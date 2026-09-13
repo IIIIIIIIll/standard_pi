@@ -243,6 +243,23 @@ Facts a contributor must not break:
 - The child's pointer is removed on `session_shutdown`. A crashed child leaves it
   behind; that is accepted rather than pruned.
 
+**Two conventions this file learned the hard way.** Both were found by the check
+phase and both generalize to any extension in this layer:
+
+- **Role predicates must be exhaustive, not selective.** A bridge that tests only
+  for its own child marker falls through into the *parent* branch for every other
+  kind of child. The shipped `trellis_subagent` tool sets both markers, so its
+  children took the parent branch, and `publish()` deleted the very key the shipped
+  tool had set for them — a strict regression, invisible while R10 keeps that tool
+  uncallable. Enumerate the roles explicitly and make the unknown case an early
+  no-op.
+- **Idempotency guards must match the whole injected constant, never a bare tag.**
+  An opening tag like `<trellis-pi-dispatch>` also occurs in ordinary prose that
+  reaches the same assembled prompt — task `design.md`, research notes — so a tag
+  test suppresses the injection for exactly the sessions whose documents quote it.
+  The failure is silent and self-inflicted: writing the tag down is what triggers
+  it.
+
 ---
 
 ## Permission Policy

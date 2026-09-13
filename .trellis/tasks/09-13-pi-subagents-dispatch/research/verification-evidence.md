@@ -208,6 +208,17 @@ warns on *any* uncommitted change. Both are therefore unreachable while any othe
 task's work is uncommitted in the same checkout. AC9 was copied from a sibling
 task's chain and asserted those strings without that condition.
 
+**Resolved later in the same session.** The other task committed (`b55ff03`), the
+tree went clean, and both assertions then passed **exactly as originally
+written**: `sync.sh` reported `Already up to date.` and mutated nothing, and
+`doctor.sh` ended in `All good.` with exit 0. So that correction was *conditional*,
+not a permanent weakening — the strings are real, they simply cannot be verified
+from a dirty checkout.
+
+The transient `settings.json has drifted from the repo` failure the second checker
+round saw was the same task mid-flight: it was adding `npm:pi-mcp-adapter` and
+`npm:pi-lens` to core, which is why `render-settings.mjs --check` now reports `ok`.
+
 **2. Running `./scripts/sync.sh` as a verification step mutated a file owned by
 another task.** It folds live settings into core by design, and the live
 `settings.json` now carries two packages added by the in-flight

@@ -129,13 +129,15 @@ run in a later turn passes whether or not that case works.
       `1 problem(s) found.`, exit 1. Evidence T8.
 - [x] **AC9** Verification chain: `bash -n setup.sh scripts/*.sh` ok;
       `node --check scripts/*.mjs` 3/3 ok; `./setup.sh` ×2 with byte-identical
-      output and exit 0; `./scripts/sync.sh` exit 0; `./scripts/doctor.sh`
-      0 problems. **Corrected during implementation:** the original wording also
-      asserted the literal strings `Already up to date.` and `All good.` Those
-      are *clean-tree* assertions (`sync.sh:73`, and `doctor.sh` warns on any
-      uncommitted change), so they cannot hold while another task's work is
-      uncommitted in this checkout. The chain is verified; those two strings are
-      not, and asserting them again would be a false criterion.
+      output and exit 0; `./scripts/sync.sh` reporting `Already up to date.` and
+      mutating nothing; `./scripts/doctor.sh` ending in `All good.`, exit 0.
+      **Corrected, then confirmed.** Those last two are *clean-tree* assertions
+      (they fire only when `git status --short` is empty), so mid-task they were
+      unreachable while another task had uncommitted work, and this AC was
+      rewritten to say so. Once that task committed (`b55ff03`), both were re-run
+      on the clean tree and pass exactly as originally worded. Recorded rather
+      than silently reverted: the strings are real, they simply cannot be
+      verified from a dirty checkout.
 - [x] **AC10** `git diff --name-only` touches no file listed in R6 and
       `.trellis/.template-hashes.json` is unchanged. This task's files were staged
       explicitly by path. **Note:** during implementation `scripts/sync.sh` folded
