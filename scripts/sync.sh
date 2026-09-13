@@ -27,16 +27,23 @@ command -v node >/dev/null 2>&1 || { echo "node is required (Pi ships on Node/np
 echo "==> Folding live settings into core"
 node "$REPO_DIR/scripts/sync-settings.mjs" "$REPO_DIR" "$PI_SRC/settings.json" "$STATE"
 
-echo "==> Pulling config directories from $PI_SRC"
+echo "==> Pulling config files from $PI_SRC"
 for f in "${PI_FILES[@]}"; do
-  if [ -f "$PI_SRC/$f" ]; then
-    cp -L "$PI_SRC/$f" "$PI_DST/$f"
-    say sync "pi-agent/$f"
+  [ -f "$PI_SRC/$f" ] || continue
+  if [ -L "$PI_SRC/$f" ]; then
+    say same "pi-agent/$f (symlinked into repo)"
+    continue
   fi
+  cp -L "$PI_SRC/$f" "$PI_DST/$f"
+  say sync "pi-agent/$f"
 done
 
 for d in "${PI_DIRS[@]}"; do
   [ -d "$PI_SRC/$d" ] || continue
+  if [ -L "$PI_SRC/$d" ]; then
+    say same "pi-agent/$d/ (symlinked into repo)"
+    continue
+  fi
   mkdir -p "$PI_DST/$d"
   if command -v rsync >/dev/null 2>&1; then
     rsync -a --delete "$PI_SRC/$d"/ "$PI_DST/$d"/
