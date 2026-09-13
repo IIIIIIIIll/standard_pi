@@ -2,11 +2,12 @@
 #
 # sync.sh — pull live harness state back into this repo.
 #
-# Run after changing settings inside Pi, installing a plugin with `pi install`,
-# or adding/updating skills, so the repo captures the change.
+# Run after changing settings inside Pi or installing a plugin with
+# `pi install`, so the repo captures the change.
 #
 # Settings are folded into pi-agent/settings.core.json with machine-specific
-# optional contributions stripped out.
+# optional contributions stripped out. Skills are NOT synced: they live in
+# skills.json and are installed from upstream by setup.sh.
 #
 set -euo pipefail
 
@@ -14,8 +15,6 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PI_SRC="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 PI_DST="$REPO_DIR/pi-agent"
 STATE="$PI_SRC/.pi-setup-state.json"
-SKILLS_SRC="$HOME/.agents/skills"
-SKILLS_DST="$REPO_DIR/agents-skills"
 
 PI_DIRS=(themes prompts tools skills agents)
 PI_FILES=(AGENTS.md)
@@ -53,20 +52,9 @@ for d in "${PI_DIRS[@]}"; do
   say sync "pi-agent/$d/"
 done
 
-echo "==> Pulling shared skills from $SKILLS_SRC"
-if [ -d "$SKILLS_SRC" ]; then
-  mkdir -p "$SKILLS_DST"
-  if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete "$SKILLS_SRC"/ "$SKILLS_DST"/
-  else
-    rm -rf "$SKILLS_DST"; mkdir -p "$SKILLS_DST"; cp -R "$SKILLS_SRC"/. "$SKILLS_DST"/
-  fi
-  [ -f "$HOME/.agents/.skill-lock.json" ] && cp "$HOME/.agents/.skill-lock.json" "$SKILLS_DST/.skill-lock.json"
-  say sync "agents-skills/"
-fi
-
 echo
-echo "==> Not tracked (machine-local by design)"
+echo "==> Managed elsewhere (not synced)"
+say upstream "skills per skills.json (setup.sh installs them)"
 for f in auth.json models-store.json models.json trust.json sessions npm git bin agent-memory; do
   [ -e "$PI_SRC/$f" ] && say skip "pi-agent/$f"
 done

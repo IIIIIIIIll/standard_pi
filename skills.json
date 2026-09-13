@@ -1,0 +1,41 @@
+{
+  "_comment": "Skills are installed from upstream at setup time and never vendored here, so they cannot fall behind. Add an entry under skills to install another; set a source ref to pin.",
+  "sources": {
+    "mattpocock": {
+      "url": "https://github.com/mattpocock/skills.git",
+      "ref": null
+    }
+  },
+  "skills": [
+    {
+      "name": "code-review",
+      "source": "mattpocock",
+      "path": "skills/engineering/code-review"
+    },
+    {
+      "name": "grill-me",
+      "source": "mattpocock",
+      "path": "skills/productivity/grill-me"
+    },
+    {
+      "name": "grilling",
+      "source": "mattpocock",
+      "path": "skills/productivity/grilling"
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "source": "mattpocock",
+      "path": "skills/engineering/improve-codebase-architecture"
+    },
+    {
+      "name": "research",
+      "source": "mattpocock",
+      "path": "skills/engineering/research"
+    },
+    {
+      "name": "tdd",
+      "source": "mattpocock",
+      "path": "skills/engineering/tdd"
+    }
+  ]
+}

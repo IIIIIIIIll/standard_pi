@@ -2,7 +2,7 @@
   "name": "opencode-go",
   "description": "OpenCode Zen Go plan — usage status bar plus rolling 5h / weekly / monthly quota commands.",
   "packages": [
-    "npm:@oscarfalero/pi-opencode-go@0.1.1"
+    "npm:@oscarfalero/pi-opencode-go"
   ],
   "settings": {
     "defaultProvider": "opencode-go",

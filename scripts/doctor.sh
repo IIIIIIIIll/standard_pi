@@ -8,8 +8,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PI_SRC="$REPO_DIR/pi-agent"
 PI_DST="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 STATE="$PI_DST/.pi-setup-state.json"
-SKILLS_SRC="$REPO_DIR/agents-skills"
-SKILLS_DST="$HOME/.agents/skills"
+SKILLS_DST="${AGENTS_SKILLS_DIR:-$HOME/.agents/skills}"
 
 PI_DIRS=(themes prompts tools skills agents)
 PI_FILES=(AGENTS.md)
@@ -36,7 +35,7 @@ fi
 
 echo "==> Settings  ($PI_DST/settings.json)"
 if [ -L "$PI_DST/settings.json" ]; then
-  bad "settings.json is a symlink; it should be generated (run scripts/install.sh)"
+  bad "settings.json is a symlink; it should be generated (run ./setup.sh)"
 elif [ -f "$PI_DST/settings.json" ]; then
   if node "$REPO_DIR/scripts/render-settings.mjs" "$REPO_DIR" "$PI_DST/settings.json" "$STATE" --check 2>&1 | sed 's/^/      /'; then
     ok "settings.json matches core + enabled optionals"
@@ -44,7 +43,7 @@ elif [ -f "$PI_DST/settings.json" ]; then
     bad "settings.json has drifted from the repo"
   fi
 else
-  bad "settings.json missing (run scripts/install.sh)"
+  bad "settings.json missing (run ./setup.sh)"
 fi
 
 echo "==> Optional bundles"
@@ -75,9 +74,9 @@ for name in "${PI_FILES[@]}" "${PI_DIRS[@]}"; do
   elif [ -L "$dst" ]; then
     bad "$name -> $(readlink "$dst")  (points elsewhere)"
   elif [ -e "$dst" ]; then
-    warn "$name exists but is not linked (run scripts/install.sh)"
+    warn "$name exists but is not linked (run ./setup.sh)"
   else
-    warn "$name not linked (run scripts/install.sh)"
+    warn "$name not linked (run ./setup.sh)"
   fi
 done
 [ "$found" = 1 ] || printf '  \033[2m·\033[0m none in repo yet (AGENTS.md, themes/, prompts/, tools/, skills/, agents/)\n'
@@ -88,7 +87,7 @@ if [ -f "$PI_DST/auth.json" ]; then
   if [ "$perms" = "600" ]; then ok "auth.json present, mode 600"
   else warn "auth.json mode is $perms (expected 600)"; fi
 else
-  warn "auth.json missing (run scripts/install.sh, then add your keys)"
+  warn "auth.json missing (run ./setup.sh, then add your keys)"
 fi
 
 echo "==> Secret scan (tracked files)"
@@ -111,12 +110,24 @@ if [ -d "$REPO_DIR/.git" ]; then
   fi
 fi
 
-echo "==> Shared skills  ($SKILLS_DST)"
-if [ -d "$SKILLS_SRC" ]; then
-  repo_n="$(find "$SKILLS_SRC" -name SKILL.md | wc -l | tr -d ' ')"
-  live_n="$(find "$SKILLS_DST" -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')"
-  if [ "$repo_n" = "$live_n" ]; then ok "$repo_n skills in repo and installed"
-  else warn "repo has $repo_n skills, installed has $live_n (run scripts/install.sh or sync.sh)"; fi
+echo "==> Skills  ($SKILLS_DST)"
+if [ -f "$REPO_DIR/skills.json" ]; then
+  total="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).skills.length)' "$REPO_DIR/skills.json")"
+  if node "$REPO_DIR/scripts/install-skills.mjs" "$REPO_DIR" --check >/tmp/pi-doctor-skills.$$ 2>&1; then
+    ok "$total skill(s) installed from upstream"
+  else
+    bad "missing skills (run ./setup.sh):"; sed 's/^/      /' /tmp/pi-doctor-skills.$$
+  fi
+  rm -f /tmp/pi-doctor-skills.$$
+  prov="${SKILLS_DST%/skills}/.pi-setup-skills.json"
+  if [ -f "$prov" ]; then
+    node -e '
+      const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+      for (const [id,s] of Object.entries(p.sources||{})) console.log(`  \u00b7 ${id} @ ${String(s.commit).slice(0,12)}`);
+    ' "$prov"
+  fi
+else
+  warn "no skills.json in repo"
 fi
 
 echo
