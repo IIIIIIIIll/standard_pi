@@ -19,7 +19,9 @@ Always-on settings, identical on every machine. It is the base that
     "npm:@juicesharp/rpiv-todo",
     "npm:@gotgenes/pi-permission-system",
     "npm:@sting8k/pi-vcc",
-    "npm:@thunstack/auto-compact"
+    "npm:@thunstack/auto-compact",
+    "npm:pi-mcp-adapter",
+    "npm:pi-lens"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",
@@ -50,6 +52,21 @@ Rules:
 | `npm:@gotgenes/pi-permission-system` | the permission gate | see below — the **only** thing gating tool calls |
 | `npm:@sting8k/pi-vcc` | algorithmic, transcript-preserving compaction summaries with **no LLM call** | owns "how to summarize" — see [Compaction](#compaction) |
 | `npm:@thunstack/auto-compact` | early percentage-triggered compaction, session toggle, TUI panel | owns "when to compact" — see [Compaction](#compaction) |
+| `npm:pi-mcp-adapter` | MCP servers behind one proxy tool (~200 tokens) instead of every server's full tool list; reads `.mcp.json`, `~/.config/mcp/mcp.json`, and host configs; adds `/mcp`, `/mcp setup`, `mcp-auth` | the on-demand path into the MCP ecosystem without paying for it in context |
+| `npm:pi-lens` | language-aware feedback on every write/edit: LSP diagnostics and navigation, linters/type-checkers, format/autofix, ast-grep and tree-sitter rules, ranked `symbol_search`, `/lens-map` | edits get checked by the real toolchain instead of by the model's own reading |
+
+Both are self-contained: neither needs a tracked config file in this repo, and
+neither writes into `~/.pi/agent/`. `pi-mcp-adapter` is inert until an MCP config
+exists (it ships no servers) — configure with `/mcp setup`, which previews every
+file it would change. `pi-lens` keeps **everything** under its own machine-global
+root: config at `~/.pi-lens/config.json`, managed tool binaries at
+`~/.pi-lens/bin/`, per-project state at `~/.pi-lens/projects/<slug>/`, plus its
+global logs. That is deliberately outside `~/.pi/agent/`, so it appears in
+neither `scripts/lib.sh`'s path lists nor `.gitignore` — do not go looking for
+pi-lens state under `pi-agent/`. It downloads LSP servers and tool binaries on
+first use (`PI_LENS_DISABLE_LSP_INSTALL`, `PI_LENS_DISABLE_TOOL_INSTALL` opt out),
+which is why a fresh machine needs network on the first session, not at setup.
+Its project config is `.pi-lens.json` (project root, outermost wins per field).
 
 `@gotgenes/pi-permission-system` is npm-installed but reads its policy from
 `extensions/pi-permission-system/config.json`, which is why that config is

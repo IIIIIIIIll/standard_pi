@@ -97,6 +97,8 @@ Anything under `packages` is installed on every machine. Currently:
 | `npm:@juicesharp/rpiv-todo` | Model-facing todo list as a live overlay surviving `/reload` and compaction |
 | `npm:@sting8k/pi-vcc` | Algorithmic, LLM-free compaction summaries; keeps the raw transcript searchable |
 | `npm:@thunstack/auto-compact` | Compacts early at a configurable **percentage** of context, plus `/auto-compact` and `/auto-compact-config` |
+| `npm:pi-mcp-adapter` | MCP servers behind a single proxy tool instead of their full tool lists; reads `.mcp.json` and host configs, adds `/mcp` and `/mcp setup` |
+| `npm:pi-lens` | Language-aware feedback on every write/edit — LSP diagnostics, linters/type-checkers, formatters, ast-grep/tree-sitter rules, `/lens-map` |
 
 `pi-subagents` also dispatches the Trellis role agents. A dispatched child runs as
 its own Pi session, so `pi-agent/extensions/trellis-subagents-bridge/` keeps it
@@ -193,6 +195,7 @@ git add -A && git commit -m "…" && git push
 | `~/.pi/agent/web-search-cache/` | Cached web-search results, re-fetchable |
 | `~/.pi/agent/cache/` | Pi's scratch cache |
 | `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json` | Extension-owned per-machine config; rewritten at runtime, so never symlinked — see [spec/config/layout-and-surfaces.md](.trellis/spec/config/layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked) |
+| `~/.pi-lens/` | pi-lens's own machine-global root — config, managed LSP/tool binaries, per-project caches, logs. Outside `~/.pi/agent/`, so it is not one of `scripts/lib.sh`'s paths |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts |
 
 > **Security:** `auth.json` is gitignored and `doctor.sh` fails if it ever becomes

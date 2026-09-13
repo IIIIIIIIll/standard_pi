@@ -6,7 +6,9 @@
     "npm:@juicesharp/rpiv-todo",
     "npm:@gotgenes/pi-permission-system",
     "npm:@sting8k/pi-vcc",
-    "npm:@thunstack/auto-compact"
+    "npm:@thunstack/auto-compact",
+    "npm:pi-mcp-adapter",
+    "npm:pi-lens"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",
