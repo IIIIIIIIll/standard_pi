@@ -2,9 +2,9 @@
   "packages": [
     "npm:pi-subagents",
     "npm:pi-web-access",
-    "npm:@gotgenes/pi-permission-system",
     "npm:@juicesharp/rpiv-ask-user-question",
-    "npm:@juicesharp/rpiv-todo"
+    "npm:@juicesharp/rpiv-todo",
+    "npm:@gotgenes/pi-permission-system"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",
