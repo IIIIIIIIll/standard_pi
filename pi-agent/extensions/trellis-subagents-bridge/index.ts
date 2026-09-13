@@ -274,12 +274,12 @@ text. The role agents in .pi/agents/ are discovered by pi-subagents directly.
 //
 // Unknown names are ignored by setActiveTools, and an already-absent name is a
 // harmless no-op, so this is safe to re-apply on every turn.
-// Single hard-coded name, but it is a real coupling: if `trellis update` renames
-// this tool or ships a second dispatch tool, R10 silently stops holding — and the
-// newly-live path is exactly the case isShippedToolChild() handles. doctor.sh
-// asserts the bridge is present, not the tool name. Re-check this constant after
-// any Trellis upgrade.
-const SHIPPED_TOOL = "trellis_subagent";
+// The shipped dispatch tools this bridge deactivates. This list is the SINGLE
+// SOURCE for those names: scripts/doctor.sh greps the generated extension for the
+// tool names it registers and fails when one is missing here, so a `trellis
+// update` that renames a tool or adds another cannot silently end the
+// deactivation. Adding a name is a one-line change.
+const SHIPPED_TOOLS = ["trellis_subagent"];
 
 function disableShippedTool(pi: PiApi): void {
   try {
@@ -289,8 +289,10 @@ function disableShippedTool(pi: PiApi): void {
     )
       return;
     const active = pi.getActiveTools();
-    if (!Array.isArray(active) || !active.includes(SHIPPED_TOOL)) return;
-    pi.setActiveTools(active.filter((name) => name !== SHIPPED_TOOL));
+    if (!Array.isArray(active)) return;
+    const kept = active.filter((name) => !SHIPPED_TOOLS.includes(name));
+    if (kept.length === active.length) return; // none of ours is active
+    pi.setActiveTools(kept);
   } catch {
     // Never let a tool-list adjustment take down the session.
   }

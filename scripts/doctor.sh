@@ -113,6 +113,39 @@ else
   fi
 fi
 
+# Shipped dispatch tools. The bridge deactivates them by name, so a `trellis
+# update` that renames one or registers another would silently end the
+# deactivation. Compare the generated extension's registered names against the
+# list the bridge declares. Offline, and no `pi` invocation: this must stay
+# meaningful on a fresh clone.
+trellis_ext="$REPO_DIR/.pi/extensions/trellis/index.ts"
+if [ ! -f "$trellis_ext" ]; then
+  warn ".pi/extensions/trellis/index.ts absent (Trellis adapters not generated in this checkout)"
+elif [ -f "$bridge_src" ]; then
+  shipped_names="$(grep -oE 'name: "[a-z_]+"' "$trellis_ext" | sed -E 's/.*"(.*)"/\1/' | sort -u)"
+  if grep -q "registerTool" "$trellis_ext" && [ -z "$shipped_names" ]; then
+    # Seeing no names is drift too: a reflowed template would otherwise make the
+    # check below pass vacuously instead of failing.
+    bad "the generated extension registers tool(s) but no name could be extracted (formatting drift?); the bridge's SHIPPED_TOOLS list can no longer be verified"
+  else
+    unknown_tools=()
+    # Deliberate word-splitting: $shipped_names is a newline-separated list of
+    # tool names, none of which can contain whitespace.
+    # shellcheck disable=SC2086
+    for t in $shipped_names; do
+      grep -qF "\"$t\"" "$bridge_src" || unknown_tools+=("$t")
+    done
+    if [ ${#unknown_tools[@]} -gt 0 ]; then
+      bad "generated extension registers tool(s) the bridge does not deactivate:"
+      for t in "${unknown_tools[@]}"; do printf '      %s\n' "$t"; done
+      printf '      add each to SHIPPED_TOOLS in pi-agent/extensions/trellis-subagents-bridge/index.ts\n'
+    else
+      n_shipped="$(printf '%s\n' "$shipped_names" | grep -c .)"
+      ok "shipped dispatch tool(s) covered by the bridge: $n_shipped"
+    fi
+  fi
+fi
+
 echo "==> Credentials"
 if [ -f "$PI_DST/auth.json" ]; then
   perms="$(stat -c '%a' "$PI_DST/auth.json" 2>/dev/null || stat -f '%Lp' "$PI_DST/auth.json")"

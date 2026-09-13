@@ -240,6 +240,14 @@ Facts a contributor must not break:
   a tool's guidelines only while it is active). It does **not** edit the generated
   extension — `.pi/` is gitignored and template-tracked, so a patch there would be
   machine-local and lost to `trellis update`.
+- **`SHIPPED_TOOLS` is the single source for the shipped tool names**, and
+  `doctor.sh` checks it against the generated extension: it greps the extension for
+  the names it registers and fails when one is missing from that list. So a
+  `trellis update` that renames the tool, or registers another, fails loudly
+  instead of silently leaving the shipped path callable again. The check also
+  fails when it can extract **no** names from an extension that clearly calls
+  `registerTool` — seeing nothing is drift too, and a reflowed template must not
+  be allowed to turn the check into a silent pass.
 - The child's pointer is removed on `session_shutdown`. A crashed child leaves it
   behind; that is accepted rather than pruned.
 
