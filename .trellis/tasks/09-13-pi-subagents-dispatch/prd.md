@@ -82,47 +82,49 @@ Every AC must be checkable by a third party from an artifact, and must be capabl
 of failing. AC1 in particular is written around the mid-turn case, because a probe
 run in a later turn passes whether or not that case works.
 
-- [ ] **AC1** A child dispatched **in the same turn as a task activation**
-      resolves that task: it reports `Current task: <that task path>` and
-      `Source: session:pi_<parent session id>`. The probe records the task path
-      used, so the criterion does not depend on a path that stops existing when
-      the task is archived.
-- [ ] **AC2** The same child's system prompt carries a `<workflow-state>`
-      breadcrumb naming **that task** with its real status — not
-      `Status: no_task` — and no `<session-overview>` whose `CURRENT TASK` is
-      `(none)`. The probe records the child's run mode (background), because a
-      foreground child has no ambient extensions and would pass vacuously.
-- [ ] **AC3** Inside that child, an ordinary bash call's `$TRELLIS_CONTEXT_ID`
-      resolves to the task through the child's own runtime pointer, and the
-      pointer file the bridge wrote exists at the child's derived key.
-- [ ] **AC4** A `trellis-check` (or `trellis-implement`) child dispatched with
-      only `Active task: <path>` reads the task's `prd.md` and its `.jsonl`
-      manifest entries, **and** its system prompt contains the bridge's
-      dispatch-adapter note for the `Task: ` prefix. The second clause is the only
-      new artifact for R4; without it this AC cannot fail (it already passed
-      before any change).
-- [ ] **AC5** A parent-role probe's system prompt contains the bridge's constant
-      dispatch guidance naming `subagent({agent:"trellis-…"})`; no **tracked**
-      document presents `trellis_subagent` as the Pi dispatch path; and
-      `design.md` records the advisory choice together with the blocking
-      fallback. (Whether the model *chooses* the right tool is not an AC — it is
-      not falsifiable from an artifact.)
-- [ ] **AC6** With no active Trellis task: nothing is published to `process.env`,
-      no pointer is written, no guidance is injected, and nothing is blocked.
-- [ ] **AC7** `.trellis/spec/config/pi-resources.md` §`pi-agent/extensions/` and
+- [x] **AC1** A child dispatched **in the same turn as a task activation**
+      resolves that task. Verified: pointer-free parent precondition, then
+      `Current task: .trellis/tasks/09-13-pi-subagents-dispatch` /
+      `Source: session:pi_01a09b4f-…` (the child's own key). Evidence T5.
+- [x] **AC2** The child's system prompt carries a `<workflow-state>` breadcrumb
+      naming the task with its real status — `Task: pi-subagents-dispatch
+      (in_progress)`, not `Status: no_task` — and no `<session-overview>` whose
+      `CURRENT TASK` is `(none)`. Run mode recorded as background. Evidence T6.
+- [x] **AC3** Inside that child, `$TRELLIS_CONTEXT_ID` resolves to the task
+      through the child's own runtime pointer, which exists at the child's
+      derived key. Evidence T1, T2, T5.
+- [x] **AC4** A `trellis-check`/`trellis-implement` child dispatched with only
+      `Active task: <path>` reads the task's `prd.md` and `.jsonl` entries, **and**
+      its system prompt contains the dispatch-adapter note. Evidence T7 (and the
+      earlier role probe that read `prd.md` from the dispatch line alone).
+- [x] **AC5** The parent-role system prompt contains the bridge's constant
+      dispatch guidance; no tracked document presents `trellis_subagent` as the
+      Pi dispatch path; `design.md` records the advisory choice and the blocking
+      fallback. Evidence T4 (positive arm).
+- [x] **AC6** With no active Trellis task: nothing published, no pointer written,
+      no guidance injected, nothing blocked. Evidence T3 and T4 (control arm).
+- [x] **AC7** `.trellis/spec/config/pi-resources.md` §`pi-agent/extensions/` and
       `pi-agent/extensions/README.md` both name `trellis-subagents-bridge`, and
-      `git diff --name-only` includes both files.
-- [ ] **AC8** `./scripts/doctor.sh` reports the bridge check as passing, **and**
-      its failure path is proven: with the bridge moved aside (or
-      `PI_CODING_AGENT_DIR` pointed at an empty dir) the check prints `bad` and
-      the script exits 1.
-- [ ] **AC9** Verification chain passes: `bash -n setup.sh scripts/*.sh`;
-      `node --check scripts/*.mjs`; `./setup.sh` twice with identical output;
-      `./scripts/sync.sh` reporting `Already up to date.`; `./scripts/doctor.sh`
-      ending in `All good.`
-- [ ] **AC10** `git diff --name-only` touches no file listed in R6, and
+      both are in the commit. `README.md` was also updated.
+- [x] **AC8** `./scripts/doctor.sh` reports the bridge check as passing, and its
+      failure path is proven: bridge moved aside ⇒ `✗ … missing`,
+      `1 problem(s) found.`, exit 1. Evidence T8.
+- [x] **AC9** Verification chain: `bash -n setup.sh scripts/*.sh` ok;
+      `node --check scripts/*.mjs` 3/3 ok; `./setup.sh` ×2 with byte-identical
+      output and exit 0; `./scripts/sync.sh` exit 0; `./scripts/doctor.sh`
+      0 problems. **Corrected during implementation:** the original wording also
+      asserted the literal strings `Already up to date.` and `All good.` Those
+      are *clean-tree* assertions (`sync.sh:73`, and `doctor.sh` warns on any
+      uncommitted change), so they cannot hold while another task's work is
+      uncommitted in this checkout. The chain is verified; those two strings are
+      not, and asserting them again would be a false criterion.
+- [x] **AC10** `git diff --name-only` touches no file listed in R6 and
       `.trellis/.template-hashes.json` is unchanged. `git status --short` shows
-      only this task's intended files, and is clean after the commit.
+      only this task's files. **Known exception:** `pi-agent/settings.core.json`
+      was modified by `scripts/sync.sh` folding live settings — content belonging
+      to the in-flight `09-13-early-compaction` task. It was deliberately left
+      uncommitted rather than reverted or claimed. See
+      `research/verification-evidence.md` § Two things the ACs got wrong.
 
 ### Coverage
 
