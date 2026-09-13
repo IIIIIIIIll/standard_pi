@@ -17,7 +17,9 @@ Always-on settings, identical on every machine. It is the base that
     "npm:pi-web-access",
     "npm:@juicesharp/rpiv-ask-user-question",
     "npm:@juicesharp/rpiv-todo",
-    "npm:@gotgenes/pi-permission-system"
+    "npm:@gotgenes/pi-permission-system",
+    "npm:@sting8k/pi-vcc",
+    "npm:@thunstack/auto-compact"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",
@@ -46,10 +48,75 @@ Rules:
 | `npm:@juicesharp/rpiv-ask-user-question` | structured questionnaire overlay | prevents guessing at requirements |
 | `npm:@juicesharp/rpiv-todo` | model-facing todo list that survives `/reload` and compaction | used by the Trellis workflows |
 | `npm:@gotgenes/pi-permission-system` | the permission gate | see below — the **only** thing gating tool calls |
+| `npm:@sting8k/pi-vcc` | algorithmic, transcript-preserving compaction summaries with **no LLM call** | owns "how to summarize" — see [Compaction](#compaction) |
+| `npm:@thunstack/auto-compact` | early percentage-triggered compaction, session toggle, TUI panel | owns "when to compact" — see [Compaction](#compaction) |
 
 `@gotgenes/pi-permission-system` is npm-installed but reads its policy from
 `extensions/pi-permission-system/config.json`, which is why that config is
 committed here rather than living in the package.
+
+### Compaction
+
+Pi's native auto-compaction triggers at `contextWindow - reserveTokens`
+(`reserveTokens` default 16384), which on a 1,000,000-token model is ~98% full —
+too late to be useful. Two packages split the job:
+
+| Concern | Owner | Setting |
+|---------|-------|---------|
+| **When** to compact | `auto-compact` | `thresholdPercent` (per-machine; 30 here) |
+| **How** to summarize | `pi-vcc` | `overrideDefaultCompaction: true` — algorithmic, **no LLM call** |
+| Final backstop | Pi core | `reserveTokens: 16384`, untouched (~98%) |
+| Resuming the run | `auto-compact` | `autoResume: true` |
+
+Facts that must not be re-litigated:
+
+- **`reserveTokens` stays untouched.** Pi overloads it as the summarization
+  output budget (`0.8 × reserveTokens`), so raising it to move the native trigger
+  would change an unrelated number. With pi-vcc's `overrideDefaultCompaction:
+  true` there is no LLM summarization call, so that budget is irrelevant anyway.
+  The percentage trigger is the right lever: proportional, and still meaningful
+  on a smaller context window.
+- **`autoResume: true` is required on Pi ≥ 0.84.4.** Measured on Pi **0.85.1**
+  (`--mode rpc`, `thresholdPercent: 1` to force a compaction after two tool
+  turns): with `false`, the session compacted **once** and then **stalled** — 0
+  resumption messages, the remaining steps never ran, no final answer. With
+  `true`, it compacted **once**, delivered the `resumptionInstruction` follow-up
+  **exactly once**, and completed the work. `ctx.compact()` is Pi's public API;
+  it aborts the agent loop (`session.compact()` opens with `await this.abort()`)
+  and does **not** resume. Only Pi's *native threshold* path self-resumes, and
+  `auto-compact` does not use it. The two packages' docs disagree; the
+  measurement is the authority.
+- **pi-vcc does not send its own continue here.** `shouldScheduleAutoContinue`
+  returns `false` for Pi ≥ 0.84.4 (`PI_SELF_RESUME_VERSION` in pi-vcc 0.7.2), so
+  `continueAfterThresholdCompact: true` is inert on this machine; and the
+  `session_compact` handler that would send it only fires for `reason`
+  `threshold` or `overflow`, never `manual`, which is the path `ctx.compact()`
+  takes. Do not rely on it as the resume mechanism.
+- **`additionalCompactionInstruction` does not reach the summarizer here.**
+  `auto-compact` passes it (non-empty by default) to `ctx.compact()` as
+  `customInstructions`; pi-vcc's parser treats any non-`__pi_vcc__` free text as
+  a post-compaction follow-up prompt, tries to send it from `session_compact`
+  while compaction is still in progress, and swallows the `Cannot submit a
+  prompt while compaction is in progress` rejection. Pi still emits an
+  `extension_error` (`send_user_message`) on every compaction — harmless (the
+  text is dropped, no extra turn), but do not expect the setting to take effect
+  under `overrideDefaultCompaction: true`.
+- **`keepRecentTokens` (default 20000) is untouched** and is what makes
+  compaction eligible at all: a session with less history has no cut point, so
+  the trigger cannot fire. A three-command session never reaches it, which is why
+  the R3 test above needed large files read into context first.
+- **Test the resume path with `pi --mode rpc`, not `pi -p`.** Measured in `pi -p`
+  with >20k tokens of history: exit 1, `This operation was aborted`, 0 compaction
+  entries and 0 resume messages — for **both** `autoResume` values, so the flag is
+  indistinguishable from a stall there. The mechanism is inferred rather than
+  measured: `ctx.compact()` is fire-and-forget, and print mode tears the runtime
+  down once the aborted prompt resolves, before compaction settles. RPC mode keeps
+  the session alive and discriminates cleanly.
+
+Both settings files (`~/.pi/agent/auto-compact.json`,
+`~/.pi/agent/pi-vcc-config.json`) are per-machine, untracked and **never
+symlinked** — see
+[layout-and-surfaces.md](./layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked).
 
 ---
 

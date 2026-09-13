@@ -118,6 +118,34 @@ Step 3 exists for the adopt-on-an-existing-machine case and logs
 `infer  enabled from existing settings: …`. It only fires when no state file
 exists, so once `setup.sh` has run, the state file is authoritative.
 
+### Per-machine extension config is not symlinked
+
+Some extensions own a settings file under the Pi config dir, named
+`~/.pi/agent/<extension>-config.json` (`auto-compact.json`,
+`pi-vcc-config.json`). These are **per-machine, untracked**, declared in both
+`.gitignore` and `PI_NOT_SYNCED`, and deliberately **not** added to `PI_FILES`.
+
+`PI_FILES` exists for "a repo file that should appear in `~/.pi/agent`", so
+symlinking one looks like the consistent choice. It is a trap, for two different
+reasons depending on the extension:
+
+- `auto-compact.json` is written with an atomic rename (`writeAutoCompactConfig`
+  writes a temp file and `renameSync`s it). `rename(2)` replaces the **symlink
+  itself**, not its target, so the first save disconnects the repo copy:
+  `doctor.sh` then reports `! … exists but is not linked (run ./setup.sh)`, and
+  `setup.sh`'s `link()` moves the real file to `<name>.bak-<stamp>` and re-links
+  the repo version — discarding the settings the user just saved, recoverable
+  only from the backup.
+- `pi-vcc-config.json` is written with a plain `writeFileSync`, which **follows**
+  the symlink, so per-machine settings would be written straight into the
+  tracked repo file (dirty tree, per-machine state committable).
+
+The resources that do work symlinked (`themes/`, `prompts/`, `AGENTS.md`, …) are
+edited by us or by Pi, not rewritten by a runtime config writer. Files rewritten
+at runtime must live outside the repo, which is why these two are named
+individually in `.gitignore` (no `pi-agent/*-config.json` glob — see the
+invariant below) and reported by `sync.sh`.
+
 ---
 
 ## The `.gitignore` / Skip-List Invariant

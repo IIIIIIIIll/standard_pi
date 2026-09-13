@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "the package inventory and the plugin/permission conventions this task extends; where the compaction subsection goes"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "the four-surface map and the decision tree for a new file; determines whether an extension config file is tracked, symlinked, generated, or ignored"}
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "lib.sh's data-only contract and the PI_NOT_SYNCED array rules (order is the report order, no trailing slash on files)"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "the multi-site fact table and verify chain; the plugin list and ignore lists are rows this task changes"}
+{"file": ".trellis/spec/config/index.md", "reason": "the config-layer checklist and quality check, including strict-JSON and ignore-coverage requirements"}

@@ -27,4 +27,7 @@ readonly PI_NOT_SYNCED=(
   auth.json models-store.json models.json trust.json
   sessions/ npm/ git/ bin/ cache/ agent-memory/
   missions/ profiles/ web-search-cache/ run-history.jsonl
+  # Extension-owned per-machine config. Files, so no trailing slash. Each one
+  # also has an explicit .gitignore entry; `doctor.sh` enforces that pairing.
+  auto-compact.json pi-vcc-config.json
 )

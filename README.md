@@ -95,11 +95,29 @@ Anything under `packages` is installed on every machine. Currently:
 | `npm:@gotgenes/pi-permission-system` | The only thing gating tool calls — Pi itself has no permission prompts. Committed policy is deliberately permissive (`"*": "allow"`) plus a real `deny` lock that survives `yoloMode`: [`extensions/pi-permission-system/config.json`](pi-agent/extensions/README.md#permission-policy) |
 | `npm:@juicesharp/rpiv-ask-user-question` | Structured questionnaire the model can put to you instead of guessing |
 | `npm:@juicesharp/rpiv-todo` | Model-facing todo list as a live overlay surviving `/reload` and compaction |
+| `npm:@sting8k/pi-vcc` | Algorithmic, LLM-free compaction summaries; keeps the raw transcript searchable |
+| `npm:@thunstack/auto-compact` | Compacts early at a configurable **percentage** of context, plus `/auto-compact` and `/auto-compact-config` |
 
 `pi-subagents` also dispatches the Trellis role agents. A dispatched child runs as
 its own Pi session, so `pi-agent/extensions/trellis-subagents-bridge/` keeps it
 pointed at the session's active task — see
 [extensions/README.md](pi-agent/extensions/README.md#trellis-subagents-bridge).
+
+Compaction is split between the last two: `auto-compact` decides **when**
+(percentage of context) and `pi-vcc` decides **how** (algorithmic extraction, no
+LLM call). Both read per-machine config that is untracked by design — they are
+rewritten at runtime (`auto-compact` by atomic rename, `pi-vcc` in place), so
+symlinking either one into the repo would disconnect or overwrite the tracked
+copy. So `~/.pi/agent/auto-compact.json` is a one-time local setup
+step, not something the repo can reproduce:
+
+```json
+{ "version": 1, "enabledAtSessionStart": true, "thresholdPercent": 30, "autoResume": true }
+```
+
+`~/.pi/agent/pi-vcc-config.json` keeps `overrideDefaultCompaction: true`. Do not
+set `reserveTokens`: pi-vcc removes the LLM summarization call, so the summary
+budget it feeds is irrelevant, and the percentage trigger is the intended lever.
 
 ### Optional — `optional/<name>/`
 
@@ -174,6 +192,7 @@ git add -A && git commit -m "…" && git push
 | `~/.pi/agent/run-history.jsonl` | Per-machine run history log |
 | `~/.pi/agent/web-search-cache/` | Cached web-search results, re-fetchable |
 | `~/.pi/agent/cache/` | Pi's scratch cache |
+| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json` | Extension-owned per-machine config; rewritten at runtime, so never symlinked — see [spec/config/layout-and-surfaces.md](.trellis/spec/config/layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked) |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts |
 
 > **Security:** `auth.json` is gitignored and `doctor.sh` fails if it ever becomes

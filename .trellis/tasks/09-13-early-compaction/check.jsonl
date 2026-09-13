@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/config/index.md", "reason": "config-layer quality check: render drift, git cleanliness, strict JSON, ignore coverage"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "the verify chain the checker must run, including setup.sh twice and setup-then-sync symmetry"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "the ignore-coverage invariant and the surface rules the two new config files must satisfy"}
+{"file": ".trellis/spec/index.md", "reason": "project-level quality check commands and expected doctor.sh outcomes"}

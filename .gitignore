@@ -22,6 +22,13 @@ pi-agent/models.json
 pi-agent/trust.json
 pi-agent/agent-memory/
 
+# Extension-owned per-machine config. These are rewritten at runtime
+# (auto-compact by renameSync, pi-vcc in place), so they must NOT be symlinked
+# into the repo — see .trellis/spec/config/layout-and-surfaces.md. Reported by
+# scripts/sync.sh.
+pi-agent/auto-compact.json
+pi-agent/pi-vcc-config.json
+
 pi-agent/sessions/
 pi-agent/npm/
 # Runtime logs written by extensions into their own directory (e.g. the

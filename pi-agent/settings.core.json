@@ -4,7 +4,9 @@
     "npm:pi-web-access",
     "npm:@juicesharp/rpiv-ask-user-question",
     "npm:@juicesharp/rpiv-todo",
-    "npm:@gotgenes/pi-permission-system"
+    "npm:@gotgenes/pi-permission-system",
+    "npm:@sting8k/pi-vcc",
+    "npm:@thunstack/auto-compact"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",

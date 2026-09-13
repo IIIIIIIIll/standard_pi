@@ -1,0 +1,33 @@
+{
+  "id": "early-compaction",
+  "name": "early-compaction",
+  "title": "Enable early percentage compaction and track the compaction extensions",
+  "description": "Add @thunstack/auto-compact to give a 30% context trigger (native Pi only triggers at contextWindow - reserveTokens, i.e. ~98% on a 1M model), track the already-installed @sting8k/pi-vcc in the same pass, resolve the resulting settings.json drift, and declare both per-machine extension config files in .gitignore and PI_NOT_SYNCED. Includes a mandatory test of the one real risk: auto-compact's autoResume may double-resume now that Pi core (>=0.84.4) resumes the run itself.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "yuanhai.tan",
+  "assignee": "yuanhai.tan",
+  "createdAt": "2026-09-13",
+  "completedAt": null,
+  "branch": "main",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "pi-agent/settings.core.json",
+    ".gitignore",
+    "scripts/lib.sh",
+    "README.md",
+    ".trellis/spec/config/pi-resources.md",
+    ".trellis/spec/config/layout-and-surfaces.md"
+  ],
+  "notes": "Always-on: @thunstack/auto-compact (percentage trigger) + @sting8k/pi-vcc (already installed but untracked, so doctor.sh is failing with render drift). Design: auto-compact owns WHEN (thresholdPercent 30), pi-vcc owns HOW (overrideDefaultCompaction true, algorithmic, no LLM call -- so the 0.8*reserveTokens summary budget is irrelevant and reserveTokens stays untouched). The two config files are per-machine and must NOT be symlinked: writeAutoCompactConfig uses renameSync, which replaces a symlink rather than its target (index.ts:133-166). Open risk being tested, not assumed: auto-compact's autoResume may duplicate core's resume on Pi >=0.84.4 (pi-vcc's docs warn a second continue 'would land as a ghost turn'). Start autoResume:false and verify work completes exactly once.",
+  "meta": {}
+}
