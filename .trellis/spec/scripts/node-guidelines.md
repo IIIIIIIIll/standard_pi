@@ -117,7 +117,7 @@ if (previousText === next) {
   console.log(`  ok       ${livePath}`);
 } else if (checkOnly) {
   console.error(`  drift    ${livePath} does not match the repo`);
-  console.error(`           run scripts/install.sh or scripts/sync.sh`);
+  console.error(`           run ./setup.sh or scripts/sync.sh`);
   process.exit(1);
 }
 ```
@@ -139,7 +139,7 @@ console.error(`  drift    ${livePath} does not match the repo`);
 Continuation lines are indented 11 spaces so they align under the message column:
 
 ```js
-console.error(`           run scripts/install.sh or scripts/sync.sh`);
+console.error(`           run ./setup.sh or scripts/sync.sh`);
 ```
 
 Canonical verbs: `ok`, `warn`, `error`, `drift`, `backup`, `render`, `state`,

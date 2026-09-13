@@ -19,7 +19,8 @@
 | `pi-agent/settings.json` | `~/.pi/agent/settings.json` | **Generated** | `render-settings.mjs` |
 | `pi-agent/.pi-setup-state.json` | `~/.pi/agent/.pi-setup-state.json` | **Generated, gitignored** | `render-settings.mjs` |
 | `~/.pi/agent/auth.json` | — | **Ignored (secret)** | user, mode `600` |
-| `~/.pi/agent/{sessions,npm,git,bin,cache}/` | — | **Ignored** | Pi |
+| `~/.pi/agent/{sessions,npm,git,bin,cache,missions,profiles,web-search-cache}/` | — | **Ignored** | Pi |
+| `~/.pi/agent/{run-history.jsonl,models-store.json,trust.json}`, `~/.pi/agent/agent-memory/` | — | **Ignored** | Pi |
 | `~/.pi/agent/extensions/*/logs/` | — | **Ignored** | the extension |
 | `~/.agents/skills/<name>/` | — | **Fetched from upstream** | `install-skills.mjs` |
 | `~/.agents/.pi-setup-skills.json` | — | **Generated, outside repo** | `install-skills.mjs` |
@@ -33,6 +34,13 @@ directories**, not an inventory — `link()` silently returns when the source do
 not exist, so `themes/`, `prompts/`, `tools/`, `skills/`, and `agents/` will be
 linked automatically the moment they appear. Creating one of them by hand is a
 normal, supported way to add a resource; adding a seventh name is not.
+
+The **Ignored** rows above are illustrative, not exhaustive — Pi adds runtime
+state between releases (`missions/`, `profiles/`, `web-search-cache/`, and
+`run-history.jsonl` were all added after this repo was created). The enforcement
+points are `.gitignore` and the skip-list in `scripts/sync.sh`; see
+[`.gitignore` Parity](#gitignore-parity) for how they relate, and note that they
+are **not** currently in parity.
 
 ---
 
@@ -113,9 +121,9 @@ exists, so once `setup.sh` has run, the state file is authoritative.
 
 `.gitignore` is the enforcement point for the "ignored" surface, and it is
 hand-maintained. The list is grouped by intent and commented — keep the grouping
-when adding to it, and keep the comment accurate (the comment above
-`pi-agent/settings.json` still says it is rendered by `scripts/install.sh`, a
-script that no longer exists; the real command is `./setup.sh`).
+when adding to it, and keep the comments accurate (the one above
+`pi-agent/settings.json` names `./setup.sh`, the entry point that renders it via
+`scripts/render-settings.mjs`).
 
 Two lists must be kept in sync whenever Pi starts writing a new runtime
 directory:
@@ -126,12 +134,33 @@ directory:
   the whole directory, but the report is how a user learns the path is
   intentionally not synced.
 
-That second list has already fallen behind: Pi now also writes `missions/`,
-`profiles/`, and `run-history.jsonl` under `~/.pi/agent/`, which appear in neither
-list. Because `sync.sh` enumerates rather than globs, nothing is wrongly copied —
-but the "Managed elsewhere (not synced)" report is incomplete, and none of those
-paths is covered by `.gitignore`. Add them to `.gitignore` in the same commit if
-you ever add one of them to `PI_DIRS`.
+Because `sync.sh` enumerates rather than globs, a path missing from either list
+is never wrongly copied — but if it is missing from `.gitignore` it becomes
+committable, and if it is missing from the skip-list the "Managed elsewhere (not
+synced)" report goes silently incomplete. Add a new runtime path to both lists in
+the same commit.
+
+### Common Mistake: assuming the two lists have parity
+
+They do not, and neither does the `README.md` table. Measured 2026-09-13:
+
+| Path | `.gitignore` | `sync.sh` skip-list | `README.md` table |
+|------|--------------|---------------------|-------------------|
+| `cache/` | yes | **no** | **no** |
+| `trust.json` | **no** | yes | yes |
+| `agent-memory/` | **no** | yes | yes |
+| all others (`auth.json`, `sessions/`, `npm/`, `git/`, `bin/`, `models-store.json`, `missions/`, `profiles/`, `web-search-cache/`, `run-history.jsonl`) | yes | yes | yes |
+
+**Consequence:** the interesting failure is the second row, not the first. A path
+absent from `.gitignore` is committable, so `trust.json` — which exists on this
+machine — is reported as "intentionally not synced" while git would happily stage
+it. `cache/` is the opposite and harmless-but-noisy: ignored by git, absent from
+the report.
+
+Nothing is leaking today (neither `trust.json` nor `agent-memory/` is tracked),
+and `doctor.sh`'s secret scan would not catch them because they contain no key
+patterns. Do not "fix" one list without checking the other two, and do not assume
+that a path `sync.sh` reports as skipped is therefore ignored by git.
 
 ---
 
@@ -145,6 +174,9 @@ actively checks the important one. Do not add them:
 | `~/.pi/agent/auth.json` | Live API keys. `doctor.sh` fails if tracked. |
 | `~/.agents/skills/` | Fetched from upstream via `skills.json`; vendoring makes it go stale. |
 | `~/.pi/agent/models-store.json`, `models.json` | Model catalog cached from `https://pi.dev/api/models/providers/<id>`. |
+| `~/.pi/agent/{missions,profiles,web-search-cache}/`, `~/.pi/agent/run-history.jsonl` | Per-machine runtime state Pi writes: mission state, profiles, search cache, and the run log. Added to the two enforcement lists on 2026-09-13. |
+| `~/.pi/agent/cache/` | Pi's scratch cache. Ignored by git but **missing from `sync.sh`'s skip-list** — see the parity note above. |
+| `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory. Listed here and reported by `sync.sh`, but **not covered by `.gitignore`** — see the parity note above. |
 | `~/.pi/agent/sessions/` | Per-machine conversation history. |
 | `~/.pi/agent/npm/`, `git/`, `bin/` | Installed `node_modules`, cloned repos, platform binaries. |
 | `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory. |

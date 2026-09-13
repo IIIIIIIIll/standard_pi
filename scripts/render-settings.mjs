@@ -110,7 +110,7 @@ if (previousText === next) {
   console.log(`  ok       ${livePath}`);
 } else if (checkOnly) {
   console.error(`  drift    ${livePath} does not match the repo`);
-  console.error(`           run scripts/install.sh or scripts/sync.sh`);
+  console.error(`           run ./setup.sh or scripts/sync.sh`);
   process.exit(1);
 } else {
   if (previousText !== null) {

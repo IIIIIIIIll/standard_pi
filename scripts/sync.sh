@@ -55,7 +55,7 @@ done
 echo
 echo "==> Managed elsewhere (not synced)"
 say upstream "skills per skills.json (setup.sh installs them)"
-for f in auth.json models-store.json models.json trust.json sessions npm git bin agent-memory; do
+for f in auth.json models-store.json models.json trust.json sessions npm git bin agent-memory missions profiles run-history.jsonl web-search-cache; do
   [ -e "$PI_SRC/$f" ] && say skip "pi-agent/$f"
 done
 

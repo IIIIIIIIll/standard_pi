@@ -7,8 +7,9 @@ pi-agent/auth.json
 # ---------------------------------------------------------------------------
 # Generated / machine-local Pi state
 # ---------------------------------------------------------------------------
-# settings.json is rendered by scripts/install.sh from settings.core.json
-# plus this machine's enabled optional bundles. Do not track it.
+# settings.json is rendered by ./setup.sh (via scripts/render-settings.mjs)
+# from settings.core.json plus this machine's enabled optional bundles.
+# Do not track it.
 pi-agent/settings.json
 pi-agent/.pi-setup-state.json
 
@@ -24,6 +25,10 @@ pi-agent/extensions/*/logs/
 pi-agent/git/
 pi-agent/bin/
 pi-agent/cache/
+pi-agent/missions/
+pi-agent/profiles/
+pi-agent/run-history.jsonl
+pi-agent/web-search-cache/
 pi-agent/*.log
 pi-agent/pi-debug.log
 pi-agent/*.bak

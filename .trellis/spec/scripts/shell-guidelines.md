@@ -307,8 +307,7 @@ user re-run, because every script is idempotent.
 - **Do not hard-code `$HOME/.pi/agent`.** Always go through `PI_CODING_AGENT_DIR`.
 - **Do not enumerate where you can discover.** If a new set of things can be found
   on disk, add a `_`-aware `find` rather than another literal array.
-- **Do not claim a path in an error message that does not exist.** Known instance:
-  `render-settings.mjs` tells the user to run `scripts/install.sh`, and
-  `.gitignore` says `settings.json` is rendered "by scripts/install.sh". That file
-  was removed — the real command is `./setup.sh`. Fixing those two strings is a
-  legitimate drive-by change; adding a third is not.
+- **Do not claim a path in an error message that does not exist.** When a script is
+  renamed or removed, grep for its name across the repo — user-facing strings
+  (`render-settings.mjs` drift output, `.gitignore` comments) are not exercised by
+  any test and go stale silently. Always name a command the user can actually run.

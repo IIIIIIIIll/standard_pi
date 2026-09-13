@@ -164,6 +164,10 @@ git add -A && git commit -m "…" && git push
 | `~/.pi/agent/sessions/` | Per-machine conversation history |
 | `~/.pi/agent/npm/`, `git/`, `bin/` | Installed `node_modules`, cloned repos, platform `rg`/`fd` |
 | `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory |
+| `~/.pi/agent/missions/` | Per-machine mission records |
+| `~/.pi/agent/profiles/` | Per-machine agent profiles |
+| `~/.pi/agent/run-history.jsonl` | Per-machine run history log |
+| `~/.pi/agent/web-search-cache/` | Cached web-search results, re-fetchable |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts |
 
 > **Security:** `auth.json` is gitignored and `doctor.sh` fails if it ever becomes

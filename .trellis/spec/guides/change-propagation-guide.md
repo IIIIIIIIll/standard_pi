@@ -63,7 +63,9 @@ grep -n "^| " README.md                                 # the tables
 |------|--------------------------------|--------------------|
 | Symlinked resource dirs (`PI_DIRS`) | `setup.sh` (array + header), `sync.sh`, `doctor.sh` (array + message), `README.md` (table + prose) | a new dir is silently never linked in one direction, or `doctor.sh` reports a false problem |
 | Symlinked files (`PI_FILES`) | same three scripts | same |
-| "Not stored here" paths | `.gitignore`, `README.md` table, `sync.sh` skip-list | a runtime path becomes commit-able |
+| "Not stored here" paths | `.gitignore`, `README.md` table, `sync.sh` skip-list | a runtime path becomes commit-able, or the report silently omits it |
+| A user-facing string (an error/help message) | the script that prints it, `.gitignore` comments, `README.md` prose, **and every spec file that quotes it verbatim** | a user follows an instruction that cannot work |
+| The name of a script or path | its own file, every caller, every message naming it, `.gitignore` comments, `README.md` | stale instructions, as happened when `install.sh` was folded into `setup.sh` |
 | Ignores / deny rules | `.gitignore`, `extensions/pi-permission-system/config.json`, `README.md` | a secret or `node_modules` gets committed |
 | Plugin list | `settings.core.json` `packages`, `README.md` plugin table, the owning `optional/*/manifest.json` | an undocumented or double-declared plugin |
 | Installed skills | `skills.json`, `README.md` "Currently installed", `~/.agents/.pi-setup-skills.json` (generated) | README lists a skill that is never installed |
@@ -71,6 +73,12 @@ grep -n "^| " README.md                                 # the tables
 | Destination defaults (`PI_CODING_AGENT_DIR`, `AGENTS_SKILLS_DIR`) | all four shell scripts, `install-skills.mjs`, `README.md` | a script reads or writes the wrong directory |
 | Output verb vocabulary | `setup.sh`/`sync.sh` `say`, `doctor.sh` `ok/warn/bad`, every `.mjs` literal | unreadable, unaligned output |
 | `optional/*/manifest.json` schema | the manifests, `_template/README.md`, `config/optional-bundles.md`, `scripts/optional.sh scaffold` | scaffold produces a manifest the renderer rejects |
+
+> **The "Not stored here" row is currently not in parity** — `.gitignore` and the
+> `sync.sh` skip-list each cover paths the other misses, and `README.md` covers a
+> third combination. `trust.json` is reported as "intentionally not synced" while
+> git would happily stage it. Read `../config/layout-and-surfaces.md`
+> §"Common Mistake: assuming the two lists have parity" before editing any of them.
 
 ---
 
