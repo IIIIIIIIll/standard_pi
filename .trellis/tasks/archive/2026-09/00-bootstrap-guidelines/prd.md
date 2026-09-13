@@ -89,17 +89,23 @@ were skipped in the two idempotency runs; both were verified separately via
 
 ### Known issues documented rather than fixed
 
-These are recorded in the specs as current reality, not corrected — this task
-is docs-only:
+These were recorded in the specs as current reality at the time, not corrected —
+this task was docs-only. **All four have since been resolved** by
+`09-13-repair-harness-drift` and its children (`d44289e`, `819bfa1`, `5997e94`),
+except the last, which is an environment fact rather than a defect:
 
-- `render-settings.mjs` and `.gitignore` both reference `scripts/install.sh`,
-  which does not exist (the real command is `./setup.sh`).
-- `PI_DIRS` / `PI_FILES` are duplicated across `setup.sh`, `sync.sh`, and
-  `doctor.sh`; the resource-directory list appears in seven places overall.
-- `sync.sh`'s "not synced" skip-list and `.gitignore` have fallen behind Pi,
-  which now also writes `missions/`, `profiles/`, and `run-history.jsonl`.
+- ~~`render-settings.mjs` and `.gitignore` both reference `scripts/install.sh`,~~
+  ~~which does not exist (the real command is `./setup.sh`).~~ → fixed in `d44289e`.
+- ~~`PI_DIRS` / `PI_FILES` are duplicated across `setup.sh`, `sync.sh`, and~~
+  ~~`doctor.sh`; the resource-directory list appears in seven places overall.~~ →
+  single-sourced in `scripts/lib.sh` in `819bfa1` (the count had been eight, not
+  seven).
+- ~~`sync.sh`'s "not synced" skip-list and `.gitignore` have fallen behind Pi,~~
+  ~~which now also writes `missions/`, `profiles/`, and `run-history.jsonl`.~~ →
+  reconciled in `5997e94`, which also added `doctor.sh`'s ignore-coverage check.
 - `shellcheck` is not installed, so the `# shellcheck` directives in the scripts
-  are documentation rather than tooling.
+  are documentation rather than tooling. (Environment fact, not a defect; still
+  true.)
 
 ---
 
