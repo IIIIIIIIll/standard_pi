@@ -152,3 +152,40 @@ Made pi-subagents the Pi dispatch path for Trellis role agents at the harness la
 
 - Upstream prelude relaxation so the generated preludes' 'first line is Active task:' rule survives pi-subagents' 'Task: ' prefix, instead of the in-repo adapter note.
 - The shipped trellis_subagent code paths in the generated extension are now dead weight; worth raising upstream now that the harness deactivates the tool.
+
+
+## Session 5: Fail loudly when generated Pi tools drift from the bridge
+<!-- trellis-session: v=2 fp=12a8fe6bc949fa11 -->
+
+**Date**: 2026-09-14
+**Task**: Fail loudly when generated Pi tools drift from the bridge
+**Branch**: `main`
+
+### Summary
+
+Closed the residual coupling left by the subagent bridge: it deactivated the shipped Trellis dispatch tool by one hard-coded name with nothing tying that name to the generated extension. The name is now a list and doctor.sh fails when the generated extension registers a tool the list does not cover.
+
+### Main Changes
+
+- SHIPPED_TOOLS replaces the single SHIPPED_TOOL constant, and doctor.sh compares it against the names the generated extension registers, naming both the offending tool and the bridge file when one is missing.
+- The check fails whenever it cannot verify, not only when it sees a mismatch: zero extracted names from a readable extension that calls registerTool, an unreadable file, and an unreadable SHIPPED_TOOLS declaration are all problems. A readable extension that registers no dispatch tool warns rather than claiming coverage, so the check cannot print a clean pass in a state worse than the absent-file case.
+- The comparison reads the SHIPPED_TOOLS declaration line rather than matching the name anywhere in the bridge, so a mention in the tool_call guard cannot stand in for deactivation. Recorded the new coupling in change-propagation-guide.md and the measured brittleness boundary in design.md.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8bec04c` | Fail loudly when the generated Pi tools drift from the bridge |
+| `2cee4e0` | Stop the drift check reporting ok when it cannot verify |
+
+### Testing
+
+- [OK] Eight mutations of the generated extension and of the bridge, each restored and re-verified against .trellis/.template-hashes.json. Full chain green: bash -n, node --check, setup.sh twice byte-identical, sync.sh 'Already up to date.', doctor.sh 'All good.', tree clean.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Extraction is all-or-nothing: partial reformatting of the generated registrations is invisible, and a tool registered from a sibling file is never scanned. Recorded as a boundary rather than fixed.
