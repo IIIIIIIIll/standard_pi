@@ -86,7 +86,9 @@ settings.core.json  +  enabled optional manifests  ->  ~/.pi/agent/settings.json
 
 ### Always-on — `settings.core.json`
 
-Anything under `packages` is installed on every machine. Currently `git:github.com/NVlabs/SoL-Pi`.
+Anything under `packages` is installed on every machine. There are none right now;
+add one with `pi install …` + `scripts/sync.sh`, or keep it machine-local by
+making it an optional bundle below.
 
 ### Optional — `optional/<name>/`
 
