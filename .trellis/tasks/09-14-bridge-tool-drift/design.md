@@ -35,25 +35,46 @@ Calibrated against today's file: exactly one hit, `name: "trellis_subagent"` at
 
 ## Brittleness, and the guard that contains it
 
-The grep depends on the generated formatting. If upstream reflows it, extraction
-yields **zero** names — and a naive subset check would then pass vacuously. The
-check must therefore distinguish four states:
+The grep depends on the generated formatting, and extraction is **all-or-nothing**:
+it goes blind only when *every* registration is reformatted at once, so partial
+blindness is silent. Measured against the real file, appending a second
+registration:
+
+| Appended shape | Extracted | Outcome |
+|---|---|---|
+| `name: "trellis_rogue",` | both names | `bad` |
+| `name: 'trellis_rogue',` (single quotes) | only the known one | silent |
+| `name:  "trellis_rogue",` (two spaces) | only the known one | silent |
+| `name:` on its own line | only the known one | silent |
+| `name: "trellis-rogue",` (hyphen) | only the known one | silent |
+
+Also unscanned: registrations moved to a sibling file.
+
+So the guard cannot be "detect every reformatting". It is "fail loudly whenever
+the check can no longer see", expressed as a ladder over the states it *can*
+distinguish:
 
 | State | Result |
 |---|---|
-| names extracted, all named by the bridge | `ok` |
-| names extracted, some unknown | `bad`, naming the tool and the bridge file |
-| `registerTool` present but zero names extracted | `bad` — formatting drift |
-| generated file absent | `warn`, with a reason |
+| names extracted, all declared by the bridge | `ok` |
+| names extracted, some undeclared | `bad`, naming the tool and the bridge file |
+| extension calls `registerTool`, no name extracted | `bad` — formatting drift |
+| extension unreadable | `bad` — cannot verify |
+| `SHIPPED_TOOLS` yields no name | `bad` — cannot read the declaration |
+| extension registers no dispatch tool at all | `warn`, never `ok: 0` |
+| generated file absent | `warn` |
 
-The third row is the point of the whole task: the check fails when it can no
-longer see, not only when what it sees is wrong.
+The first version of this check got the middle four wrong: it printed
+`ok ... covered by the bridge: 0` for an unreadable file, an empty file, and a
+file with no `registerTool` token. The check phase found it by mutating states
+beyond the four this document had imagined — which is the argument for having an
+independent reader at all.
 
 ## Risks
 
 | Risk | Handling |
 |---|---|
-| The grep also matches an unrelated `name: "…"` string added upstream | The comparison is one-directional (unknown ⇒ `bad`), so a stray match becomes a loud, reviewable false positive rather than a silent pass. AC2 exercises the positive path |
+| The grep also matches an unrelated `name: "…"` string added upstream | The extension-side comparison is one-directional (undeclared ⇒ `bad`), so a stray match becomes a loud, reviewable false positive rather than a silent pass. On the bridge side the names are read off the `SHIPPED_TOOLS` declaration line, not matched anywhere in the file, so a mention in the `tool_call` guard cannot stand in for deactivation |
 | The temporary-mutation test leaves the generated file changed | Take a backup first, restore from it, then re-verify `sha256` against `.trellis/.template-hashes.json`. `.pi/` is gitignored, so git is not the safety net here |
 | `doctor.sh` grows a check that duplicates the existing agents check | Keep both in the same section: the agents check asserts discovery *input*, this asserts tool *identity* |
 | The bridge list and the check drift apart from each other | The check reads the bridge file directly, so the bridge is the single source for names and there is no third copy to stale |

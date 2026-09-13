@@ -35,10 +35,17 @@ name, report `bad` (contributing to exit 1), naming both the offending tool and
 the bridge file to edit.
 
 **R3 — The check must never produce a false `ok`.**
-If the generated extension exists and contains a `registerTool` call but **no**
-tool name can be extracted, that is itself drift: `bad`, never silence. This is
-the requirement that makes the check worth having — it must fail when it stops
-being able to see, not only when what it sees is wrong.
+Every state in which the check *cannot verify* must be loud. Concretely, all of:
+an extension that calls `registerTool` but yields no extractable name (`bad`); an
+unreadable extension file (`bad`); a `SHIPPED_TOOLS` declaration that yields no
+name (`bad`); and a readable extension that registers no dispatch tool at all
+(`warn`, never `ok: 0`). This is the requirement that makes the check worth
+having — it must fail when it stops being able to see, not only when what it sees
+is wrong.
+
+The first version of this check satisfied R2 but not R3, which the check phase
+caught: an unreadable file reported `ok ... covered by the bridge: 0`, i.e. a
+clean pass in a state *worse* than the absent-file case that warns.
 
 **R4 — Offline and deterministic.**
 No network, and no invocation of the `pi` binary or any model-facing tool. It must
@@ -80,6 +87,14 @@ generated file and `.trellis/.template-hashes.json` byte-identical.
 - [ ] **AC6** After the full chain, `git diff --name-only` lists no generated file
       and `.trellis/.template-hashes.json` is unchanged.
 - [ ] **AC7** `pi-resources.md` names the coupling and the check.
+
+- [x] **AC8** Every "cannot verify" state is loud, each proven against a
+temporary mutation with the file restored and hash-verified: extension
+unreadable (`chmod 000`) ⇒ `bad` + exit 1; extension empty, or containing no
+`registerTool` token ⇒ `warn`, never `ok ... covered by the bridge: 0`;
+`SHIPPED_TOOLS` emptied while the `tool_call` guard still mentions the name ⇒
+`bad`, so the check compares against the declared list rather than any mention
+in the file.
 
 ## Notes
 

@@ -115,33 +115,50 @@ fi
 
 # Shipped dispatch tools. The bridge deactivates them by name, so a `trellis
 # update` that renames one or registers another would silently end the
-# deactivation. Compare the generated extension's registered names against the
-# list the bridge declares. Offline, and no `pi` invocation: this must stay
+# deactivation. Compare the names the generated extension registers against the
+# names the bridge declares. Offline, and no `pi` invocation: this must stay
 # meaningful on a fresh clone.
+#
+# Every "cannot verify" path below fails or warns. A check that degrades to `ok`
+# when it stops being able to see is worse than no check at all.
 trellis_ext="$REPO_DIR/.pi/extensions/trellis/index.ts"
+bridge_file="pi-agent/extensions/trellis-subagents-bridge/index.ts"
 if [ ! -f "$trellis_ext" ]; then
   warn ".pi/extensions/trellis/index.ts absent (Trellis adapters not generated in this checkout)"
-elif [ -f "$bridge_src" ]; then
-  shipped_names="$(grep -oE 'name: "[a-z_]+"' "$trellis_ext" | sed -E 's/.*"(.*)"/\1/' | sort -u)"
-  if grep -q "registerTool" "$trellis_ext" && [ -z "$shipped_names" ]; then
-    # Seeing no names is drift too: a reflowed template would otherwise make the
-    # check below pass vacuously instead of failing.
-    bad "the generated extension registers tool(s) but no name could be extracted (formatting drift?); the bridge's SHIPPED_TOOLS list can no longer be verified"
+elif [ ! -f "$bridge_src" ]; then
+  : # the missing bridge was already reported above
+elif [ ! -r "$trellis_ext" ]; then
+  bad "cannot read .pi/extensions/trellis/index.ts; the bridge's SHIPPED_TOOLS list cannot be verified"
+elif ! grep -q "SHIPPED_TOOLS" "$bridge_src" 2>/dev/null; then
+  bad "the bridge no longer declares SHIPPED_TOOLS; doctor cannot verify which tools it deactivates"
+else
+  ext_names="$(grep -oE 'name: "[a-z_]+"' "$trellis_ext" 2>/dev/null | sed -E 's/.*"(.*)"/\1/' | sort -u)"
+  # Read the declared list off its declaration line, not a bare quoted-string
+  # match anywhere in the file: a name mentioned in the tool_call guard is not a
+  # name the bridge deactivates.
+  declared_line="$(grep 'SHIPPED_TOOLS' "$bridge_src" 2>/dev/null | grep -v '//' | head -n 1)"
+  declared="$(printf '%s\n' "$declared_line" | grep -oE '"[a-z_]+"' | tr -d '"' | sort -u)"
+  if [ -z "$declared" ]; then
+    bad "read no tool name from the SHIPPED_TOOLS declaration in $bridge_file (empty or reformatted?)"
+  elif [ -z "$ext_names" ]; then
+    if grep -q "registerTool" "$trellis_ext" 2>/dev/null; then
+      bad "the generated extension registers tool(s) but no name could be extracted (formatting drift?); the bridge's SHIPPED_TOOLS list can no longer be verified"
+    else
+      warn "the generated extension registers no dispatch tool; nothing for the bridge to deactivate"
+    fi
   else
     unknown_tools=()
-    # Deliberate word-splitting: $shipped_names is a newline-separated list of
-    # tool names, none of which can contain whitespace.
-    # shellcheck disable=SC2086
-    for t in $shipped_names; do
-      grep -qF "\"$t\"" "$bridge_src" || unknown_tools+=("$t")
-    done
+    while IFS= read -r t; do
+      [ -n "$t" ] || continue
+      printf '%s\n' "$declared" | grep -qxF "$t" || unknown_tools+=("$t")
+    done <<< "$ext_names"
     if [ ${#unknown_tools[@]} -gt 0 ]; then
       bad "generated extension registers tool(s) the bridge does not deactivate:"
       for t in "${unknown_tools[@]}"; do printf '      %s\n' "$t"; done
-      printf '      add each to SHIPPED_TOOLS in pi-agent/extensions/trellis-subagents-bridge/index.ts\n'
+      printf '      add each to SHIPPED_TOOLS in %s\n' "$bridge_file"
     else
-      n_shipped="$(printf '%s\n' "$shipped_names" | grep -c .)"
-      ok "shipped dispatch tool(s) covered by the bridge: $n_shipped"
+      n_ext="$(printf '%s\n' "$ext_names" | grep -c .)"
+      ok "shipped dispatch tool(s) covered by the bridge: $n_ext"
     fi
   fi
 fi
