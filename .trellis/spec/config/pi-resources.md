@@ -304,6 +304,15 @@ Facts that must not be forgotten when editing this file:
 - `extensions/pi-permission-system/logs/` is gitignored **by design**: the review
   log records bash command strings unredacted. Never commit it, and do not paste
   it into a spec or issue without redacting.
+- **A covered external access logs as `permission_request.session_approved`.**
+  The gate writes that record whenever every external path on the command was
+  already allowed — *config* allows included — with `decidedBy: { surface:
+  "external_directory", pattern: null }`. It is not evidence that a session grant
+  or a human decided anything; on that path nothing prompted at all. What a
+  prompt looks like is a `permission_request.waiting` event followed by a
+  resolution such as `confirmation_unavailable` (headless) or `user_approved`.
+  The event name alone has misled at least one reader into thinking the policy
+  allow had not applied.
 
 The full rationale, state table, and tuning recipes live in
 `pi-agent/extensions/README.md`. That file is the deep reference; this spec
