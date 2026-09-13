@@ -150,6 +150,12 @@ Facts a contributor must not break:
   `PI_SUBAGENT_CHILD === "1" && TRELLIS_SUBAGENT_CHILD !== "1"`. The generated
   `trellis_subagent` tool sets *both* markers for its own children, which already
   carry a correct key and must be left alone.
+- **It deactivates the shipped `trellis_subagent` tool** with
+  `pi.setActiveTools(...)`, on session start and on every turn, so that tool is
+  not callable and its competing `promptGuidelines` are not injected (Pi includes
+  a tool's guidelines only while it is active). It does **not** edit the generated
+  extension — `.pi/` is gitignored and template-tracked, so a patch there would be
+  machine-local and lost to `trellis update`.
 - The child's pointer is removed on `session_shutdown`. A crashed child leaves it
   behind; that is accepted rather than pruned.
 

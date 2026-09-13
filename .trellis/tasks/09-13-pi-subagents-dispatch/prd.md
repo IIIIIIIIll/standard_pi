@@ -67,10 +67,20 @@ It is loaded globally in every Pi project on the machine. With no `.trellis/`
 project, or with no active task, it must publish nothing, inject nothing, write no
 file, and block nothing.
 
+**R10 — The shipped `trellis_subagent` tool must not be callable.**
+Two dispatch paths otherwise compete for the same role agents, and the shipped
+tool injects its own `promptGuidelines` while being named Trellis-themed. It must
+be removed from the active tool set — without editing the generated extension
+(R6). Removing it from the active set also removes its injected guidance, since
+Pi includes a tool's guidelines only while the tool is active.
+
 ## Non-Goals
 
-- Removing or unpatching the generated `trellis_subagent` tool.
 - Upstream changes to `@mindfoldhq/trellis` (no template edits, no PR).
+- **Superseded non-goal.** The original plan excluded disabling the shipped
+  `trellis_subagent` tool and chose advisory steering only. The user directed
+  that it be made **uncallable**. R10 records that requirement; it is met without
+  editing a generated file, so R6 still holds.
 - Any non-Pi platform.
 - Adopting pi-subagents worktrees, lanes, missions, or schedules for Trellis
   roles — this task only restores context correctness.
@@ -126,6 +136,12 @@ run in a later turn passes whether or not that case works.
       uncommitted rather than reverted or claimed. See
       `research/verification-evidence.md` § Two things the ACs got wrong.
 
+- [x] **AC11** The shipped tool is uncallable while the replacement is available:
+      in a fresh session the tool list reports `TRELLIS=no` / `SUBAGENT=yes` (the
+      control shows the list is readable and still contains extension tools), an
+      attempted call reports `NOT AVAILABLE`, and **zero** subagent runs are
+      created. Evidence T10.
+
 ### Coverage
 
 | Requirement | ACs |
@@ -139,6 +155,7 @@ run in a later turn passes whether or not that case works.
 | R7 | AC7 |
 | R8 | AC8 |
 | R9 | AC6 |
+| R10 | AC11 |
 
 ## Notes
 

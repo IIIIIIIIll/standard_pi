@@ -55,6 +55,8 @@ interface PiApi {
     event: string,
     handler: (event: unknown, ctx?: PiContext) => unknown,
   ) => void;
+  getActiveTools?: () => string[];
+  setActiveTools?: (names: string[]) => void;
 }
 
 // ── Small helpers ─────────────────────────────────────────────────────
@@ -244,6 +246,44 @@ The "Active task:" line remains required and must be the first thing in the task
 text. The role agents in .pi/agents/ are discovered by pi-subagents directly.
 </trellis-pi-dispatch>`;
 
+// ── Disabling the shipped dispatch tool ───────────────────────────────
+// Trellis ships a native `trellis_subagent` tool from the generated extension.
+// pi-subagents supersedes it: the same role agents are discovered from
+// .pi/agents/, and the bridge above supplies the context it was compensating
+// for. Leaving both registered means two competing dispatch paths and two sets
+// of injected guidance in the prompt.
+//
+// This removes it from the ACTIVE tool set rather than editing the generated
+// file. Two reasons that matter:
+//   - The generated extension is gitignored and template-hash tracked
+//     (.pi/extensions/trellis/index.ts == the @mindfoldhq/trellis template), so
+//     a patch there is neither versioned in this repo nor reproducible on
+//     another machine, and it comes back as local drift on every
+//     `trellis update`.
+//   - Pi injects a tool's promptGuidelines only while the tool is active
+//     (docs/extensions.md), so deactivating it also drops the competing
+//     "Use subagent for task delegation" bullet that the generated tool
+//     registers while naming itself trellis_subagent.
+//
+// Unknown names are ignored by setActiveTools, and an already-absent name is a
+// harmless no-op, so this is safe to re-apply on every turn.
+const SHIPPED_TOOL = "trellis_subagent";
+
+function disableShippedTool(pi: PiApi): void {
+  try {
+    if (
+      typeof pi.getActiveTools !== "function" ||
+      typeof pi.setActiveTools !== "function"
+    )
+      return;
+    const active = pi.getActiveTools();
+    if (!Array.isArray(active) || !active.includes(SHIPPED_TOOL)) return;
+    pi.setActiveTools(active.filter((name) => name !== SHIPPED_TOOL));
+  } catch {
+    // Never let a tool-list adjustment take down the session.
+  }
+}
+
 // ── Extension ─────────────────────────────────────────────────────────
 export default function trellisSubagentsBridge(pi: PiApi): void {
   // Inert outside a Trellis project (R9): resolveRoot only matches a directory
@@ -294,6 +334,7 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
     };
 
     pi.on?.("session_start", (_event, ctx) => {
+      disableShippedTool(pi);
       writePointer(ctx);
     });
 
@@ -306,6 +347,7 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
     });
 
     pi.on?.("before_agent_start", (event) => {
+      disableShippedTool(pi);
       if (!written) return undefined;
       const cur = (event as PiEvent)?.systemPrompt ?? "";
       if (cur.includes("<trellis-pi-dispatch-adapter>")) return undefined;
@@ -329,6 +371,7 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
   };
 
   pi.on?.("session_start", (_event, ctx) => {
+    disableShippedTool(pi);
     publish(ctx);
   });
 
@@ -346,6 +389,9 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
   });
 
   pi.on?.("before_agent_start", (event, ctx) => {
+    // Re-applied every turn: the active set can be recomputed between turns, and
+    // this is an idempotent list filter.
+    disableShippedTool(pi);
     publish(ctx);
     if (!process.env.TRELLIS_CONTEXT_ID) return undefined;
     const cur = (event as PiEvent)?.systemPrompt ?? "";

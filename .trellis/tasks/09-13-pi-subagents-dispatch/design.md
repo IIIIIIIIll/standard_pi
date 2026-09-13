@@ -121,13 +121,39 @@ real shape, plus "do not run `task.py finish`" (the child now appears as the tas
 own session). Upstream prelude relaxation remains the cleaner long-term fix and is
 recorded as a follow-up, not done here.
 
-### Dispatch steering (R5)
+### Dispatch steering (R5) and removing the shipped tool (R10)
 
-Advisory constant, not a blocking hook. The generated tool's own guideline already
-says `Use subagent for task delegation…` (`index.ts:1931-1932`) while its name is
-Trellis-themed, so the competition is real; the block remains a documented
-escalation if observation shows the advisory is not enough. Rationale and the
-rejected alternative: `research/dispatch-bridge-mechanisms.md`.
+Two changes, because they address different halves of the same problem.
+
+1. **Advisory guidance (R5).** A constant `<trellis-pi-dispatch>` block naming
+   `subagent({agent:"trellis-…", task:"Active task: …"})`. The generated tool's own
+   guideline already says `Use subagent for task delegation…`
+   (`index.ts:1931-1932`) while its name is Trellis-themed, so the competition is
+   real.
+2. **Deactivation (R10).**
+   `pi.setActiveTools(pi.getActiveTools().filter((n) => n !== "trellis_subagent"))`,
+   applied on `session_start` and on every `before_agent_start`.
+
+**Why deactivation rather than patching the generated file.** Patching
+`.pi/extensions/trellis/index.ts` was considered, and is the option that was
+initially requested. It is rejected on four grounds:
+
+| | Patch the generated extension | Deactivate via `setActiveTools` |
+|---|---|---|
+| Versioned in this repo | **no** — `.pi/` is gitignored, so the patch is machine-local and unreproducible | yes, tracked harness code |
+| Survives `trellis update` | shows as local drift and prompts every upgrade; the patch must be re-applied after each regeneration | yes |
+| Reproducible on a fresh clone / another machine | no | yes |
+| Removes the tool's injected `promptGuidelines` | yes | yes — Pi includes guidelines only while the tool is active |
+| Failure mode | the patch must keep matching generated text that upstream may change | a recomputed active set between turns could re-add the tool |
+
+Mitigations for the last row: the removal is re-applied on **every**
+`before_agent_start`, not just at session start, and the filter is idempotent and
+cheap. `setActiveTools` ignores unknown names, so an already-removed tool is a
+no-op.
+
+Deactivation keeps R6 intact — no generated file is edited — and is the only one
+of the two that a fresh clone reproduces. Rationale for the rejected advisory-only
+variant: `research/dispatch-bridge-mechanisms.md`.
 
 ## Risks
 

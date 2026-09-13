@@ -37,6 +37,13 @@ runtime session pointer under its own key. The generated extension then resolves
 the real task through its normal path — correct breadcrumb, correct injected
 context, and a bash key that resolves — with nothing stripped or rewritten.
 
+It also **deactivates the shipped `trellis_subagent` tool** with
+`pi.setActiveTools(...)`, so pi-subagents is the only dispatch path and the
+shipped tool's competing prompt guidance is not injected (Pi includes a tool's
+guidelines only while it is active). The generated extension is deliberately not
+edited: `.pi/` is gitignored and template-hash tracked, so a patch there would be
+machine-local, unreproducible, and reverted by `trellis update`.
+
 Because it is global, it is careful about scope: outside a `.trellis/` project,
 or with no active task, it publishes nothing, injects nothing, and writes no file.
 

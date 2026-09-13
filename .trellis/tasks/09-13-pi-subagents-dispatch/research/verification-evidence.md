@@ -116,6 +116,38 @@ satisfied the plan.
 | `./scripts/sync.sh` | exit 0 |
 | `./scripts/doctor.sh` | 0 problems, 1 note |
 
+## T10 — AC11: the shipped tool is uncallable (R10)
+
+The tool list was read and the call was attempted in two fresh sessions. The
+subagent run directory count is the deterministic part: it cannot move unless a
+child was actually dispatched.
+
+```
+subagent runs before: 20
+
+probe 1 (tool list, with a control):
+  TRELLIS=no        # "trellis_subagent" is absent
+  SUBAGENT=yes      # the list is readable and still contains extension tools
+
+probe 2 (attempt the call):
+  NOT AVAILABLE
+
+subagent runs after: 20  ->  new runs created: 0
+```
+
+The `SUBAGENT=yes` control is what makes probe 1 meaningful: it rules out "the
+model could not see any tool list". Zero new runs proves no dispatch occurred.
+
+An earlier attempt at a detector is worth recording because it was wrong: session
+JSONL files appeared to contain `trellis_subagent` in 27 files, but tool
+definitions are not persisted in the session — the single hit per file was this
+task's own `task.json` description text. That detector would have reported a false
+negative after the change and a false positive before it. An attempted call plus
+the run-count delta replaced it.
+
+Removing the tool also removes its injected `promptGuidelines`, because Pi
+includes a tool's guidelines only while the tool is active (`docs/extensions.md`).
+
 ## Two things the ACs got wrong, found by running them
 
 **1. `sync.sh` and `doctor.sh` are clean-tree assertions, not sync assertions.**
