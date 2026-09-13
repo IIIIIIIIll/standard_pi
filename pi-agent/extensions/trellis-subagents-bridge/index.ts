@@ -64,10 +64,6 @@ function str(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v.trim() : null;
 }
 
-function isObj(v: unknown): v is JsonObject {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
 function readText(p: string): string {
   try {
     return readFileSync(p, "utf-8");
@@ -98,15 +94,6 @@ function callStr(
   } catch {
     return null;
   }
-}
-
-function lookupStr(data: unknown, keys: string[]): string | null {
-  if (!isObj(data)) return null;
-  for (const k of keys) {
-    const v = str(data[k]);
-    if (v) return v;
-  }
-  return null;
 }
 
 // ── Project root ──────────────────────────────────────────────────────
@@ -142,17 +129,21 @@ function resolveRoot(ctx?: PiContext): string | null {
 // sessionManager.getSessionId() and only then the environment; deriving the key
 // from the environment alone would diverge from it wherever those disagree.
 //
-// One deliberate divergence: PI_SESSION_FILE is accepted as a transcript
-// fallback. The generated extension only consults sessionManager.getSessionFile()
-// and event input. That branch is unreachable whenever a session id exists, which
-// is the case this design depends on (design.md E12) — it only avoids a null key
-// when the id is missing but the transcript path is known.
-function contextKey(ctx?: PiContext, input?: unknown): string | null {
+// Deliberate divergences from the generated copy, both unreachable whenever a
+// session id resolves (design.md E12), which is the case this design depends on:
+//   1. No `input` parameter. The generated version takes the event and descends
+//      nested `input` / `properties` / `event` / `hook_input` keys looking for a
+//      session id or transcript path. Every bridge call site passes the context,
+//      and sessionManager.getSessionId() resolves first, so those never fire.
+//   2. `PI_SESSION_FILE` is accepted as a transcript fallback; the generated
+//      version consults only sessionManager.getSessionFile() and event input.
+// Keep this tracking upstream: the pointer filename must equal the key the
+// generated extension computes, or the child silently resolves nothing.
+function contextKey(ctx?: PiContext): string | null {
   const sessionId =
     callStr(ctx?.sessionManager?.getSessionId, ctx?.sessionManager) ??
     str(process.env.PI_SESSION_ID) ??
-    str(process.env.PI_SESSIONID) ??
-    lookupStr(input, ["session_id", "sessionId", "sessionID"]);
+    str(process.env.PI_SESSIONID);
   if (sessionId) {
     const normalized = sessionId.replace(/[^A-Za-z0-9._-]+/g, "_");
     if (!normalized) return `pi_${hash(sessionId)}`;
@@ -160,8 +151,7 @@ function contextKey(ctx?: PiContext, input?: unknown): string | null {
   }
   const transcriptPath =
     callStr(ctx?.sessionManager?.getSessionFile, ctx?.sessionManager) ??
-    str(process.env.PI_SESSION_FILE) ??
-    lookupStr(input, ["transcript_path", "transcriptPath", "transcript"]);
+    str(process.env.PI_SESSION_FILE);
   if (transcriptPath) return `pi_transcript_${hash(transcriptPath)}`;
   return null;
 }
@@ -213,14 +203,28 @@ function activeTaskDir(root: string, key: string | null): string | null {
 }
 
 // ── Roles ─────────────────────────────────────────────────────────────
-// A child of the generated `trellis_subagent` tool sets BOTH markers
-// (.pi/extensions/trellis/index.ts buildChildEnv). Those children already carry a
-// correct key and their generated extension is inert, so the bridge must leave
-// them alone — otherwise it would rewrite a correct value with a derived one.
+// Three cases, and the second is the easy one to get wrong:
+//
+//   1. pi-subagents child — PI_SUBAGENT_CHILD only. The bridge's child role.
+//   2. child of the shipped `trellis_subagent` tool — BOTH markers. Its
+//      buildChildEnv (.pi/extensions/trellis/index.ts) sets TRELLIS_CONTEXT_ID
+//      itself, and its generated extension then goes inert there, so the
+//      environment is that child's ONLY channel for the task key. The bridge must
+//      do nothing at all: falling through to the parent branch would run
+//      publish(), find no runtime pointer at the child's own key, and DELETE the
+//      key the shipped tool just set — a regression from pre-bridge behaviour.
+//   3. parent session — neither marker. The bridge's parent role.
 function isBridgeChild(): boolean {
   return (
     process.env.PI_SUBAGENT_CHILD === "1" &&
     process.env.TRELLIS_SUBAGENT_CHILD !== "1"
+  );
+}
+
+function isShippedToolChild(): boolean {
+  return (
+    process.env.PI_SUBAGENT_CHILD === "1" &&
+    process.env.TRELLIS_SUBAGENT_CHILD === "1"
   );
 }
 
@@ -267,6 +271,11 @@ text. The role agents in .pi/agents/ are discovered by pi-subagents directly.
 //
 // Unknown names are ignored by setActiveTools, and an already-absent name is a
 // harmless no-op, so this is safe to re-apply on every turn.
+// Single hard-coded name, but it is a real coupling: if `trellis update` renames
+// this tool or ships a second dispatch tool, R10 silently stops holding — and the
+// newly-live path is exactly the case isShippedToolChild() handles. doctor.sh
+// asserts the bridge is present, not the tool name. Re-check this constant after
+// any Trellis upgrade.
 const SHIPPED_TOOL = "trellis_subagent";
 
 function disableShippedTool(pi: PiApi): void {
@@ -289,6 +298,8 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
   // Inert outside a Trellis project (R9): resolveRoot only matches a directory
   // that actually contains `.trellis/`.
   if (!resolveRoot()) return;
+  // Roles case 2: leave the shipped tool's own children completely untouched.
+  if (isShippedToolChild()) return;
 
   let cachedKey: string | null = null;
   const keyFor = (ctx?: PiContext): string | null => {
@@ -349,7 +360,8 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
     pi.on?.("before_agent_start", (event) => {
       disableShippedTool(pi);
       if (!written) return undefined;
-      const cur = (event as PiEvent)?.systemPrompt ?? "";
+      const cur = (event as PiEvent)?.systemPrompt;
+      if (typeof cur !== "string") return undefined;
       if (cur.includes("<trellis-pi-dispatch-adapter>")) return undefined;
       return { systemPrompt: [cur, CHILD_ADAPTER_NOTE].join("\n\n") };
     });
@@ -358,15 +370,23 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
   }
 
   // ── Parent: publish the task key, refresh at dispatch time ─────────
+  // Only ever retract a value this process published. A value we did not set may
+  // belong to an outer context (the shipped tool's child env), and deleting it
+  // would strand that process.
+  let publishedByUs = false;
   const publish = (ctx?: PiContext): boolean => {
     const root = resolveRoot(ctx);
     const key = keyFor(ctx);
     if (!root || !key) return false;
     if (!activeTaskDir(root, key)) {
-      delete process.env.TRELLIS_CONTEXT_ID;
+      if (publishedByUs) {
+        delete process.env.TRELLIS_CONTEXT_ID;
+        publishedByUs = false;
+      }
       return false;
     }
     process.env.TRELLIS_CONTEXT_ID = key;
+    publishedByUs = true;
     return true;
   };
 
@@ -394,7 +414,8 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
     disableShippedTool(pi);
     publish(ctx);
     if (!process.env.TRELLIS_CONTEXT_ID) return undefined;
-    const cur = (event as PiEvent)?.systemPrompt ?? "";
+    const cur = (event as PiEvent)?.systemPrompt;
+    if (typeof cur !== "string") return undefined;
     if (cur.includes("<trellis-pi-dispatch>")) return undefined;
     return { systemPrompt: [cur, PARENT_DISPATCH_GUIDANCE].join("\n\n") };
   });

@@ -81,8 +81,14 @@ One new tracked global extension,
 ### Child role
 
 Predicate: `PI_SUBAGENT_CHILD === "1" && process.env.TRELLIS_SUBAGENT_CHILD !== "1"`.
-The second clause matters: `buildChildEnv` sets **both** markers for its own
-children (`index.ts:1552-1559`), and those children already have a correct key.
+There are **three** roles, not two. A child of the shipped `trellis_subagent` tool
+sets *both* markers (`buildChildEnv`, `index.ts:1552-1559`): its generated
+extension already sets `TRELLIS_CONTEXT_ID` for it and is then inert, so the
+environment is that child's only channel — the bridge must return early **before
+any role logic** and touch nothing. Falling through to the parent branch would
+run `publish()`, find no pointer at the child's own key, and delete the key the
+shipped tool just set (found live by the check phase;
+`research/check-phase-findings.md` § B1).
 
 On `session_start`:
 

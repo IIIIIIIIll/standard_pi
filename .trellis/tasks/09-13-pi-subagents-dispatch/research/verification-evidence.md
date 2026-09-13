@@ -148,6 +148,28 @@ the run-count delta replaced it.
 Removing the tool also removes its injected `promptGuidelines`, because Pi
 includes a tool's guidelines only while the tool is active (`docs/extensions.md`).
 
+## T11 — AC12: the shipped tool's own child keeps its key (B1 fix)
+
+The check phase found that a child of the shipped `trellis_subagent` tool failed
+`isBridgeChild()`, fell into the parent branch, and had its inherited key deleted.
+Re-run of the reviewer's A/B after the fix, with the generated extension inert in
+that child (so the environment is its only channel):
+
+```
+$ env -u PI_SESSION_ID PI_SUBAGENT_CHILD=1 TRELLIS_SUBAGENT_CHILD=1 \
+    TRELLIS_CONTEXT_ID=pi_01a09af3-… pi -p '…'
+Current task: .trellis/tasks/09-13-pi-subagents-dispatch
+Source: session:pi_01a09af3-7c1e-74af-97fb-818681afa9b1
+```
+
+Before the fix the same invocation produced an empty `TRELLIS_CONTEXT_ID`,
+`Current task: (none)` and exit 1. The `Source:` key is the inherited parent key,
+which is what proves the variable survived.
+
+Regression checks in the same pass: a normal pi-subagents child still resolves via
+its own pointer (exit 0, pointer removed on shutdown), and R10 still holds
+(`NOT AVAILABLE`, run count 21 → 21).
+
 ## Two things the ACs got wrong, found by running them
 
 **1. `sync.sh` and `doctor.sh` are clean-tree assertions, not sync assertions.**

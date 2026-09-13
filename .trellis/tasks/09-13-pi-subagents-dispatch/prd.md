@@ -112,7 +112,10 @@ run in a later turn passes whether or not that case works.
       Pi dispatch path; `design.md` records the advisory choice and the blocking
       fallback. Evidence T4 (positive arm).
 - [x] **AC6** With no active Trellis task: nothing published, no pointer written,
-      no guidance injected, nothing blocked. Evidence T3 and T4 (control arm).
+      and no guidance injected. Evidence T3 and T4 (control arm). **Amended by
+      R10:** the bridge does still mutate the active tool set in that state, since
+      removing the shipped tool is unconditional — "block nothing" no longer
+      describes it literally.
 - [x] **AC7** `.trellis/spec/config/pi-resources.md` §`pi-agent/extensions/` and
       `pi-agent/extensions/README.md` both name `trellis-subagents-bridge`, and
       both are in the commit. `README.md` was also updated.
@@ -129,18 +132,26 @@ run in a later turn passes whether or not that case works.
       uncommitted in this checkout. The chain is verified; those two strings are
       not, and asserting them again would be a false criterion.
 - [x] **AC10** `git diff --name-only` touches no file listed in R6 and
-      `.trellis/.template-hashes.json` is unchanged. `git status --short` shows
-      only this task's files. **Known exception:** `pi-agent/settings.core.json`
-      was modified by `scripts/sync.sh` folding live settings — content belonging
-      to the in-flight `09-13-early-compaction` task. It was deliberately left
-      uncommitted rather than reverted or claimed. See
-      `research/verification-evidence.md` § Two things the ACs got wrong.
+      `.trellis/.template-hashes.json` is unchanged. This task's files were staged
+      explicitly by path. **Note:** during implementation `scripts/sync.sh` folded
+      live settings into `pi-agent/settings.core.json`, which belonged to the
+      in-flight `09-13-early-compaction` task; it was left uncommitted rather than
+      reverted or claimed, and that task later committed it (`d6b0117`). This
+      task's own hunk of `.trellis/spec/config/pi-resources.md` was staged
+      surgically through the index so the other task's concurrent edits in the
+      same file were not swept in. See `research/verification-evidence.md`.
 
-- [x] **AC11** The shipped tool is uncallable while the replacement is available:
-      in a fresh session the tool list reports `TRELLIS=no` / `SUBAGENT=yes` (the
-      control shows the list is readable and still contains extension tools), an
-      attempted call reports `NOT AVAILABLE`, and **zero** subagent runs are
-      created. Evidence T10.
+- [x] **AC11** The shipped tool is uncallable while the replacement is available.
+      Deterministic arms, reproducible from the command recorded in Evidence T10:
+      an attempted call reports `NOT AVAILABLE`, and the subagent run-directory
+      count is unchanged (a dispatch cannot occur without a run directory). An
+      explicit `--tools bash,trellis_subagent` allowlist also reports
+      `NOT AVAILABLE`. The tool-list self-report arm is corroborating only.
+- [x] **AC12** A child of the shipped tool keeps its inherited key: with
+      `PI_SUBAGENT_CHILD=1 TRELLIS_SUBAGENT_CHILD=1` and an inherited
+      `TRELLIS_CONTEXT_ID`, `task.py current --source` resolves via that key
+      (`Source: session:pi_<parent id>`) and the key is not deleted. This is the
+      regression the check phase found; Evidence T11.
 
 ### Coverage
 
@@ -155,7 +166,7 @@ run in a later turn passes whether or not that case works.
 | R7 | AC7 |
 | R8 | AC8 |
 | R9 | AC6 |
-| R10 | AC11 |
+| R10 | AC11, AC12 |
 
 ## Notes
 

@@ -52,9 +52,16 @@ Do not publish on every `tool_call`; gate on the dispatch tool names.
 ## Step 3 — Child role: write and remove the runtime pointer
 
 Predicate: `process.env.PI_SUBAGENT_CHILD === "1" &&
-process.env.TRELLIS_SUBAGENT_CHILD !== "1"`. The second clause is required —
-`buildChildEnv` (`index.ts:1552-1559`) sets both markers for its own children,
-which already have a correct key and must not be touched.
+process.env.TRELLIS_SUBAGENT_CHILD !== "1"`.
+
+**Updated after the check phase.** There are three roles, not two, and the third
+is an explicit no-op. A child of the shipped `trellis_subagent` tool sets **both**
+markers (`buildChildEnv`, `index.ts:1552-1559`); its generated extension sets
+`TRELLIS_CONTEXT_ID` itself and is then inert there, so the environment is that
+child's only channel. Such a child must return early **before any role logic**:
+falling through to the parent branch runs `publish()`, finds no pointer at the
+child's own key, and deletes the key the shipped tool just set. See
+`research/check-phase-findings.md` § B1.
 
 On `session_start`:
 
@@ -85,9 +92,14 @@ byte 0; `index.ts:1877-1895`):
   resolves as the task's own session.
 - **Parent role**: the dispatch guidance naming
   `subagent({agent:"trellis-…", task:"Active task: …"})`, gated on the same
-  resolved-task predicate as Step 2 so AC6 holds. Advisory only — do **not** add
-  the blocking `tool_call` hook in this task; leave a comment pointing at the
-  documented escalation.
+  resolved-task predicate as Step 2 so AC6 holds.
+
+**Updated by R10 (supersedes "advisory only").** The bridge now also calls
+`disableShippedTool(pi)` on `session_start` and on every `before_agent_start`, so
+the shipped tool is not merely out-competed but uncallable, and its
+`promptGuidelines` are no longer injected. Do not add a blocking `tool_call` hook
+for it — deactivation makes one unnecessary, and a hook would fire only if
+deactivation had already failed.
 
 ## Step 5 — Behavioural probes (AC1–AC5)
 
