@@ -44,3 +44,37 @@ Two phases in one session. First, the `trellis init` spec bootstrap: the repo ha
 ### Next Steps
 
 - 00-bootstrap-guidelines is complete (checkboxes ticked, Completion Record written) but still in_progress -- archive it once you have skimmed the specs. Optionally: shellcheck is not installed, so the # shellcheck directives in scripts/*.sh remain documentation rather than tooling.
+
+
+## Session 2: Compact at 30% instead of 98%, and track the compaction extensions
+<!-- trellis-session: v=2 fp=60a7d0e1e76318de -->
+
+**Date**: 2026-09-13
+**Task**: Compact at 30% instead of 98%, and track the compaction extensions
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- Native auto-compaction triggers at contextWindow - reserveTokens, which on the active 1M-token model is ~98% full. Raising reserveTokens was the obvious fix and the wrong one: Pi overloads it as the summarization output budget (0.8x), and the trigger is window-relative so the same value goes negative on a 500k model. Instead added npm:@thunstack/auto-compact (owns when: thresholdPercent 30, proportional) alongside the already-installed but untracked npm:@sting8k/pi-vcc (owns how: overrideDefaultCompaction true, algorithmic, no LLM call) -- which also resolved pre-existing settings.json render drift. Both packages tracked unpinned in settings.core.json. Declared both per-machine extension config files in .gitignore and PI_NOT_SYNCED rather than symlinking them.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ed3dd8b` | Compact at 30% of context instead of 98%, and track both compaction extensions |
+
+### Testing
+
+- [OK] doctor.sh: all 16 reported-skipped paths gitignored, no render drift. reserveTokens and keepRecentTokens absent from both settings files. setup.sh twice byte-identical. The resumption question was settled empirically rather than from the READMEs, which disagree: pi --mode rpc with thresholdPercent 1 gave 0 resume messages and 2 of 4 tool steps with autoResume false, versus 1 resume message and all 4 steps with it true -- so true is shipped. Reproduced independently by the check agent in a second RPC session. Mechanism verified in dist/: AgentSession.compact() aborts and never resumes the interrupted turn, and ctx.compact() is that manual fire-and-forget path; Pi core self-resumes only on the native threshold path.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- One shared spec file took hunk-level staging to avoid committing another agent's in-flight work; their permission_request hunk is still uncommitted. Optional follow-ups: auto-compact's additionalCompactionInstruction is dropped under pi-vcc (blanked in the live config to silence a per-compaction extension_error, worth reporting upstream), and 00-bootstrap-guidelines is complete but still unarchived.
