@@ -1,0 +1,32 @@
+{
+  "id": "reconcile-path-lists",
+  "name": "reconcile-path-lists",
+  "title": "Reconcile the ignore, skip-list, and not-stored path lists",
+  "description": "The three lists that track machine-local Pi paths (.gitignore, scripts/sync.sh's skip-list, README.md's not-stored table) have drifted apart: cache/ is ignored but not reported, trust.json and agent-memory/ are reported but not ignored. Reconcile them and add a doctor.sh check that stops the next drift. Found during the check pass of 09-13-stale-paths-and-lists.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P3",
+  "creator": "yuanhai.tan",
+  "assignee": "yuanhai.tan",
+  "createdAt": "2026-09-13",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "09-13-repair-harness-drift",
+  "relatedFiles": [
+    ".gitignore",
+    "scripts/sync.sh",
+    "README.md",
+    "scripts/doctor.sh",
+    ".trellis/spec/config/layout-and-surfaces.md"
+  ],
+  "notes": "Child of 09-13-repair-harness-drift. Must be implemented after 09-13-single-source-symlink-lists: both edit scripts/doctor.sh and .gitignore, and that task rewrites doctor.sh's prologue.",
+  "meta": {}
+}

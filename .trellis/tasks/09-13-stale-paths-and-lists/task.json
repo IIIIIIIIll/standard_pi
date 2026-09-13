@@ -1,0 +1,33 @@
+{
+  "id": "stale-paths-and-lists",
+  "name": "stale-paths-and-lists",
+  "title": "Correct stale install.sh references and sync the local-path lists",
+  "description": "Fix the two user-facing references to scripts/install.sh (which does not exist) to point at ./setup.sh, and catch the machine-local path lists up with what Pi actually writes under ~/.pi/agent (missions/, profiles/, run-history.jsonl, web-search-cache/, sol-pi.json.bak-*) across .gitignore, README.md, and sync.sh's not-synced report.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "yuanhai.tan",
+  "assignee": "yuanhai.tan",
+  "createdAt": "2026-09-13",
+  "completedAt": null,
+  "branch": "main",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "09-13-repair-harness-drift",
+  "relatedFiles": [
+    "scripts/render-settings.mjs",
+    ".gitignore",
+    "README.md",
+    "scripts/sync.sh",
+    ".trellis/spec/config/layout-and-surfaces.md",
+    ".trellis/spec/scripts/shell-guidelines.md"
+  ],
+  "notes": "Child of 09-13-repair-harness-drift. Must be committed before 09-13-single-source-symlink-lists starts: both edit scripts/sync.sh and scripts/doctor.sh.",
+  "meta": {}
+}
