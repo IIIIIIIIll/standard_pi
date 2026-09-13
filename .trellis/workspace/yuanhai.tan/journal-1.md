@@ -110,3 +110,45 @@ Session summary was not supplied.
 ### Next Steps
 
 - No work of mine is outstanding: all commits are local and origin/main is still at 873d85c, so a push is the only remaining action if wanted. Two things belong to other workstreams and were deliberately left alone: the other window's uncommitted permission_request.session_approved hunk in .trellis/spec/config/pi-resources.md, and its in-progress task 09-13-pi-subagents-dispatch. Earlier loose end worth considering: auto-compact's additionalCompactionInstruction is silently dropped under pi-vcc's overrideDefaultCompaction and emits an extension_error per compaction -- blanked in the live config, but it is an interaction bug between two now-tracked packages and would be worth reporting upstream.
+
+
+## Session 4: Route Pi Trellis role dispatch through pi-subagents
+<!-- trellis-session: v=2 fp=e6d9a09f87b06ef8 -->
+
+**Date**: 2026-09-14
+**Task**: Route Pi Trellis role dispatch through pi-subagents
+**Branch**: `main`
+
+### Summary
+
+Made pi-subagents the Pi dispatch path for Trellis role agents at the harness layer, without editing any generated file. One tracked global extension replaced the shipped trellis_subagent path; the shipped tool is now uncallable.
+
+### Main Changes
+
+- Added pi-agent/extensions/trellis-subagents-bridge/index.ts. The parent publishes its context key and refreshes it on subagent tool calls, so a task activated earlier in the same turn is visible; each child writes its own runtime session pointer. The generated extension then resolves the real task unmodified - correct breadcrumb, correct injected context, correct bash key, nothing stripped or rewritten.
+- Deactivated the shipped trellis_subagent tool with pi.setActiveTools, re-applied every turn, so only pi-subagents can dispatch and its competing promptGuidelines are no longer injected. Added scripts/doctor.sh checks for the bridge and for pi-subagents' discovery input, with the failure path proven.
+- Documented the bridge in pi-resources.md, pi-agent/extensions/README.md and README.md, including the two conventions the check phase taught: role predicates must be exhaustive rather than selective, and idempotency guards must match a whole injected constant rather than a bare tag that ordinary prose also contains.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d7f0f3e` | Make pi-subagents children resolve the active Trellis task |
+| `a8f6603` | Record verification evidence and correct two acceptance criteria |
+| `343b8d7` | Disable the shipped trellis_subagent tool so only pi-subagents can dispatch |
+| `f7718aa` | Fix a latent regression in the shipped tool's children, and harden the bridge |
+| `866ab1b` | Fix the guidance guard matching a bare tag, and record both check rounds |
+| `8b95cd9` | Record the conditional AC9 correction, and the two lessons for this layer |
+
+### Testing
+
+- [OK] Nine live probes plus two independent check rounds. Full chain green: bash -n and node --check clean, setup.sh twice byte-identical, sync.sh 'Already up to date.' mutating nothing, doctor.sh 'All good.' exit 0, tree clean.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Upstream prelude relaxation so the generated preludes' 'first line is Active task:' rule survives pi-subagents' 'Task: ' prefix, instead of the in-repo adapter note.
+- The shipped trellis_subagent code paths in the generated extension are now dead weight; worth raising upstream now that the harness deactivates the tool.
