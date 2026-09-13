@@ -1,0 +1,7 @@
+{
+  "packages": [
+    "git:github.com/NVlabs/SoL-Pi"
+  ],
+  "theme": "dark",
+  "defaultThinkingLevel": "high"
+}

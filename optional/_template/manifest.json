@@ -1,0 +1,8 @@
+{
+  "name": "REPLACE_WITH_DIRECTORY_NAME",
+  "description": "One line on what this plugin does and when to enable it.",
+  "packages": [
+    "npm:REPLACE_ME"
+  ],
+  "settings": {}
+}

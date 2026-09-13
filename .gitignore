@@ -2,13 +2,20 @@
 # Secrets — never commit these
 # ---------------------------------------------------------------------------
 pi-agent/auth.json
-agent/auth.json
 **/auth.json
-!.keep
 
 # ---------------------------------------------------------------------------
-# Machine-local Pi state (rebuilt automatically on each machine)
+# Generated / machine-local Pi state
 # ---------------------------------------------------------------------------
+# settings.json is rendered by scripts/install.sh from settings.core.json
+# plus this machine's enabled optional bundles. Do not track it.
+pi-agent/settings.json
+pi-agent/.pi-setup-state.json
+
+# Model catalogs are cached from https://pi.dev/api/models/providers/<id>
+pi-agent/models-store.json
+pi-agent/models.json
+
 pi-agent/sessions/
 pi-agent/npm/
 pi-agent/git/
@@ -18,7 +25,7 @@ pi-agent/*.log
 pi-agent/pi-debug.log
 pi-agent/*.bak
 pi-agent/*.bak-*
-pi-agent/settings.json.bak-*
+pi-agent/*.pre-render-*
 
 # ---------------------------------------------------------------------------
 # Editors / OS noise

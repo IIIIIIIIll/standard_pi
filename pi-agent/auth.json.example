@@ -1,6 +1,6 @@
 {
-  "opencode-go": {
+  "<provider-id>": {
     "type": "api_key",
-    "key": "REPLACE_WITH_YOUR_OPENCODE_GO_API_KEY"
+    "key": "<your-api-key>"
   }
 }
