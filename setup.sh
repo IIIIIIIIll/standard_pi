@@ -28,7 +28,7 @@ PI_DST="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 STATE="$PI_DST/.pi-setup-state.json"
 
 # Optional resources, symlinked when present in the repo.
-PI_DIRS=(themes prompts tools skills agents)
+PI_DIRS=(themes prompts tools skills agents extensions)
 PI_FILES=(AGENTS.md)
 
 WITH=()

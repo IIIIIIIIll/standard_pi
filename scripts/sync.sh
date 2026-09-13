@@ -16,7 +16,7 @@ PI_SRC="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 PI_DST="$REPO_DIR/pi-agent"
 STATE="$PI_SRC/.pi-setup-state.json"
 
-PI_DIRS=(themes prompts tools skills agents)
+PI_DIRS=(themes prompts tools skills agents extensions)
 PI_FILES=(AGENTS.md)
 
 say() { printf '  %-8s %s\n' "$1" "$2"; }

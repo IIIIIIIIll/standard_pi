@@ -13,7 +13,7 @@ update**, including pulling the latest skills from upstream.
 It does six things:
 
 1. renders `~/.pi/agent/settings.json` from core settings + this machine's optional bundles
-2. symlinks `AGENTS.md` and resource dirs (`themes/`, `prompts/`, `tools/`, `skills/`, `agents/`)
+2. symlinks `AGENTS.md` and resource dirs (`themes/`, `prompts/`, `tools/`, `skills/`, `agents/`, `extensions/`)
 3. seeds `~/.pi/agent/auth.json` from the template if absent
 4. installs/refreshes skills **from their upstream sources** (see below)
 5. refreshes Pi plugin packages (`pi update --extensions`)
@@ -68,7 +68,7 @@ Currently installed, all from [`mattpocock/skills`](https://github.com/mattpococ
 | `pi-agent/settings.core.json` | `~/.pi/agent/settings.json` | **Rendered** — core settings, same everywhere |
 | `optional/<name>/manifest.json` | `~/.pi/agent/settings.json` | **Rendered** — only where enabled |
 | `pi-agent/auth.json.example` | `~/.pi/agent/auth.json` | Copied once as a template; the real file stays local |
-| `pi-agent/AGENTS.md`, `pi-agent/{themes,prompts,tools,skills,agents}/` | `~/.pi/agent/…` | **Symlinked** (if present) |
+| `pi-agent/AGENTS.md`, `pi-agent/{themes,prompts,tools,skills,agents,extensions}/` | `~/.pi/agent/…` | **Symlinked** (if present) |
 | `skills.json` | `~/.agents/skills/` | **Fetched from upstream** by `setup.sh` |
 | `setup.sh` | — | The entry point |
 | `scripts/` | — | Helpers, sync, optional toggles, doctor |
@@ -125,7 +125,7 @@ scripts/optional.sh enable my-plugin
 ## Day-to-day
 
 Symlinked resources (`AGENTS.md`, `themes/`, `prompts/`, `tools/`, `skills/`,
-`agents/`) are already repo changes as you edit them — just commit.
+`agents/`, `extensions/`) are already repo changes as you edit them — just commit.
 
 Settings need one explicit step, because `settings.json` is generated:
 

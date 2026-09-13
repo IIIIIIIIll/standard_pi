@@ -10,7 +10,7 @@ PI_DST="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 STATE="$PI_DST/.pi-setup-state.json"
 SKILLS_DST="${AGENTS_SKILLS_DIR:-$HOME/.agents/skills}"
 
-PI_DIRS=(themes prompts tools skills agents)
+PI_DIRS=(themes prompts tools skills agents extensions)
 PI_FILES=(AGENTS.md)
 
 problems=0
