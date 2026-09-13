@@ -1,4 +1,8 @@
 {
+  "packages": [
+    "npm:pi-subagents",
+    "npm:pi-web-access"
+  ],
   "theme": "dark",
   "defaultThinkingLevel": "high"
 }
