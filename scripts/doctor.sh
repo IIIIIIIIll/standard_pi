@@ -86,6 +86,33 @@ for name in "${PI_FILES[@]}" "${PI_DIRS[@]}"; do
 done
 [ "$found" = 1 ] || printf '  \033[2m·\033[0m none in repo yet (AGENTS.md, themes/, prompts/, tools/, skills/, agents/, extensions/)\n'
 
+echo "==> Trellis subagent bridge"
+bridge_src="$PI_SRC/extensions/trellis-subagents-bridge/index.ts"
+if [ ! -f "$bridge_src" ]; then
+  bad "pi-agent/extensions/trellis-subagents-bridge/index.ts missing"
+elif [ ! -f "$PI_DST/extensions/trellis-subagents-bridge/index.ts" ]; then
+  bad "bridge not reachable via $PI_DST/extensions (run ./setup.sh)"
+else
+  ok "bridge extension linked"
+fi
+# pi-subagents discovers project role agents from the project config agents dir.
+# Assert the discovery INPUT rather than the tool's own listing: subagent({"action":"list"})
+# is model-facing and cannot be called from bash.
+pi_agents="$REPO_DIR/.pi/agents"
+if [ ! -d "$pi_agents" ]; then
+  warn ".pi/agents absent (Trellis adapters not generated in this checkout)"
+else
+  missing_agents=()
+  for role in trellis-implement trellis-check trellis-research; do
+    [ -f "$pi_agents/$role.md" ] || missing_agents+=("$role")
+  done
+  if [ ${#missing_agents[@]} -gt 0 ]; then
+    bad "pi-subagents cannot discover role agent(s): ${missing_agents[*]}"
+  else
+    ok "pi-subagents discovery input present (3 role agents)"
+  fi
+fi
+
 echo "==> Credentials"
 if [ -f "$PI_DST/auth.json" ]; then
   perms="$(stat -c '%a' "$PI_DST/auth.json" 2>/dev/null || stat -f '%Lp' "$PI_DST/auth.json")"

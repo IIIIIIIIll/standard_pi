@@ -96,6 +96,11 @@ Anything under `packages` is installed on every machine. Currently:
 | `npm:@juicesharp/rpiv-ask-user-question` | Structured questionnaire the model can put to you instead of guessing |
 | `npm:@juicesharp/rpiv-todo` | Model-facing todo list as a live overlay surviving `/reload` and compaction |
 
+`pi-subagents` also dispatches the Trellis role agents. A dispatched child runs as
+its own Pi session, so `pi-agent/extensions/trellis-subagents-bridge/` keeps it
+pointed at the session's active task — see
+[extensions/README.md](pi-agent/extensions/README.md#trellis-subagents-bridge).
+
 ### Optional — `optional/<name>/`
 
 Packages and settings applied only where you enable them. Choices are recorded in

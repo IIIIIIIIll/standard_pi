@@ -20,6 +20,26 @@ Installed Pi *packages* (`pi install …`) do **not** live here — they go to
 This directory is only for extensions placed by hand **and** for the handful of
 packages that read their config from under here.
 
+## Trellis subagents bridge
+
+`trellis-subagents-bridge/` makes `pi-subagents` children resolve their parent's
+active Trellis task.
+
+`pi-subagents` already finds the role agents in `.pi/agents/`, but a dispatched
+child runs as its own Pi session — and the generated Trellis extension resolves
+the active task from `.trellis/.runtime/sessions/<key>.json`, where the key comes
+from the **child's** session id. Left alone, the child is told `Status: no_task`
+and `task.py current` exits 1.
+
+The bridge fixes that by correcting the *value* rather than patching each of its
+consequences: the parent publishes its context key, and the child writes a
+runtime session pointer under its own key. The generated extension then resolves
+the real task through its normal path — correct breadcrumb, correct injected
+context, and a bash key that resolves — with nothing stripped or rewritten.
+
+Because it is global, it is careful about scope: outside a `.trellis/` project,
+or with no active task, it publishes nothing, injects nothing, and writes no file.
+
 ## Permission policy
 
 [`@gotgenes/pi-permission-system`](https://github.com/gotgenes/pi-permission-system)
