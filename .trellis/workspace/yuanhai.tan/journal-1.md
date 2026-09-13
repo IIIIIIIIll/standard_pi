@@ -78,3 +78,35 @@ Session summary was not supplied.
 ### Next Steps
 
 - One shared spec file took hunk-level staging to avoid committing another agent's in-flight work; their permission_request hunk is still uncommitted. Optional follow-ups: auto-compact's additionalCompactionInstruction is dropped under pi-vcc (blanked in the live config to silence a per-compaction extension_error, worth reporting upstream), and 00-bootstrap-guidelines is complete but still unarchived.
+
+
+## Session 3: Close out the bootstrap task; no work commits this round
+<!-- trellis-session: v=2 fp=0c2211eaeb0aeb31 -->
+
+**Date**: 2026-09-13
+**Task**: Close out the bootstrap task; no work commits this round
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- Finalised 00-bootstrap-guidelines and archived it. Before archiving I verified the deliverables rather than trusting the checkboxes: no placeholder prose anywhere under .trellis/spec, index parity across all four index.md files (no orphans), 12 spec files present, and relatedFiles pointing at the reshaped tree. Amended the task's Completion Record, whose 'known issues documented rather than fixed' section had gone stale -- three of its four items were fixed later in the session by the drift-repair work (d44289e, 819bfa1, 5997e94), and the PI_DIRS duplication count had been eight places, not seven as the record claimed. They are now struck through with commit references so the entry reads as history rather than as a live defect list. Checked safe_commit.py before archiving: it stages a specific path allowlist (journal, index.md, task dir, archive dir) and never the .trellis/ tree, so the other window's dirty pi-resources.md hunk was never at risk. Archive commit 009a3de touched only the task's own prd.md and task.json.
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] Verification was static, not behavioural: grep for placeholder markers across .trellis/spec (only legitimate hits), index-to-file parity check per spec directory, and inspection of the archive commit's file list to confirm it contained exactly the two task files. doctor.sh reports No problems. with a single note, which is the other window's uncommitted hunk rather than anything from this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- No work of mine is outstanding: all commits are local and origin/main is still at 873d85c, so a push is the only remaining action if wanted. Two things belong to other workstreams and were deliberately left alone: the other window's uncommitted permission_request.session_approved hunk in .trellis/spec/config/pi-resources.md, and its in-progress task 09-13-pi-subagents-dispatch. Earlier loose end worth considering: auto-compact's additionalCompactionInstruction is silently dropped under pi-vcc's overrideDefaultCompaction and emits an extension_error per compaction -- blanked in the live config, but it is an interaction bug between two now-tracked packages and would be worth reporting upstream.
