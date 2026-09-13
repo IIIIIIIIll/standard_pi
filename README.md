@@ -168,6 +168,7 @@ git add -A && git commit -m "…" && git push
 | `~/.pi/agent/profiles/` | Per-machine agent profiles |
 | `~/.pi/agent/run-history.jsonl` | Per-machine run history log |
 | `~/.pi/agent/web-search-cache/` | Cached web-search results, re-fetchable |
+| `~/.pi/agent/cache/` | Pi's scratch cache |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts |
 
 > **Security:** `auth.json` is gitignored and `doctor.sh` fails if it ever becomes

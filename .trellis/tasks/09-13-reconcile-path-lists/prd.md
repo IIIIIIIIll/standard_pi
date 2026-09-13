@@ -44,19 +44,37 @@ key-shaped string.
 
 ## Acceptance Criteria
 
-- [ ] No path reported by `sync.sh` as skipped is stageable by git. Verify:
-      `for p in $(sed -n 's/^for f in \(.*\); do$/\1/p' scripts/sync.sh); do git check-ignore -q "pi-agent/$p" || echo "NOT IGNORED: $p"; done`
-      outputs nothing.
-- [ ] `cache/` appears in the `sync.sh` report when `~/.pi/agent/cache/` exists.
-- [ ] `trust.json` and `agent-memory/` are covered by `.gitignore`.
-- [ ] `doctor.sh` reports a problem when the check is violated: temporarily remove
+- [x] No path reported by `sync.sh` as skipped is stageable by git. Verified with
+      `( . scripts/lib.sh; for p in "${PI_NOT_SYNCED[@]}"; do git check-ignore -q "pi-agent/$p" || echo "NOT IGNORED: $p"; done )`
+      → no output.
+
+      *Command corrected after implementation:* the original form parsed the
+      `for f in …; do` line with `sed`. That line no longer holds the literal list
+      (the array moved to `lib.sh`), so the old command matched two loop headers
+      and emitted false offenders. The criterion's intent is unchanged, and it is
+      now permanently enforced by `doctor.sh`'s `Ignore coverage` section rather
+      than by a one-shot command.
+- [x] `cache/` appears in the `sync.sh` report when `~/.pi/agent/cache/` exists.
+- [x] `trust.json` and `agent-memory/` are covered by `.gitignore`.
+- [x] `doctor.sh` reports a problem when the check is violated: temporarily remove
       `pi-agent/trust.json` from `.gitignore`, confirm a `✗` and exit 1, restore it,
       confirm `All good.`
-- [ ] `doctor.sh`'s new check does **not** fire on a clean tree, and does not fire
+- [x] `doctor.sh`'s new check does **not** fire on a clean tree, and does not fire
       for `.gitignore`-only patterns such as `*.log` or `.pi/`.
-- [ ] `bash -n setup.sh scripts/*.sh`; `./setup.sh` twice; `./scripts/sync.sh`;
+- [x] `bash -n setup.sh scripts/*.sh`; `./setup.sh` twice; `./scripts/sync.sh`;
       `./scripts/doctor.sh` ends in `All good.`
-- [ ] One commit.
+- [x] One commit.
+
+### Verified beyond the criteria
+
+- All four negative tests in `implement.md` §8 fail the script as designed, plus a
+  combined (a)+(b) run that reports **both** offenders.
+- `doctor.sh` outside a git repository: exit 1, `✗ not a git repository`, no
+  unbound-variable error.
+- `git check-ignore` consults the index, so a path that is tracked despite a
+  matching ignore rule is reported **not** ignored. The check therefore also
+  catches force-added files — which is why it deliberately does not pass
+  `--no-index`.
 
 ## Out Of Scope
 

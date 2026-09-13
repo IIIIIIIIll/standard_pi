@@ -36,7 +36,7 @@ desc="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[
 ## Pre-Development Checklist
 
 - [ ] Decide which script owns the change. `setup.sh` renders + links + installs + verifies; `sync.sh` pulls live state back into the repo; `doctor.sh` only reports; `optional.sh` owns per-machine bundle state. Do not duplicate a responsibility into a second script.
-- [ ] If the script walks resource paths, source `scripts/lib.sh` and never re-declare `PI_DIRS` / `PI_FILES` (`readonly` makes a re-declaration fail) — see [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md).
+- [ ] If the script walks resource or not-synced paths, source `scripts/lib.sh` and never re-declare `PI_DIRS` / `PI_FILES` / `PI_NOT_SYNCED` (`readonly` makes a re-declaration fail). All three lists live only there — see [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md).
 - [ ] If the script calls Node, use `node "$REPO_DIR/scripts/<helper>.mjs"` with an absolute path derived from `$REPO_DIR`; never a relative path, because scripts are invoked from arbitrary working directories.
 - [ ] Add the `command -v node >/dev/null 2>&1 || { ...; exit 1; }` preflight if the script needs Node (all four currently do).
 - [ ] New executable scripts need `chmod +x`; git tracks the mode, and only `setup.sh` plus `scripts/{optional,sync,doctor}.sh` are currently `100755`. `scripts/lib.sh` is sourced-only and stays `100644`.

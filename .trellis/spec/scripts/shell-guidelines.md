@@ -55,6 +55,19 @@ never introduce `-e`. The one deliberate exception is the missing-`lib.sh` guard
 (below), which reports a `bad` and exits immediately: with the resource lists
 undefined, every later symlink check would be a false problem.
 
+The `==> Ignore coverage (machine-local paths)` check is a `bad`, not a `warn`: a
+path `sync.sh` reports as deliberately not synced that git would still commit is
+a security-relevant inconsistency, not a note. Like the secret-scan section it is
+guarded on `[ -d "$REPO_DIR/.git" ]`, and it uses `git -C "$REPO_DIR"
+check-ignore`, which needs no network and works for paths that do not exist on
+disk (so it is meaningful on a fresh clone). `check-ignore` *does* consult the
+index: a path that is tracked despite a matching ignore rule (force-added, e.g.
+`git add -f`) is reported as **not ignored**, which is intended — the check then
+catches that state too. Build the offender list, then branch on the length form
+`${#not_ignored[@]}` — see
+[`set -u` And Arrays](#set--u-and-arrays) for why the length form (and not a bare
+`"${not_ignored[@]}"`) is what keeps an empty array safe under `set -u`.
+
 ---
 
 ## Repo Root And Destinations
@@ -193,9 +206,10 @@ everywhere.
 
 `PI_DIRS` / `PI_FILES` are the one deliberate exception to discovery, because the
 set is a *whitelist* rather than an inventory: the resource directories need not
-exist yet, and `link()` silently skips a source that is absent. They have a
-single definition in `scripts/lib.sh`, which every script that touches resource
-paths must source:
+exist yet, and `link()` silently skips a source that is absent. The not-synced
+paths (`PI_NOT_SYNCED`) are the other data list: `sync.sh` reports them and
+`doctor.sh` checks that each is gitignored. All three have a single definition in
+`scripts/lib.sh`, which every script that touches those paths must source:
 
 ```bash
 LIB="$REPO_DIR/scripts/lib.sh"
@@ -209,7 +223,8 @@ fi
 
 Rules that follow:
 
-- **Never re-declare `PI_DIRS` or `PI_FILES` in a consumer.** They are `readonly`,
+- **Never re-declare `PI_DIRS`, `PI_FILES`, or `PI_NOT_SYNCED` in a consumer.**
+  They are `readonly`,
   so a second copy is rejected (`PI_DIRS: readonly variable`) instead of silently
   replacing the list. The *values* therefore cannot diverge, but the failure
   surface differs. `setup.sh` and `sync.sh` run under `set -e`, so the rejected
@@ -225,8 +240,12 @@ Rules that follow:
   failed `source` leaves the arrays unset, and the next `"${PI_DIRS[@]}"` aborts
   with an `unbound variable` instead of naming the missing file. `doctor.sh` uses
   `bad` + `exit 1` instead of the `echo` + `exit 1` shown here.
-- **Keep `lib.sh` to the two arrays.** `setup.sh` is the bootstrap entry point;
-  do not couple it to more of `scripts/`.
+- **Keep `lib.sh` to the path lists (data only).** `setup.sh` is the bootstrap entry point;
+  do not couple it to more of `scripts/`. `PI_DIRS`, `PI_FILES` and
+  `PI_NOT_SYNCED` are the whole contract — no behaviour (`say`, `note`, the `node`
+  preflight, `link()`) belongs here. `PI_NOT_SYNCED` is stored in canonical
+  slash-form for directories (`sessions/`, `npm/`, …), because `git check-ignore`
+  distinguishes `pi-agent/sessions` from `pi-agent/sessions/`.
 
 See [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md)
 for the sites that still have to be edited by hand when the list changes.
@@ -285,6 +304,12 @@ node "$REPO_DIR/scripts/render-settings.mjs" "$REPO_DIR" "$PI_DST/settings.json"
 
 Do not "simplify" it to `"${RENDER_ARGS[@]}"` — that breaks under `set -u` when
 no optional is enabled.
+
+The **length** form is safe on an empty array: `doctor.sh`'s ignore-coverage
+check branches on `${#not_ignored[@]}` and `${#PI_NOT_SYNCED[@]}` rather than
+expanding the elements, so the first run (nothing offending) does not trip
+`set -u`. Reach for `${#arr[@]}` whenever an array may legitimately be empty and
+you only need to know whether it is.
 
 Deliberate word-splitting on a newline-separated list is marked, with the reason:
 

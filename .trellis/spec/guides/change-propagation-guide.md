@@ -55,7 +55,7 @@ and `.agents/` is CLI-generated, so a hit in either is not yours to update.
 For a structural change, search for the *shape* rather than the value:
 
 ```bash
-grep -rn "PI_DIRS\|PI_FILES" --include='*.sh' .        # the arrays
+grep -rn "PI_DIRS\|PI_FILES\|PI_NOT_SYNCED" --include='*.sh' .   # the harness lists
 grep -rn "^pi-agent/" .gitignore                        # ignored surfaces
 grep -n "^| " README.md                                 # the tables
 ```
@@ -68,7 +68,7 @@ grep -n "^| " README.md                                 # the tables
 |------|--------------------------------|--------------------|
 | Symlinked resource dirs (`PI_DIRS`) | `scripts/lib.sh` (the single definition), `setup.sh` (header comment), `doctor.sh` (inline message), `README.md` (setup step, Layout table, Day-to-day prose) | a new dir is never linked in one direction, or `doctor.sh` reports a false problem |
 | Symlinked files (`PI_FILES`) | `scripts/lib.sh` (the single definition), plus the same non-code sites whenever the file name is listed | same |
-| "Not stored here" paths | `.gitignore`, `README.md` table, `sync.sh` skip-list | a runtime path becomes commit-able, or the report silently omits it |
+| "Not stored here" paths | `scripts/lib.sh` (the single definition: `PI_NOT_SYNCED`), `.gitignore`, `README.md` table | a runtime path becomes commit-able; `doctor.sh` catches the `.gitignore` half, the README prose is unguarded |
 | A user-facing string (an error/help message) | the script that prints it, `.gitignore` comments, `README.md` prose, **and every spec file that quotes it verbatim** | a user follows an instruction that cannot work |
 | The name of a script or path | its own file, every caller, every message naming it, `.gitignore` comments, `README.md` | stale instructions, as happened when `install.sh` was folded into `setup.sh` |
 | Ignores / deny rules | `.gitignore`, `extensions/pi-permission-system/config.json`, `README.md` | a secret or `node_modules` gets committed |
@@ -79,11 +79,16 @@ grep -n "^| " README.md                                 # the tables
 | Output verb vocabulary | `setup.sh`/`sync.sh` `say`, `doctor.sh` `ok/warn/bad`, every `.mjs` literal | unreadable, unaligned output |
 | `optional/*/manifest.json` schema | the manifests, `_template/README.md`, `config/optional-bundles.md`, `scripts/optional.sh scaffold` | scaffold produces a manifest the renderer rejects |
 
-> **The "Not stored here" row is currently not in parity** — `.gitignore` and the
-> `sync.sh` skip-list each cover paths the other misses, and `README.md` covers a
-> third combination. `trust.json` is reported as "intentionally not synced" while
-> git would happily stage it. Read `../config/layout-and-surfaces.md`
-> §"Common Mistake: assuming the two lists have parity" before editing any of them.
+> **The "Not stored here" lists are deliberately not identical, and one direction
+> is now enforced.** `PI_NOT_SYNCED` in `scripts/lib.sh` is the single definition;
+> `sync.sh` reports it and `doctor.sh` fails (`bad`) when any reported path is not
+> ignored by git. The invariant is `PI_NOT_SYNCED ⊆ .gitignore` — add a new runtime
+> path to both in the same commit. `.gitignore`-only patterns (`*.log`, `.pi/`, …)
+> and the paths `sync.sh` reports earlier (`settings.json`,
+> `.pi-setup-state.json`) are expected to differ. See
+> `../config/layout-and-surfaces.md`
+> §"The `.gitignore` / Skip-List Invariant", including the `git check-ignore`
+> trailing-slash finding before you touch a directory entry.
 
 ---
 
@@ -161,7 +166,7 @@ conventions make that safe:
   `source` leaves the arrays unset, and the next `"${PI_DIRS[@]}"` aborts with an
   `unbound variable` instead of naming what is missing. `doctor.sh` reports it
   with its own `bad` + `exit 1`.
-- **`lib.sh` holds only the two arrays.** Do not move helpers (`say`, `note`, the
+- **`lib.sh` holds only the path lists (data only).** Do not move helpers (`say`, `note`, the
   `node` preflight, `link()`) into it: `setup.sh` is the bootstrap entry point,
   and the repo's convention is that each script reads standalone.
 

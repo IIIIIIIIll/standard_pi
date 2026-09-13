@@ -3,7 +3,7 @@
   "name": "reconcile-path-lists",
   "title": "Reconcile the ignore, skip-list, and not-stored path lists",
   "description": "The three lists that track machine-local Pi paths (.gitignore, scripts/sync.sh's skip-list, README.md's not-stored table) have drifted apart: cache/ is ignored but not reported, trust.json and agent-memory/ are reported but not ignored. Reconcile them and add a doctor.sh check that stops the next drift. Found during the check pass of 09-13-stale-paths-and-lists.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -12,7 +12,7 @@
   "assignee": "yuanhai.tan",
   "createdAt": "2026-09-13",
   "completedAt": null,
-  "branch": null,
+  "branch": "main",
   "base_branch": "main",
   "worktree_path": null,
   "commit": null,
@@ -22,11 +22,12 @@
   "parent": "09-13-repair-harness-drift",
   "relatedFiles": [
     ".gitignore",
-    "scripts/sync.sh",
     "README.md",
+    "scripts/lib.sh",
+    "scripts/sync.sh",
     "scripts/doctor.sh",
     ".trellis/spec/config/layout-and-surfaces.md"
   ],
-  "notes": "Child of 09-13-repair-harness-drift. Must be implemented after 09-13-single-source-symlink-lists: both edit scripts/doctor.sh and .gitignore, and that task rewrites doctor.sh's prologue.",
+  "notes": "Child of 09-13-repair-harness-drift, 3rd of 3. Invariant enforced: sync.sh's reported-skipped list must be a subset of .gitignore, checked by doctor.sh via git check-ignore. Exact-string matching is required because check-ignore treats a directory pattern's trailing slash as significant (pi-agent/sessions is NOT ignored, pi-agent/sessions/ IS), so PI_NOT_SYNCED is stored in canonical slash-form and doctor.sh validates the exact string. The reverse direction (.gitignore-only patterns) is undetectable by design and harmless.",
   "meta": {}
 }

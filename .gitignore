@@ -17,6 +17,11 @@ pi-agent/.pi-setup-state.json
 pi-agent/models-store.json
 pi-agent/models.json
 
+# Trust decisions and accumulated memory are per-machine, like the session
+# history below: reported by scripts/sync.sh, never committed.
+pi-agent/trust.json
+pi-agent/agent-memory/
+
 pi-agent/sessions/
 pi-agent/npm/
 # Runtime logs written by extensions into their own directory (e.g. the

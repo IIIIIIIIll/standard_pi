@@ -115,6 +115,21 @@ if [ -d "$REPO_DIR/.git" ]; then
   fi
 fi
 
+echo "==> Ignore coverage (machine-local paths)"
+if [ -d "$REPO_DIR/.git" ]; then
+  not_ignored=()
+  for name in "${PI_NOT_SYNCED[@]}"; do
+    git -C "$REPO_DIR" check-ignore -q -- "pi-agent/$name" || not_ignored+=("$name")
+  done
+  if [ ${#not_ignored[@]} -gt 0 ]; then
+    bad "path(s) sync.sh reports as not-synced, but git would commit:"
+    for name in "${not_ignored[@]}"; do printf '      pi-agent/%s\n' "$name"; done
+    printf '      add them to .gitignore (directory patterns need the trailing slash)\n'
+  else
+    ok "all ${#PI_NOT_SYNCED[@]} reported-skipped paths are gitignored"
+  fi
+fi
+
 echo "==> Skills  ($SKILLS_DST)"
 if [ -f "$REPO_DIR/skills.json" ]; then
   total="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).skills.length)' "$REPO_DIR/skills.json")"

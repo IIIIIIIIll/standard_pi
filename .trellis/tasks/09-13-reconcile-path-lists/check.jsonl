@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "the verify chain the checker must run, including setup.sh twice and the setup-then-sync symmetry check"}
+{"file": ".trellis/spec/scripts/index.md", "reason": "scripts-layer quality check: bash -n, idempotency, doctor.sh outcome, executable-bit rules"}
+{"file": ".trellis/spec/config/index.md", "reason": "config-layer quality check: auth.json untracked, git cleanliness after setup.sh, strict JSON"}
+{"file": ".trellis/spec/index.md", "reason": "project-level quality check commands and expected doctor.sh outcomes"}

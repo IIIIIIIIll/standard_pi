@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "the four-surface map, the .gitignore parity section this task rewrites, and the machine-local path rules the reconciliation must follow"}
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "doctor.sh's deliberate no-set -e contract, its ok/warn/bad helpers, and the set -u array-expansion hazards the new check must respect"}
+{"file": ".trellis/spec/scripts/index.md", "reason": "scripts-layer conventions: lib.sh is shared by setup.sh/sync.sh/doctor.sh, and the entry-point-vs-helper rules"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "the multi-site fact table and the verify chain; the 'Not stored here' row names the lists this task reconciles"}

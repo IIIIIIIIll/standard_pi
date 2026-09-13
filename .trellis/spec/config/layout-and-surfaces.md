@@ -39,9 +39,10 @@ a resource; adding a seventh name to `scripts/lib.sh` is not.
 The **Ignored** rows above are illustrative, not exhaustive — Pi adds runtime
 state between releases (`missions/`, `profiles/`, `web-search-cache/`, and
 `run-history.jsonl` were all added after this repo was created). The enforcement
-points are `.gitignore` and the skip-list in `scripts/sync.sh`; see
-[`.gitignore` Parity](#gitignore-parity) for how they relate, and note that they
-are **not** currently in parity.
+points are `.gitignore` and `PI_NOT_SYNCED` in `scripts/lib.sh`; see
+[The `.gitignore` / Skip-List Invariant](#the-gitignore--skip-list-invariant) for
+how they relate — they are deliberately **not** identical, and `doctor.sh`
+enforces the direction that matters.
 
 ---
 
@@ -51,8 +52,9 @@ are **not** currently in parity.
    needs a credential, commit an `auth.example.json` under
    `optional/<name>/` and document it in that bundle's README.
 
-2. **Does Pi write it at runtime?** → ignored, and it must be added to
-   `.gitignore` explicitly (see the parity note below).
+2. **Does Pi write it at runtime?** → ignored, and it must be added to both
+   `.gitignore` and `PI_NOT_SYNCED` in `scripts/lib.sh` (see the invariant
+   section below).
 
 3. **Is it per-machine state derived from tracked inputs?** → generated. Do not
    commit it and do not symlink it. Add a render step rather than a file.
@@ -118,7 +120,7 @@ exists, so once `setup.sh` has run, the state file is authoritative.
 
 ---
 
-## `.gitignore` Parity
+## The `.gitignore` / Skip-List Invariant
 
 `.gitignore` is the enforcement point for the "ignored" surface, and it is
 hand-maintained. The list is grouped by intent and commented — keep the grouping
@@ -126,42 +128,77 @@ when adding to it, and keep the comments accurate (the one above
 `pi-agent/settings.json` names `./setup.sh`, the entry point that renders it via
 `scripts/render-settings.mjs`).
 
-Two lists must be kept in sync whenever Pi starts writing a new runtime
-directory:
+Three lists describe machine-local Pi paths, and they answer different questions:
 
-- `.gitignore` — so it cannot be committed.
-- The `for f in auth.json models-store.json …` skip-list in `scripts/sync.sh` —
-  cosmetic only, since `sync.sh` copies specific `PI_DIRS`/`PI_FILES` rather than
-  the whole directory, but the report is how a user learns the path is
-  intentionally not synced.
+- `.gitignore` — what git may never commit.
+- `PI_NOT_SYNCED` in `scripts/lib.sh` — **the single definition** of the paths
+  `sync.sh` reports as deliberately not synced. `sync.sh` consumes the array;
+  `doctor.sh` checks it. Never re-declare it.
+- The `README.md` "What is intentionally *not* stored here" table — prose for the
+  user, hand-maintained, not mechanically checked.
 
-Because `sync.sh` enumerates rather than globs, a path missing from either list
-is never wrongly copied — but if it is missing from `.gitignore` it becomes
-committable, and if it is missing from the skip-list the "Managed elsewhere (not
-synced)" report goes silently incomplete. Add a new runtime path to both lists in
-the same commit.
+The lists are **not** identical, and should not be made identical. The invariant
+is one-directional:
+
+> Every path `PI_NOT_SYNCED` reports as not synced must be impossible to commit:
+> `PI_NOT_SYNCED ⊆ .gitignore`.
+
+`doctor.sh` enforces it in `==> Ignore coverage (machine-local paths)` and fails
+(`bad`, not `warn`) when a reported-skipped path is not ignored. The reverse
+direction — a pattern in `.gitignore` that the report does not name — is
+undetectable by design and harmless: it is ignored-but-unreported, which is
+`cache/`-shaped rather than a leak.
+
+`.gitignore` legitimately covers patterns that are not runtime *paths* (`.pi/`,
+`.agents/`, `.idea/`, `*.swp`, `*.log`, `*.bak-*`), and `sync.sh` legitimately
+omits `settings.json` and `.pi-setup-state.json`, which it reports earlier in its
+own output ("Folding live settings into core"). So do not "fix" a divergence by
+copying one list into the other.
+
+Because `sync.sh` enumerates rather than globs, a path missing from the report is
+never wrongly copied — but if it is missing from `.gitignore` it becomes
+committable. When Pi starts writing a new runtime directory, add it to
+`PI_NOT_SYNCED` **and** `.gitignore` in the same commit; the `doctor.sh` check is
+there to catch the half you forget.
 
 ### Common Mistake: assuming the two lists have parity
 
-They do not, and neither does the `README.md` table. Measured 2026-09-13:
+They do not, and that is fine — the one-directional invariant above is what
+matters. The three lists were reconciled on 2026-09-13. The divergence found
+before the fix:
 
-| Path | `.gitignore` | `sync.sh` skip-list | `README.md` table |
-|------|--------------|---------------------|-------------------|
-| `cache/` | yes | **no** | **no** |
-| `trust.json` | **no** | yes | yes |
-| `agent-memory/` | **no** | yes | yes |
-| all others (`auth.json`, `sessions/`, `npm/`, `git/`, `bin/`, `models-store.json`, `missions/`, `profiles/`, `web-search-cache/`, `run-history.jsonl`) | yes | yes | yes |
+| Path | `.gitignore` (before) | `PI_NOT_SYNCED` (before) | Resolution |
+|------|-----------------------|--------------------------|------------|
+| `cache/` | yes | **no** | added to `PI_NOT_SYNCED` |
+| `trust.json` | **no** | yes | added to `.gitignore` |
+| `agent-memory/` | **no** | yes | added to `.gitignore` |
 
-**Consequence:** the interesting failure is the second row, not the first. A path
-absent from `.gitignore` is committable, so `trust.json` — which exists on this
-machine — is reported as "intentionally not synced" while git would happily stage
-it. `cache/` is the opposite and harmless-but-noisy: ignored by git, absent from
-the report.
+The interesting failure was the second row, not the first: `~/.pi/agent/trust.json`
+exists on this machine, so `sync.sh` told the user it was deliberately not synced
+while git would happily stage it. `doctor.sh`'s secret scan would not have caught
+it — a trust file contains no key-shaped string. It is now impossible to commit,
+and the new `bad` check fails if that regresses.
 
-Nothing is leaking today (neither `trust.json` nor `agent-memory/` is tracked),
-and `doctor.sh`'s secret scan would not catch them because they contain no key
-patterns. Do not "fix" one list without checking the other two, and do not assume
-that a path `sync.sh` reports as skipped is therefore ignored by git.
+**`git check-ignore` is slash-sensitive**, and this is the non-obvious part of
+enforcing the invariant. Measured in this repo:
+
+```
+pi-agent/sessions        not ignored (exit 1)     # .gitignore has pi-agent/sessions/
+pi-agent/sessions/       IGNORED
+```
+
+So `PI_NOT_SYNCED` stores directory entries in **canonical slash-form**
+(`sessions/`, `npm/`, `git/`, `bin/`, `cache/`, `agent-memory/`, `missions/`,
+`profiles/`, `web-search-cache/`) and `doctor.sh` checks the exact string. A
+directory entry that loses its trailing slash makes the check fail, and the
+failure message says so. Do not "fix" that by loosening the check to accept
+either form — the slash is what git keys on.
+
+The check also catches a path that became tracked *despite* a matching rule:
+`git check-ignore` consults the index by default, so a force-added file
+(`git add -f pi-agent/trust.json`) is reported as **not ignored**. That is
+intended — ignored-and-tracked is exactly the state the invariant forbids — and
+it is why the check does not pass `--no-index`.
 
 ---
 
@@ -176,11 +213,10 @@ actively checks the important one. Do not add them:
 | `~/.agents/skills/` | Fetched from upstream via `skills.json`; vendoring makes it go stale. |
 | `~/.pi/agent/models-store.json`, `models.json` | Model catalog cached from `https://pi.dev/api/models/providers/<id>`. |
 | `~/.pi/agent/{missions,profiles,web-search-cache}/`, `~/.pi/agent/run-history.jsonl` | Per-machine runtime state Pi writes: mission state, profiles, search cache, and the run log. Added to the two enforcement lists on 2026-09-13. |
-| `~/.pi/agent/cache/` | Pi's scratch cache. Ignored by git but **missing from `sync.sh`'s skip-list** — see the parity note above. |
-| `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory. Listed here and reported by `sync.sh`, but **not covered by `.gitignore`** — see the parity note above. |
+| `~/.pi/agent/cache/` | Pi's scratch cache. Ignored and reported; see the invariant section above. |
+| `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory. Ignored and reported; see the invariant section above. |
 | `~/.pi/agent/sessions/` | Per-machine conversation history. |
 | `~/.pi/agent/npm/`, `git/`, `bin/` | Installed `node_modules`, cloned repos, platform binaries. |
-| `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory. |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts. |
 
 Package *catalogs* are deliberately not stored — only the package **specs**
