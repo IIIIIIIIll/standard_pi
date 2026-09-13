@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# Secrets — never commit these
+# ---------------------------------------------------------------------------
+pi-agent/auth.json
+agent/auth.json
+**/auth.json
+!.keep
+
+# ---------------------------------------------------------------------------
+# Machine-local Pi state (rebuilt automatically on each machine)
+# ---------------------------------------------------------------------------
+pi-agent/sessions/
+pi-agent/npm/
+pi-agent/git/
+pi-agent/bin/
+pi-agent/cache/
+pi-agent/*.log
+pi-agent/pi-debug.log
+pi-agent/*.bak
+pi-agent/*.bak-*
+pi-agent/settings.json.bak-*
+
+# ---------------------------------------------------------------------------
+# Editors / OS noise
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/

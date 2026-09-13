@@ -1,0 +1,11 @@
+{
+  "packages": [
+    "git:github.com/NVlabs/SoL-Pi",
+    "npm:@oscarfalero/pi-opencode-go@0.1.1"
+  ],
+  "lastChangelogVersion": "0.84.2",
+  "theme": "dark",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "deepseek-v4.1-flash",
+  "defaultThinkingLevel": "high"
+}
