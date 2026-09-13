@@ -71,3 +71,63 @@ different Pi installation from a bun cache. That signature — `This operation w
 aborted` under `pi -p` with a large context — is the defect
 `09-13-early-compaction` is documenting, so the abort had a real cause behind the
 prompt error. The retry constrained the child to the repo explicitly and succeeded.
+
+---
+
+# Second round — re-check after the fix
+
+`trellis-check` run `298b3835`, reviewing commit `f7718aa`.
+
+**Verdict: the fix is correct.** The three-way role split is right; the early
+return precedes every writer and deleter of `TRELLIS_CONTEXT_ID`; `publish()` no
+longer retracts a value it did not set; and the M6 type guard was cleared — the
+suspected regression was not present.
+
+The checker escalated past model self-report to a **mechanical** probe (a temporary
+extension loaded with `-e` that reads `ctx.getSystemPrompt()`). That decision
+mattered twice:
+
+- **It cleared M6 honestly.** `systemPrompt` is a string on `before_agent_start`
+  (`typeofSP: "string"`, `spLen: 15368`), so the guard never trips and the child
+  adapter note is present verbatim in a child's assembled prompt.
+- **It exposed a blocker a model-based probe had hidden.** For this task's own
+  pointer the model answered `NONE` — while the mechanical probe showed the
+  guidance really *was* absent, for a different reason than suspected.
+
+## B2 — blocker for AC5 (fixed)
+
+The guidance's idempotency guard tested the **bare opening tag**:
+
+```ts
+if (cur.includes("<trellis-pi-dispatch>")) return undefined;
+```
+
+That literal also occurs in ordinary prose reaching the same assembled prompt —
+`design.md` and `verification-evidence.md` both quote it — so the guard matched on
+*documentation* and suppressed the block entirely. A/B, active task only:
+
+| pointer targets | prompt len | guidance present |
+|---|---|---|
+| this task (docs quote the tag) | 132 207 | **false** |
+| a task whose docs do not | 113 170 | true |
+
+Pre-existing rather than introduced by `f7718aa`, and not the M6 guard. It became
+live because **this task's own documentation** added the literal tag: at `d7f0f3e`
+`design.md` had none, which is why T4's model-based arm appeared to pass at the
+time. The child-note guard had the identical shape and was one doc mention from the
+same failure.
+
+**Fix:** both guards now test the whole constant
+(`cur.includes(PARENT_DISPATCH_GUIDANCE)` / `cur.includes(CHILD_ADAPTER_NOTE)`),
+with a comment recording why the bare tag is unsafe. **Verified mechanically
+(T12):** `END len=132507 bareTag=true guidance=true`.
+
+## Also carried back
+
+- `doctor.sh` exited 1 during the round on `settings.json has drifted from the
+  repo`. Unrelated to the reviewed commit and not reproducible now:
+  `render-settings.mjs --check` reports `ok`, and the live/core diff is only the
+  optional bundle's package and keys plus the runtime-owned `lastChangelogVersion`.
+  Recorded as an observation, not a defect.
+- An unreachable branch (`if (!normalized)`) was confirmed copied verbatim from the
+  generated `contextKey`; kept for upstream parity and now commented as such.

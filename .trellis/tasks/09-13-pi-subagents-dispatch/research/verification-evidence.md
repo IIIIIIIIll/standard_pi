@@ -60,6 +60,14 @@ unfounded self-correction, since the block existed only during the arm where the
 pointer was present. Self-report about one's own system prompt is not evidence;
 the byte-exact quote plus an independent control is.
 
+**Superseded by T12 — do not rely on this arm.** A later mechanical probe showed
+the model answering `NONE` for a block that was demonstrably present in the
+assembled prompt, so a model's report about its own system prompt is not evidence
+in *either* direction. The positive arm here was probably genuine when it ran — at
+`d7f0f3e` `design.md` did not yet contain the literal `<trellis-pi-dispatch>` tag,
+which a later docs edit introduced — but that is exactly why it could not detect
+the defect that edit caused.
+
 ## T5 — P0: activate a task and dispatch in the same turn (AC1)
 
 Precondition verified: zero pointers for the pinned parent id, so nothing was
@@ -169,6 +177,27 @@ which is what proves the variable survived.
 Regression checks in the same pass: a normal pi-subagents child still resolves via
 its own pointer (exit 0, pointer removed on shutdown), and R10 still holds
 (`NOT AVAILABLE`, run count 21 → 21).
+
+## T12 — AC5 verified mechanically (supersedes the T4 arm)
+
+A probe extension loaded with `-e` registered `before_agent_start` and `agent_end`
+handlers and appended whatever `ctx.getSystemPrompt()` returned — the final
+assembled prompt — to a file. The session's runtime pointer targeted **this** task,
+whose injected docs contain the bare opening tag: the collision case.
+
+```
+BEFORE len=17509  bareTag=false guidance=false
+END    len=132507 bareTag=true  guidance=true
+```
+
+`guidance=true` is the fix. The idempotency guard now tests the whole constant, so
+the bare tag appearing in `design.md` prose no longer suppresses the block. Before
+the fix the same measurement was `bareTag=true, guidance=false` — the block was
+missing precisely for the session that most needed it.
+
+Method note: this escalation was necessary because the model-based arm reported
+`NONE` for a prompt that provably contained the text. Read the assembled prompt; do
+not ask the model what it was given.
 
 ## Two things the ACs got wrong, found by running them
 

@@ -108,9 +108,14 @@ run in a later turn passes whether or not that case works.
       its system prompt contains the dispatch-adapter note. Evidence T7 (and the
       earlier role probe that read `prd.md` from the dispatch line alone).
 - [x] **AC5** The parent-role system prompt contains the bridge's constant
-      dispatch guidance; no tracked document presents `trellis_subagent` as the
-      Pi dispatch path; `design.md` records the advisory choice and the blocking
-      fallback. Evidence T4 (positive arm).
+      dispatch guidance. Verified **mechanically** in T12: a probe extension reads
+      the final assembled prompt and reports the guidance present, for a session
+      whose injected task docs also contain the bare opening tag. The earlier
+      model-self-report arm (T4) is no longer treated as evidence — a later check
+      round showed the model reporting `NONE` for a block proven present — and it
+      had masked a real defect: the idempotency guard matched the bare tag, so
+      this task's own docs suppressed the guidance. No tracked document presents
+      `trellis_subagent` as the Pi dispatch path.
 - [x] **AC6** With no active Trellis task: nothing published, no pointer written,
       and no guidance injected. Evidence T3 and T4 (control arm). **Amended by
       R10:** the bridge does still mutate the active tool set in that state, since

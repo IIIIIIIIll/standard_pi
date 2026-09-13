@@ -146,6 +146,9 @@ function contextKey(ctx?: PiContext): string | null {
     str(process.env.PI_SESSIONID);
   if (sessionId) {
     const normalized = sessionId.replace(/[^A-Za-z0-9._-]+/g, "_");
+    // Unreachable in practice: str() guarantees a non-empty id, and replacing at
+    // least one invalid character always leaves a non-empty result. Kept verbatim
+    // for parity with the generated copy, which this function must track.
     if (!normalized) return `pi_${hash(sessionId)}`;
     return `pi_${normalized}${normalized === sessionId ? "" : `_${hash(sessionId)}`}`;
   }
@@ -362,7 +365,10 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
       if (!written) return undefined;
       const cur = (event as PiEvent)?.systemPrompt;
       if (typeof cur !== "string") return undefined;
-      if (cur.includes("<trellis-pi-dispatch-adapter>")) return undefined;
+      // Idempotency test on the WHOLE constant, never on the bare tag: the tag
+      // also occurs in ordinary prose that reaches this prompt (task specs and
+      // research notes quote it), which would suppress the note entirely.
+      if (cur.includes(CHILD_ADAPTER_NOTE)) return undefined;
       return { systemPrompt: [cur, CHILD_ADAPTER_NOTE].join("\n\n") };
     });
 
@@ -416,7 +422,11 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
     if (!process.env.TRELLIS_CONTEXT_ID) return undefined;
     const cur = (event as PiEvent)?.systemPrompt;
     if (typeof cur !== "string") return undefined;
-    if (cur.includes("<trellis-pi-dispatch>")) return undefined;
+    // Whole-constant test only. The bare opening tag also appears in ordinary
+    // prose that lands in this same assembled prompt — this task's own design.md
+    // and research notes quote it — so matching the tag suppressed the guidance
+    // entirely for the task that most needed it.
+    if (cur.includes(PARENT_DISPATCH_GUIDANCE)) return undefined;
     return { systemPrompt: [cur, PARENT_DISPATCH_GUIDANCE].join("\n\n") };
   });
 }
