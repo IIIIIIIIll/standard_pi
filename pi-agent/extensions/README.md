@@ -54,7 +54,8 @@ The committed policy is **permissive on purpose**:
     "*": "allow",
     "path": { "*.env": "deny", "*.env.*": "deny", "*.env.example": "allow" },
     "bash": { "rm -rf *": "deny" },
-    "external_directory": "ask"
+    "external_directory": { "*": "ask", "/tmp/*": "allow" },
+    "external_directory_read": { "*": "allow" }
   }
 }
 ```
@@ -91,25 +92,52 @@ Four layers compose with **most-restrictive-wins**: `path` (cross-cutting) →
 referenced path and its symlink-resolved form, so a deny can't be evaded through
 a symlink alias.
 
-### Tuning the remaining prompts
+### The outside-CWD boundary
 
-`external_directory: "ask"` is the one rule that still prompts, and it fires for
-anything outside the working directory — including Pi's own infrastructure, which
-the agent touches constantly. If it gets noisy, allow reads outside CWD while
-still gating writes (precedence keeps `path` denials on top):
+`external_directory` is the only surface still under policy, and it is split by
+direction rather than left as a single `ask`:
 
 ```json
 {
   "permission": {
-    "external_directory": { "*": "ask" },
+    "external_directory": { "*": "ask", "/tmp/*": "allow" },
     "external_directory_read": { "*": "allow" }
   }
 }
 ```
 
-Or name specific directories to auto-allow for reads via `piInfrastructureReadPaths`.
-Note that a broad read allowance is *more* permissive than the extension's
-conservative default — but never more permissive than stock Pi, which gates nothing.
+Reads outside the working directory no longer prompt: the boundary gate is
+answered per direction, and a proven read clears it. The agent reads other
+checkouts, caches, and build output constantly, and Pi's own infrastructure
+already sits outside the tree — a CWD-boundary prompt on a read is almost never
+the decision the user wants to be asked. Writes still `ask`, with one exception:
+`/tmp`, so scratch files live where they belong instead of being parked inside
+the repo to dodge the gate.
+
+A path whose direction cannot be proven — an opaque command's argument, say —
+still consults both directions and so still asks, which is the extension's
+fail-closed base case. Nothing here can make an unprovable access silent.
+
+Two details make this compose rather than conflict:
+
+- **Bare `external_directory` is sugar.** It expands into
+  `external_directory_read` and `external_directory_write` with its entries
+  placed first, so the explicit `external_directory_read` has the final say on
+  reads while the sugar map alone decides writes. Collapsing that directional
+  key back into a string would put writes behind one undifferentiated `ask`.
+- **`/tmp/*`, not a bare `/tmp`.** A trailing `*` is greedy and crosses
+  directory boundaries, while a bare directory pattern matches only the
+  directory entry itself — which is not the path a tool call carries. The
+  single entry is all macOS needs too: `/tmp` resolves to `/private/tmp`, and
+  patterns match both the path and its symlink-resolved form.
+
+Nothing here loosens the `path` layer — it is cross-cutting and
+most-restrictive-wins, so `*.env` reads and `rm -rf` are denied wherever they
+happen.
+
+The extension's own `piInfrastructureReadPaths` auto-discovery is unchanged and
+still applies; name extra directories there if a future read needs to be
+recognized as infrastructure rather than merely external.
 
 ### Logs
 

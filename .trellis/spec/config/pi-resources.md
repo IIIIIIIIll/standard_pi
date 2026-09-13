@@ -166,7 +166,8 @@ Facts a contributor must not break:
     "*": "allow",
     "path": { "*.env": "deny", "*.env.*": "deny", "*.env.example": "allow" },
     "bash": { "rm -rf *": "deny" },
-    "external_directory": "ask"
+    "external_directory": { "*": "ask", "/tmp/*": "allow" },
+    "external_directory_read": { "*": "allow" }
   }
 }
 ```
@@ -192,12 +193,24 @@ Facts that must not be forgotten when editing this file:
   `allow`.
 - Patterns match both the referenced path and its symlink-resolved form, so a
   deny cannot be evaded through a symlink alias.
-- `"external_directory": "ask"` is the one remaining prompt. To quiet it without
-  weakening `path`, the documented tuning is `external_directory` → `{ "*": "ask" }`
-  plus `external_directory_read` → `{ "*": "allow" }`, or a specific
-  `piInfrastructureReadPaths` allowlist. Any broad read allowance is more
-  permissive than the extension's default, though never more permissive than
-  stock Pi.
+- **The outside-CWD boundary is split by direction.** Reads are open
+  (`external_directory_read` → `{ "*": "allow" }`); writes still `ask`, with
+  `/tmp` allowed so scratch files need not be parked inside the repo to dodge
+  the gate. This is why `external_directory` is a map, not the string `"ask"`.
+- **Bare `external_directory` is sugar**, expanding into `external_directory_read`
+  and `external_directory_write` with its entries placed first. The explicit
+  `external_directory_read` therefore has the final say on reads, and the sugar
+  map alone decides writes. Do not collapse that directional key back into a
+  string, and do not add a parallel `path_read` allow — reads are already
+  handled at this layer.
+- **`/tmp/*`, never a bare `/tmp`.** A trailing `*` is greedy and crosses
+  directory boundaries; a bare directory pattern matches only the directory
+  entry itself, which is not the path a tool call carries. One entry covers
+  macOS too, where `/tmp` resolves to `/private/tmp`: patterns match both the
+  path and its symlink-resolved form.
+- **Open reads do not touch the `deny` floor.** `path` is the cross-cutting
+  layer and wins over any `external_directory` allow, so `*.env` stays blocked
+  and `rm -rf *` stays blocked under `/tmp` exactly as elsewhere.
 - `extensions/pi-permission-system/logs/` is gitignored **by design**: the review
   log records bash command strings unredacted. Never commit it, and do not paste
   it into a spec or issue without redacting.
