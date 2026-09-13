@@ -18,6 +18,9 @@ pi-agent/models.json
 
 pi-agent/sessions/
 pi-agent/npm/
+# Runtime logs written by extensions into their own directory (e.g. the
+# permission system's review stream) — machine-local, never committed.
+pi-agent/extensions/*/logs/
 pi-agent/git/
 pi-agent/bin/
 pi-agent/cache/

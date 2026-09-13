@@ -86,8 +86,15 @@ settings.core.json  +  enabled optional manifests  ->  ~/.pi/agent/settings.json
 
 ### Always-on — `settings.core.json`
 
-Anything under `packages` is installed on every machine. Currently
-`npm:pi-subagents` and `npm:pi-web-access`.
+Anything under `packages` is installed on every machine. Currently:
+
+| Package | What it adds |
+|---------|--------------|
+| `npm:pi-subagents` | Sub-agent delegation, parallel review, scripted workflows |
+| `npm:pi-web-access` | `web_search`, `fetch_content`, and source verification tools |
+| `npm:@gotgenes/pi-permission-system` | Allow/ask/deny policy for tools; policy lives at [`extensions/pi-permission-system/config.json`](pi-agent/extensions/README.md#permission-policy) |
+| `npm:@juicesharp/rpiv-ask-user-question` | Structured questionnaire the model can put to you instead of guessing |
+| `npm:@juicesharp/rpiv-todo` | Model-facing todo list as a live overlay surviving `/reload` and compaction |
 
 ### Optional — `optional/<name>/`
 
