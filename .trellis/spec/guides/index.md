@@ -21,12 +21,23 @@ These guides help you **ask the right questions before coding**.
 
 | Guide | Purpose | When to Use |
 |-------|---------|-------------|
+| [Change Propagation Guide](./change-propagation-guide.md) | Find every site that holds a fact before editing one of them | **Whenever you change a constant, list, path, or name** — this repo has no test suite |
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
 
 ---
 
 ## Quick Reference: Thinking Triggers
+
+### When to Think About Change Propagation
+
+- [ ] You are about to edit a bash array, a path, a package name, or a directory list
+- [ ] The value appears in more than one file (`grep` first — see the guide)
+- [ ] You are changing something a user can see, so `README.md` may also describe it
+- [ ] You are adding a resource directory, a plugin, or a skill
+- [ ] You are touching `.gitignore`, the permission policy, or a `PI_DIRS` array
+
+→ Read [Change Propagation Guide](./change-propagation-guide.md)
 
 ### When to Think About Cross-Layer Issues
 

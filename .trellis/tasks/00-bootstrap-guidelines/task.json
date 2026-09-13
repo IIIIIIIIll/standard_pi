@@ -21,9 +21,10 @@
   "children": [],
   "parent": null,
   "relatedFiles": [
-    ".trellis/spec/backend/",
-    ".trellis/spec/frontend/"
+    ".trellis/spec/scripts/",
+    ".trellis/spec/config/",
+    ".trellis/spec/guides/change-propagation-guide.md"
   ],
-  "notes": "First-time setup task created by trellis init (fullstack project)",
+  "notes": "First-time setup task created by trellis init (fullstack project). Reshaped during bootstrap: the repo is a Pi harness config store (bash + Node ESM + JSON), so the backend/frontend template layers were replaced by scripts/ and config/.",
   "meta": {}
 }

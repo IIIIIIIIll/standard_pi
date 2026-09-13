@@ -21,13 +21,94 @@ the rest conversationally.
 
 ## Status (update the checkboxes as you complete each item)
 
-- [ ] Fill backend guidelines
-- [ ] Fill frontend guidelines
-- [ ] Add code examples
+- [x] Fill backend guidelines — **not applicable**: this repo has no backend layer. The `backend/` template directory was deleted. See Completion Record.
+- [x] Fill frontend guidelines — **not applicable**: this repo has no frontend layer. The `frontend/` template directory was deleted. See Completion Record.
+- [x] Add code examples — every guideline file cites real file paths and real snippets from `setup.sh`, `scripts/*.sh`, `scripts/*.mjs`, and the tracked JSON.
+
+---
+
+## Completion Record (2026-09-13, yuanhai.tan)
+
+### Reshape decision
+
+The template's `backend/` + `frontend/` split does not describe this project.
+`my_pi_setup` is a portable Pi harness config store: four bash scripts, three
+dependency-free Node ESM helpers, tracked JSON, and Markdown. Both template
+directories were deleted and replaced with layers matching the real code.
+
+### Final spec tree
+
+```
+.trellis/spec/
+├── index.md                        project overview, pre-dev checklist, quality check
+├── scripts/
+│   ├── index.md                    layer entry, checklist, quality check
+│   ├── shell-guidelines.md         setup.sh + scripts/*.sh
+│   └── node-guidelines.md          scripts/*.mjs
+├── config/
+│   ├── index.md                    layer entry, the four surfaces
+│   ├── layout-and-surfaces.md      tracked | symlinked | generated | ignored + decision tree
+│   ├── optional-bundles.md         optional/<name>/manifest.json contract
+│   └── pi-resources.md             settings.core.json, skills.json, extensions/, permissions
+└── guides/
+    ├── index.md
+    ├── change-propagation-guide.md NEW — the load-bearing guide for this repo
+    ├── code-reuse-thinking-guide.md
+    └── cross-layer-thinking-guide.md
+```
+
+`config, scripts` are now the auto-detected spec layers
+(`get_context.py --mode packages`).
+
+### Existing convention docs found
+
+- `README.md` — the store's user-facing contract; its Layout table, plugin
+  table, and "not stored here" table were used as evidence for
+  `config/layout-and-surfaces.md`.
+- `pi-agent/extensions/README.md` — the deep reference for the permission
+  policy; `config/pi-resources.md` records only the rules a contributor must not
+  break and links back to it.
+- `AGENTS.md` — Trellis-managed block only; no project conventions of its own.
+- No `CLAUDE.md`, `.cursorrules`, `CONTRIBUTING.md`, or `.editorconfig`.
+
+### Verification performed
+
+```
+bash -n setup.sh scripts/*.sh            OK
+node --check scripts/*.mjs               OK
+render-settings.mjs --check              no drift (exit 0)
+install-skills.mjs --check               6/6 installed (exit 0), no network
+./setup.sh --yes --skip-skills --skip-plugins   exit 0, twice, identical output
+grep -rniE "to be filled|TODO: fill" .trellis/spec   no placeholder prose
+internal markdown links                 all resolve
+```
+
+The network steps of `setup.sh` (`install-skills.mjs`, `pi update --extensions`)
+were skipped in the two idempotency runs; both were verified separately via
+`--check`.
+
+### Known issues documented rather than fixed
+
+These are recorded in the specs as current reality, not corrected — this task
+is docs-only:
+
+- `render-settings.mjs` and `.gitignore` both reference `scripts/install.sh`,
+  which does not exist (the real command is `./setup.sh`).
+- `PI_DIRS` / `PI_FILES` are duplicated across `setup.sh`, `sync.sh`, and
+  `doctor.sh`; the resource-directory list appears in seven places overall.
+- `sync.sh`'s "not synced" skip-list and `.gitignore` have fallen behind Pi,
+  which now also writes `missions/`, `profiles/`, and `run-history.jsonl`.
+- `shellcheck` is not installed, so the `# shellcheck` directives in the scripts
+  are documentation rather than tooling.
 
 ---
 
 ## Spec files to populate
+
+> **Superseded.** This table is the `trellis init` template target list, kept as a
+> record of what was asked. The actual final tree is in the Completion Record at
+> the top of this file: `backend/` and `frontend/` were deleted because this repo
+> has neither layer.
 
 
 ### Backend guidelines
