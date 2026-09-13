@@ -16,8 +16,13 @@ PI_SRC="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 PI_DST="$REPO_DIR/pi-agent"
 STATE="$PI_SRC/.pi-setup-state.json"
 
-PI_DIRS=(themes prompts tools skills agents extensions)
-PI_FILES=(AGENTS.md)
+LIB="$REPO_DIR/scripts/lib.sh"
+if [ ! -f "$LIB" ]; then
+  echo "missing $LIB — it is part of this repo (re-clone or restore it)" >&2
+  exit 1
+fi
+# shellcheck source=scripts/lib.sh
+. "$LIB"
 
 say() { printf '  %-8s %s\n' "$1" "$2"; }
 

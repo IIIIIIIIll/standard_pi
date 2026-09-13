@@ -10,9 +10,6 @@ PI_DST="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 STATE="$PI_DST/.pi-setup-state.json"
 SKILLS_DST="${AGENTS_SKILLS_DIR:-$HOME/.agents/skills}"
 
-PI_DIRS=(themes prompts tools skills agents extensions)
-PI_FILES=(AGENTS.md)
-
 problems=0
 notes=0
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$1"; }
@@ -32,6 +29,14 @@ if [ -d "$REPO_DIR/.git" ]; then
 else
   bad "not a git repository"
 fi
+
+LIB="$REPO_DIR/scripts/lib.sh"
+if [ ! -f "$LIB" ]; then
+  bad "scripts/lib.sh missing (it defines PI_DIRS/PI_FILES)"
+  exit 1
+fi
+# shellcheck source=scripts/lib.sh
+. "$LIB"
 
 echo "==> Settings  ($PI_DST/settings.json)"
 if [ -L "$PI_DST/settings.json" ]; then
@@ -79,7 +84,7 @@ for name in "${PI_FILES[@]}" "${PI_DIRS[@]}"; do
     warn "$name not linked (run ./setup.sh)"
   fi
 done
-[ "$found" = 1 ] || printf '  \033[2m·\033[0m none in repo yet (AGENTS.md, themes/, prompts/, tools/, skills/, agents/)\n'
+[ "$found" = 1 ] || printf '  \033[2m·\033[0m none in repo yet (AGENTS.md, themes/, prompts/, tools/, skills/, agents/, extensions/)\n'
 
 echo "==> Credentials"
 if [ -f "$PI_DST/auth.json" ]; then

@@ -29,11 +29,12 @@
 | `.pi/`, `.agents/` | — | **Ignored** (Trellis-generated adapters) | `trellis` CLI |
 
 Note that `PI_DIRS` lists six resource directories but only `extensions/` exists
-in the repo today. The list is a **whitelist of allowed symlinked resource
-directories**, not an inventory — `link()` silently returns when the source does
-not exist, so `themes/`, `prompts/`, `tools/`, `skills/`, and `agents/` will be
-linked automatically the moment they appear. Creating one of them by hand is a
-normal, supported way to add a resource; adding a seventh name is not.
+in the repo today. The list is defined once, in `scripts/lib.sh`, and is a
+**whitelist of allowed symlinked resource directories**, not an inventory —
+`link()` silently returns when the source does not exist, so `themes/`,
+`prompts/`, `tools/`, `skills/`, and `agents/` will be linked automatically the
+moment they appear. Creating one of them by hand is a normal, supported way to add
+a resource; adding a seventh name to `scripts/lib.sh` is not.
 
 The **Ignored** rows above are illustrative, not exhaustive — Pi adds runtime
 state between releases (`missions/`, `profiles/`, `web-search-cache/`, and
@@ -197,7 +198,8 @@ Package *catalogs* are deliberately not stored — only the package **specs**
   forward; pinning silently disables updates for that spec.
 - **Do not put a setting in both `settings.core.json` and a manifest.** The next
   `sync.sh` deletes it from core.
-- **Do not add a seventh resource directory to `PI_DIRS` without wiring it into
-  `.gitignore` and the README layout table.**
+- **Do not add a seventh resource directory to `PI_DIRS` in `scripts/lib.sh`
+  without wiring it into the README layout table (and the other hand-maintained
+  sites listed in [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md)).**
 - **Do not add JSONC.** Every JSON file here must parse with a strict parser —
   see the permission-policy consequence in [pi-resources.md](./pi-resources.md).

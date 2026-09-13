@@ -50,7 +50,8 @@ generated and will be overwritten on the next render), and committing
 - [ ] If it is a secret, it goes in `~/.pi/agent/auth.json` only. `doctor.sh`
       fails if that file is tracked.
 - [ ] If you are adding a directory Pi should discover, it must be added to
-      `PI_DIRS` **and** to `.gitignore`/`README.md` as appropriate — see
+      `PI_DIRS` in `scripts/lib.sh` **and** to `.gitignore`/`README.md` as
+      appropriate — see
       [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md).
 - [ ] `.env` handling is deny-by-default in the permission policy. Do not add a
       rule that allows reading `*.env` to make something work.

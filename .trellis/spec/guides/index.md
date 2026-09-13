@@ -35,7 +35,7 @@ These guides help you **ask the right questions before coding**.
 - [ ] The value appears in more than one file (`grep` first — see the guide)
 - [ ] You are changing something a user can see, so `README.md` may also describe it
 - [ ] You are adding a resource directory, a plugin, or a skill
-- [ ] You are touching `.gitignore`, the permission policy, or a `PI_DIRS` array
+- [ ] You are touching `.gitignore`, the permission policy, or the `PI_DIRS` list
 
 → Read [Change Propagation Guide](./change-propagation-guide.md)
 

@@ -18,20 +18,25 @@ it cannot catch "you updated the array in two scripts and forgot the third" if
 the third one's check happens to pass anyway.
 
 Real example, measured on this repo — the set of symlinked resource directories
-(`themes prompts tools skills agents extensions`) appears in **seven places**:
+(`themes prompts tools skills agents extensions`) now has **one definition** and
+**four hand-maintained sites** (five lines — the `README.md` overview is two of
+them):
 
 | # | Location | Form |
 |---|----------|------|
+| — | `scripts/lib.sh:16-18` | **the single definition** — `readonly PI_DIRS=(…)` / `PI_FILES=(…)`, sourced by all three scripts |
 | 1 | `setup.sh:8` | header comment (`--help` text) |
-| 2 | `setup.sh:31` | `PI_DIRS=(…)` |
-| 3 | `scripts/sync.sh:19` | `PI_DIRS=(…)` |
-| 4 | `scripts/doctor.sh:13` | `PI_DIRS=(…)` |
-| 5 | `scripts/doctor.sh:82` | inline message listing the names |
-| 6 | `README.md:71` | Layout table: `pi-agent/{themes,prompts,tools,skills,agents,extensions}/` |
-| 7 | `README.md:134` | Day-to-day prose list |
+| 2 | `scripts/doctor.sh:87` | inline "none in repo yet" message listing the names |
+| 3 | `README.md:16,71` | overview: numbered setup step + Layout table |
+| 4 | `README.md:134` | Day-to-day prose list |
 
-Places 1–5 are behavioural; a miss there is a bug. Places 6–7 are documentation;
-a miss there is a stale README. Both matter.
+The three scripts carry no copy of their own: `setup.sh`, `scripts/sync.sh`, and
+`scripts/doctor.sh` each source `scripts/lib.sh`, and the arrays are `readonly`,
+so a re-declaration in a consumer is rejected instead of diverging.
+
+Sites 1–2 are behavioural (they are printed output); sites 3–4 are
+documentation. A miss at any of them is a stale label or README rather than a
+broken symlink, which is why this guide still exists.
 
 ---
 
@@ -61,8 +66,8 @@ grep -n "^| " README.md                                 # the tables
 
 | Fact | Sites that must change together | Severity if missed |
 |------|--------------------------------|--------------------|
-| Symlinked resource dirs (`PI_DIRS`) | `setup.sh` (array + header), `sync.sh`, `doctor.sh` (array + message), `README.md` (table + prose) | a new dir is silently never linked in one direction, or `doctor.sh` reports a false problem |
-| Symlinked files (`PI_FILES`) | same three scripts | same |
+| Symlinked resource dirs (`PI_DIRS`) | `scripts/lib.sh` (the single definition), `setup.sh` (header comment), `doctor.sh` (inline message), `README.md` (setup step, Layout table, Day-to-day prose) | a new dir is never linked in one direction, or `doctor.sh` reports a false problem |
+| Symlinked files (`PI_FILES`) | `scripts/lib.sh` (the single definition), plus the same non-code sites whenever the file name is listed | same |
 | "Not stored here" paths | `.gitignore`, `README.md` table, `sync.sh` skip-list | a runtime path becomes commit-able, or the report silently omits it |
 | A user-facing string (an error/help message) | the script that prints it, `.gitignore` comments, `README.md` prose, **and every spec file that quotes it verbatim** | a user follows an instruction that cannot work |
 | The name of a script or path | its own file, every caller, every message naming it, `.gitignore` comments, `README.md` | stale instructions, as happened when `install.sh` was folded into `setup.sh` |
@@ -88,18 +93,21 @@ Say Pi gains a `themes-plus/` directory that should be versioned here. The full
 change set is:
 
 1. `mkdir pi-agent/themes-plus/` and put the content in it.
-2. `setup.sh` — add to `PI_DIRS`, **and** to the header comment on line 8 (the
-   `--help` text is generated from it).
-3. `scripts/sync.sh` — add to `PI_DIRS`.
-4. `scripts/doctor.sh` — add to `PI_DIRS`, **and** to the "none in repo yet"
-   message on line 82.
-5. `README.md` — the Layout table row and the Day-to-day prose list.
-6. `.gitignore` — only if Pi writes runtime state into it.
-7. `./setup.sh` then `./scripts/doctor.sh` — confirm the new dir links and that
+2. `scripts/lib.sh` — add to `PI_DIRS`. This is the **only** array edit;
+   `setup.sh`, `scripts/sync.sh`, and `scripts/doctor.sh` all pick it up.
+3. `setup.sh` — the header comment on line 8 (the `--help` text is generated
+   from it).
+4. `scripts/doctor.sh` — the "none in repo yet" message on line 87.
+5. `README.md` — the overview (numbered setup step + Layout table).
+6. `README.md` — the Day-to-day prose list.
+7. `.gitignore` — only if Pi writes runtime state into it.
+8. `./setup.sh` then `./scripts/doctor.sh` — confirm the new dir links and that
    the round trip `setup.sh → sync.sh` reports `same`.
 
-Seven edits for one directory. That is the shape of a change in this repo; treat
-it as normal rather than as a sign something is wrong.
+Five edit steps for one directory — the single array definition plus the four
+hand-maintained sites above. Site 3 is two separate `README.md` lines (`16` and
+`71`), so the line changes number six. That is the shape of a change in this
+repo; treat it as normal rather than as a sign something is wrong.
 
 ---
 
@@ -133,23 +141,34 @@ Never treat a non-zero exit as noise.
 
 ---
 
-## If You Want To Fix The Duplication
+## Where The Lists Live Now
 
-The honest structural fix is one shared definition that `setup.sh`, `sync.sh`,
-and `doctor.sh` source, e.g. `scripts/lib.sh` holding `PI_DIRS`/`PI_FILES`.
-Constraints if you attempt it:
+The duplication was removed. `scripts/lib.sh` is the single definition, and
+`setup.sh`, `scripts/sync.sh`, and `scripts/doctor.sh` source it. Three
+conventions make that safe:
 
-- `setup.sh` is the bootstrap entry point and must keep working when the repo has
-  just been cloned. Sourcing a file from `scripts/` adds a dependency but is
-  acceptable — the file ships in the same repo.
-- `doctor.sh` must not gain `set -e`, and must keep working when the sourced file
-  is missing (report it as a `bad`, do not crash).
-- Deduplicating bash cannot help `README.md` or `.gitignore`, which are the other
-  two sites — so the guide remains necessary even after the refactor.
+- **The arrays are `readonly` and `lib.sh` has a double-source guard.** A
+  consumer that re-declares `PI_DIRS` cannot change the list: the assignment is
+  rejected (`readonly variable`). `setup.sh` and `sync.sh` run under `set -e`, so
+  the error aborts them with exit `1` before they do anything. `doctor.sh` must
+  keep running after a failed check and has no `set -e`, so it prints the error,
+  keeps the correct list, and still exits `0` (unless the rejected assignment is
+  the script's last command, when bash's exit status is `1`). The *values* cannot
+  diverge; the exit code differs by script, which is documented in
+  [../scripts/shell-guidelines.md](../scripts/shell-guidelines.md).
+- **A missing `lib.sh` is fatal in all three scripts, and names the file.** Do
+  not replace the existence check with a bare `source`: under `set -u` a failed
+  `source` leaves the arrays unset, and the next `"${PI_DIRS[@]}"` aborts with an
+  `unbound variable` instead of naming what is missing. `doctor.sh` reports it
+  with its own `bad` + `exit 1`.
+- **`lib.sh` holds only the two arrays.** Do not move helpers (`say`, `note`, the
+  `node` preflight, `link()`) into it: `setup.sh` is the bootstrap entry point,
+  and the repo's convention is that each script reads standalone.
 
-Until then, **the duplication is real and intentional-ish**: it is cheap to read
-and there is no build step. Do not add a *fourth* copy of a script-local list,
-and do not restructure the scripts as a drive-by while fixing something else.
+Deduplicating bash cannot help the four hand-maintained sites at the top of this
+guide — three are prose and one is a `--help` comment. The guide remains
+necessary; what changed is that a change to a script's *behaviour* now
+propagates itself, and only the labels have to be chased by hand.
 
 ---
 

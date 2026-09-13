@@ -51,7 +51,9 @@ bad()  { printf '  \033[31m✗\033[0m %s\n' "$1"; problems=$((problems + 1)); }
 ```
 
 If you add a check to `doctor.sh`, call `ok`/`warn`/`bad`; never `exit` early and
-never introduce `-e`.
+never introduce `-e`. The one deliberate exception is the missing-`lib.sh` guard
+(below), which reports a `bad` and exits immediately: with the resource lists
+undefined, every later symlink check would be a false problem.
 
 ---
 
@@ -189,8 +191,45 @@ The same `_*` convention is relied on by `render-settings.mjs::listOptionals()`
 and `doctor.sh`, so a new internal directory must start with `_` to be excluded
 everywhere.
 
-**Exception:** `PI_DIRS` / `PI_FILES` are still hard-coded in three scripts.
-That is known duplication — see [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md).
+`PI_DIRS` / `PI_FILES` are the one deliberate exception to discovery, because the
+set is a *whitelist* rather than an inventory: the resource directories need not
+exist yet, and `link()` silently skips a source that is absent. They have a
+single definition in `scripts/lib.sh`, which every script that touches resource
+paths must source:
+
+```bash
+LIB="$REPO_DIR/scripts/lib.sh"
+if [ ! -f "$LIB" ]; then
+  echo "missing $LIB — it is part of this repo (re-clone or restore it)" >&2
+  exit 1
+fi
+# shellcheck source=scripts/lib.sh
+. "$LIB"
+```
+
+Rules that follow:
+
+- **Never re-declare `PI_DIRS` or `PI_FILES` in a consumer.** They are `readonly`,
+  so a second copy is rejected (`PI_DIRS: readonly variable`) instead of silently
+  replacing the list. The *values* therefore cannot diverge, but the failure
+  surface differs. `setup.sh` and `sync.sh` run under `set -e`, so the rejected
+  assignment aborts them with exit `1` before they touch anything. `doctor.sh`
+  deliberately has no `set -e`: on its own line, the rejected assignment prints
+  the error to stderr, bash skips the rest of *that line*, and the script keeps
+  going with the correct list and exits `0` if nothing else is wrong (the
+  realistic case). If the rejected assignment is the script's **last** command,
+  bash's exit status becomes `1` instead. Do not "fix" any of that by adding
+  `-e` or a trap to `doctor.sh` — surviving a failed check is the trade-off for
+  reporting every problem in one pass.
+- **Never `source` `lib.sh` without the existence check above.** Under `set -u` a
+  failed `source` leaves the arrays unset, and the next `"${PI_DIRS[@]}"` aborts
+  with an `unbound variable` instead of naming the missing file. `doctor.sh` uses
+  `bad` + `exit 1` instead of the `echo` + `exit 1` shown here.
+- **Keep `lib.sh` to the two arrays.** `setup.sh` is the bootstrap entry point;
+  do not couple it to more of `scripts/`.
+
+See [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md)
+for the sites that still have to be edited by hand when the list changes.
 
 ---
 

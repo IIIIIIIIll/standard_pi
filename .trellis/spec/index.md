@@ -38,9 +38,11 @@ layers exist here. Do not recreate them.
 
 ## The One Rule To Internalize
 
-**Every fact in this repo is written down in more than one place.** The resource
-directory list, the plugin list, the "what is not stored here" table — all of
-them are repeated across scripts, `README.md`, and `.gitignore`.
+**Every fact in this repo is written down in more than one place.** The plugin
+list and the "what is not stored here" table are repeated across scripts,
+`README.md`, and `.gitignore`. The resource directory list is the exception that
+proves the rule: it has a single definition in `scripts/lib.sh`, but it is still
+*named* in `setup.sh`'s help text, a `doctor.sh` message, and `README.md`.
 
 There is no test suite catching drift. Drift is caught by
 `scripts/doctor.sh`, which is the closest thing to a verifier this project has.

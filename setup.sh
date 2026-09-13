@@ -5,7 +5,7 @@
 # Does everything, and is safe to re-run (that is also how you update):
 #
 #   1. render ~/.pi/agent/settings.json from core + this machine's optionals
-#   2. symlink AGENTS.md and resource dirs (themes/prompts/tools/skills/agents)
+#   2. symlink AGENTS.md and resource dirs (themes/prompts/tools/skills/agents/extensions)
 #   3. seed ~/.pi/agent/auth.json from the template if absent
 #   4. install/refresh skills from their upstream sources (skills.json)
 #   5. refresh Pi plugin packages
@@ -27,9 +27,13 @@ PI_SRC="$REPO_DIR/pi-agent"
 PI_DST="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 STATE="$PI_DST/.pi-setup-state.json"
 
-# Optional resources, symlinked when present in the repo.
-PI_DIRS=(themes prompts tools skills agents extensions)
-PI_FILES=(AGENTS.md)
+LIB="$REPO_DIR/scripts/lib.sh"
+if [ ! -f "$LIB" ]; then
+  echo "missing $LIB — it is part of this repo (re-clone or restore it)" >&2
+  exit 1
+fi
+# shellcheck source=scripts/lib.sh
+. "$LIB"
 
 WITH=()
 EXPLICIT=0
