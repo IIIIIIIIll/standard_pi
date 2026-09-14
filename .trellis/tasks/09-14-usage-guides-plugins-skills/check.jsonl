@@ -1,0 +1,10 @@
+{"file": ".trellis/spec/config/index.md", "reason": "Check that each docs/ entry names its config surface in this vocabulary, and that docs/ is classified as tracked prose rather than a Pi resource."}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "Verify the docs/ surface was added to the file map and decision tree, and that no PI_DIRS/PI_FILES entry was introduced."}
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "Verify the docs/plugins.md entries do not restate this file's per-package mechanics, that the cross-link exists, and that the coverage-check contract is recorded beside the specs it depends on."}
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "Verify the new doctor.sh section uses ok/warn/bad with counters, never exits early, adds no warn on a clean run, uses the 2>&1 temp-file branch, and that any verbatim snippet quoted in a spec still matches the file."}
+{"file": ".trellis/spec/scripts/node-guidelines.md", "reason": "Verify scripts/check-docs.mjs honours the argument, exit-code, output-format, stream, and failure-collection contracts, and adds no dependency."}
+{"file": ".trellis/spec/scripts/index.md", "reason": "Verify the helper registry row and quality-check line were updated for the fourth .mjs helper."}
+{"file": ".trellis/spec/index.md", "reason": "Verify the helper count and any plugin-list sentence were corrected rather than left at three helpers."}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "Verify the plugin-list and installed-skills rows name every site: both JSON inputs, the optional manifests, the README tables, the docs entries, and the pi-resources.md sections."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Check for duplicated sources of truth: the coverage checker must read the JSON inputs rather than hard-code the id list. The docs headings themselves are required by R1, not duplication."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Map the docs -> helper -> doctor.sh -> spec chain and its contracts, then walk the reviewer checklist against it."}

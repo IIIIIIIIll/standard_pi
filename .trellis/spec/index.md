@@ -12,7 +12,7 @@ It is not an application: there is no server, no UI, no database, no test suite.
 The whole product is:
 
 - four bash scripts that render, symlink, sync, and verify harness state
-- three dependency-free Node ESM helpers that do the JSON work
+- four dependency-free Node ESM helpers that do the JSON work
 - JSON config files that Pi reads (`settings.core.json`, `optional/*/manifest.json`, `skills.json`)
 - Markdown that explains the above
 
@@ -43,6 +43,11 @@ list and the "what is not stored here" table are repeated across scripts,
 `README.md`, and `.gitignore`. The resource directory list is the exception that
 proves the rule: it has a single definition in `scripts/lib.sh`, but it is still
 *named* in `setup.sh`'s help text, a `doctor.sh` message, and `README.md`.
+
+The daily-use layer adds one more hand-maintained copy of each list:
+`docs/plugins.md` covers `settings.core.json` `packages`, and `docs/skills.md`
+covers `skills.json`. `scripts/check-docs.mjs` (run by `doctor.sh`) is the only
+thing that checks either.
 
 There is no test suite catching drift. Drift is caught by
 `scripts/doctor.sh`, which is the closest thing to a verifier this project has.

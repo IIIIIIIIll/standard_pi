@@ -11,7 +11,7 @@ This layer owns everything that touches the filesystem. There are two runtimes:
 | Runtime | Files | Role |
 |---------|-------|------|
 | bash | `setup.sh`, `scripts/{optional,sync,doctor}.sh` | Entry points and orchestration |
-| Node ESM | `scripts/{render-settings,sync-settings,install-skills}.mjs` | JSON composition and network/git fetch |
+| Node ESM | `scripts/{render-settings,sync-settings,install-skills,check-docs}.mjs` | JSON composition and network/git fetch, docs coverage check |
 
 The split is deliberate and consistent: **bash decides and reports, Node reads and
 writes JSON.** No bash script parses JSON with `jq` (it is not installed); every
@@ -49,6 +49,10 @@ desc="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[
       environment — do not rely on it, and do not add `# shellcheck` directives
       without also writing the reason in a normal comment).
 - [ ] `node --check scripts/*.mjs` passes for Node helpers.
+- [ ] `node scripts/check-docs.mjs .` exits 0, and with no argument exits 2 —
+      `docs/` still exists and has one entry per shipped package and skill. The
+      contract (heading convention, sources of truth, fail-loud rows) is in
+      [../config/pi-resources.md](../config/pi-resources.md#the-docs-coverage-check).
 - [ ] Re-running the script is a no-op. `./setup.sh && ./setup.sh` and
       `./scripts/sync.sh && ./scripts/sync.sh` must both be stable.
 - [ ] `./scripts/doctor.sh` reports `All good.` (or only informational notes).

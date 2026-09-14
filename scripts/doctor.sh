@@ -239,6 +239,22 @@ else
   warn "no skills.json in repo"
 fi
 
+echo "==> Docs coverage (docs/ against what ships)"
+if ! command -v node >/dev/null 2>&1; then
+  # bad, not warn: this check is the only thing keeping a tracked document from
+  # silently rotting, so a check that cannot run must fail. node is already a hard
+  # dependency of the sections above.
+  bad "node unavailable, cannot check docs/ coverage"
+elif [ ! -d "$REPO_DIR/docs" ]; then
+  bad "docs/ is missing"
+elif node "$REPO_DIR/scripts/check-docs.mjs" "$REPO_DIR" >/tmp/pi-doctor-docs.$$ 2>&1; then
+  ok "$(sed 's/^ *ok *//' /tmp/pi-doctor-docs.$$)"
+else
+  bad "docs/ coverage does not match the shipped set:"
+  sed 's/^/      /' /tmp/pi-doctor-docs.$$
+fi
+rm -f /tmp/pi-doctor-docs.$$
+
 echo
 if [ "$problems" -eq 0 ] && [ "$notes" -eq 0 ]; then
   printf '\033[32mAll good.\033[0m\n'

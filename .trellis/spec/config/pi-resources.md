@@ -46,6 +46,24 @@ Rules:
 
 ### The package inventory
 
+**Ownership: this table is the contributor view;
+[`docs/plugins.md`](../../../docs/plugins.md) is the daily-use view.** They cover
+overlapping material on purpose, and the division is:
+
+- **This file owns** *why* a package is core, and the mechanics of its config:
+  write behaviour, symlink traps, credential warnings, compaction, measured paths.
+  **It wins any disagreement** with `docs/`.
+- **`docs/plugins.md` owns** what it is, when to reach for it, what to type, and a
+  single config line naming the path and its surface.
+- **Exactly two things are deliberately duplicated**: the config location and its
+  surface, and the invocation tokens (e.g. `/lens-map`, `/tps`). Both are required
+  in every `docs/` entry. Nothing else is restated in either direction — when you
+  add a mechanic here, `docs/` links to it rather than repeating it.
+
+Editing either one: keep the split above, and see
+[The `docs/` coverage check](#the-docs-coverage-check) for what the checker
+compares.
+
 | Package | What it adds | Why it is core |
 | --------- | -------------- | ---------------- |
 | `npm:pi-subagents` | Sub-agent delegation, parallel review, scripted workflows | the delegation mechanism itself |
@@ -232,6 +250,62 @@ Rules:
 
 Adding a skill: add an entry under `skills`, then `./setup.sh`, then commit
 `skills.json`. If the skill comes from a new repo, add a `sources` entry too.
+Daily use for these six — when to reach for each, and whether the model may invoke
+it on its own — is [`docs/skills.md`](../../../docs/skills.md); the inventory here
+stays the contributor view.
+
+---
+
+## The `docs/` coverage check
+
+`docs/` answers "when do I reach for this, and what do I type" for the 12
+always-on packages ([`docs/plugins.md`](../../../docs/plugins.md)) and the 6 fetched
+skills ([`docs/skills.md`](../../../docs/skills.md)). Nothing keeps those pages
+current except this check: `scripts/check-docs.mjs`, run by `doctor.sh` as
+`==> Docs coverage`.
+
+It is a **membership** check — both files must cover exactly what the repo ships —
+and it is deliberately not a content check. A flag renamed inside a package that is
+still listed stays invisible; a package added, removed, renamed, or misspelled in
+an entry fails immediately.
+
+| Input | Source of truth | Compared as |
+| ------- | ----------------- | ------------- |
+| Plugin ids | entry headings in `docs/plugins.md` | set-equality with `packages` in `pi-agent/settings.core.json` |
+| Skill ids | entry headings in `docs/skills.md` | set-equality with the `name` of each entry in `skills.json` |
+
+The heading shape is a **parser contract**, not styling, and it is stated in
+`docs/README.md` for the user as well:
+
+- An entry is a heading of three hashes; the **first** backtick-delimited token on
+  that line is the id. Trailing text is allowed. The id is the exact spec string
+  (`npm:pi-lens`, `https://github.com/ayghri/i-have-adhd`) or the exact `skills.json`
+  name.
+- Lines inside fenced code blocks are skipped, so an example heading in a fence is
+  never counted.
+- Pointer sections use two hashes, so the checker does not read them as entries.
+
+Fail-loud rules — seeing nothing is drift too, and an unrunnable check is reported
+rather than skipped:
+
+| Condition | Result |
+| ----------- | -------- |
+| `docs/plugins.md` or `docs/skills.md` missing | `bad` |
+| An existing file yields zero entry headings | `bad` (formatting drift or an emptied file) |
+| `settings.core.json` / `skills.json` unreadable or unparseable | `bad` |
+| A shipped id with no entry, or an entry for something not shipped | `bad`, naming each id |
+| An id documented twice | `bad`, naming the id |
+| `node` unavailable | `bad` — `doctor.sh` cannot run this check at all |
+
+Exit codes follow [`scripts/node-guidelines.md`](../scripts/node-guidelines.md): `0`
+success, `1` any problem above, `2` a missing positional argument. The success line
+(with both counts) goes to **stdout**; each problem goes to **stderr**, one per line.
+`doctor.sh` captures both with `>/tmp/pi-doctor-docs.$$ 2>&1` — drop the `2>&1` and
+the captured file is empty and the ids land unindented on the terminal.
+
+Changing either list therefore has a third site: add or remove the package in
+`settings.core.json`, then update
+[`docs/plugins.md`](../../../docs/plugins.md), or `doctor.sh` fails until you do.
 
 ---
 

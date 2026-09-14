@@ -29,6 +29,7 @@
 | `~/.pi/agent/settings.json.pre-render-<stamp>` | — | **Ignored backup** | `render-settings.mjs` |
 | `<path>.bak-<stamp>` | — | **Ignored backup** | `setup.sh::link()`, `render-settings.mjs` |
 | `.pi/`, `.agents/` | — | **Ignored** (Trellis-generated adapters) | `trellis` CLI |
+| `docs/` | — | **Tracked prose** | — (read directly; never symlinked) |
 
 Note that `PI_DIRS` lists six resource directories but only `extensions/` exists
 in the repo today. The list is defined once, in `scripts/lib.sh`, and is a
@@ -81,8 +82,13 @@ enforces the direction that matters.
    vendor it.
 
 7. **Is it an explanation of any of the above?** → `README.md` for the store as a
-   whole, `optional/<name>/README.md` for a bundle, or this spec tree for
-   contributor-facing conventions.
+   whole, `docs/` for how to *use* what is installed (one entry per plugin, skill,
+   and role agent), `optional/<name>/README.md` for a bundle, or this spec tree for
+   contributor-facing conventions. `docs/` is tracked prose read in place: it is
+   **not** a Pi surface, so it never enters `PI_DIRS`/`PI_FILES` and is never
+   symlinked into `~/.pi/agent`. Membership is checked by
+   `scripts/check-docs.mjs` — see
+   [pi-resources.md](./pi-resources.md#the-docs-coverage-check).
 
 ---
 

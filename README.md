@@ -62,6 +62,9 @@ because there is no snapshot to fall behind.
 Currently installed, all from [`mattpocock/skills`](https://github.com/mattpocock/skills):
 `code-review`, `grill-me`, `grilling`, `improve-codebase-architecture`, `research`, `tdd`.
 
+When to reach for each one, whether the model may invoke it on its own, and how it
+is triggered: [`docs/skills.md`](docs/skills.md).
+
 ---
 
 ## Layout
@@ -75,6 +78,7 @@ Currently installed, all from [`mattpocock/skills`](https://github.com/mattpococ
 | `skills.json` | `~/.agents/skills/` | **Fetched from upstream** by `setup.sh` |
 | `setup.sh` | — | The entry point |
 | `scripts/` | — | Helpers, sync, optional toggles, doctor |
+| `docs/` | — | Tracked prose: how to use what is installed — [plugins](docs/plugins.md), [skills](docs/skills.md), [agents](docs/agents.md). Never linked into `~/.pi/agent`. |
 
 `settings.json` is **generated**, never tracked and never a symlink, because it is
 a per-machine artefact:
@@ -90,6 +94,9 @@ settings.core.json  +  enabled optional manifests  ->  ~/.pi/agent/settings.json
 ### Always-on — `settings.core.json`
 
 Anything under `packages` is installed on every machine. Currently:
+
+When to reach for each one, and what to type: [`docs/plugins.md`](docs/plugins.md).
+The table below is the inventory; that page is the manual.
 
 | Package | What it adds |
 | --------- | -------------- |
@@ -110,6 +117,10 @@ Anything under `packages` is installed on every machine. Currently:
 its own Pi session, so `pi-agent/extensions/trellis-subagents-bridge/` keeps it
 pointed at the session's active task — see
 [extensions/README.md](pi-agent/extensions/README.md#trellis-subagents-bridge).
+
+What each role agent is for, the prompt form that actually works, and how to drive
+the plugins above day to day: [`docs/`](docs/README.md) —
+[plugins](docs/plugins.md), [skills](docs/skills.md), [agents](docs/agents.md).
 
 Compaction is split between the last two: `auto-compact` decides **when**
 (percentage of context) and `pi-vcc` decides **how** (algorithmic extraction, no
@@ -240,8 +251,9 @@ git add -A && git commit -m "…" && git push
 | `setup.sh` | The entry point: everything above, idempotent. |
 | `scripts/optional.sh list \| enable \| disable \| scaffold` | Per-machine optional plugin bundles. |
 | `scripts/install-skills.mjs` | Fetches skills from `skills.json` sources (`--check` verifies without network). |
+| `scripts/check-docs.mjs` | Compares the entry ids in `docs/plugins.md` and `docs/skills.md` against `settings.core.json` and `skills.json`; run by `doctor.sh`, and it fails loudly rather than skipping when an input is unreadable. |
 | `scripts/sync.sh` | Folds live settings into `settings.core.json`, stripping optional contributions. |
-| `scripts/doctor.sh` | Checks symlinks, render drift, skills, `auth.json` permissions, git cleanliness, and scans tracked files for secrets. |
+| `scripts/doctor.sh` | Checks symlinks, render drift, skills, docs coverage, `auth.json` permissions, git cleanliness, and scans tracked files for secrets. |
 | `scripts/render-settings.mjs`, `scripts/sync-settings.mjs` | Node helpers used by the shell scripts. |
 
 Override the Pi config directory with `PI_CODING_AGENT_DIR` — Pi reads that one

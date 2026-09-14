@@ -74,3 +74,7 @@ generated and will be overwritten on the next render), and committing
       to know about it, and in the relevant `optional/<name>/README.md` if it is
       bundle-specific.
 - [ ] `./scripts/optional.sh list` still shows the expected enabled/available split.
+- [ ] `node scripts/check-docs.mjs .` exits 0 — every package in
+      `settings.core.json` and every skill in `skills.json` still has an entry in
+      `docs/`, and no entry documents something that is not shipped. The contract
+      is in [pi-resources.md](./pi-resources.md#the-docs-coverage-check).
