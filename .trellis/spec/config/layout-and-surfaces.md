@@ -14,6 +14,7 @@
 | `optional/<name>/auth.example.json` | — | Tracked | copied by the user into `auth.json` |
 | `skills.json` | — (input) | Tracked | `install-skills.mjs` reads it |
 | `pi-agent/AGENTS.md` | `~/.pi/agent/AGENTS.md` | Symlinked | `setup.sh` |
+| `pi-agent/i-have-adhd.json` | `~/.pi/agent/i-have-adhd.json` | Symlinked | `setup.sh` |
 | `pi-agent/{themes,prompts,tools,skills,agents,extensions}/` | `~/.pi/agent/<name>` | Symlinked | `setup.sh` |
 | `pi-agent/auth.json.example` | `~/.pi/agent/auth.json` | Tracked template → copied **once** | `setup.sh` |
 | `pi-agent/settings.json` | `~/.pi/agent/settings.json` | **Generated** | `render-settings.mjs` |
@@ -37,6 +38,13 @@ in the repo today. The list is defined once, in `scripts/lib.sh`, and is a
 moment they appear. Creating one of them by hand is a normal, supported way to add
 a resource; adding a seventh name to `scripts/lib.sh` is not.
 
+`PI_FILES` is the same mechanism for *files* rather than directories, and is
+today `AGENTS.md` + `i-have-adhd.json` (`pi-agent/AGENTS.md` does not exist, so
+only the latter links). Note that `i-have-adhd.json` sits in the agent dir next
+to files that are deliberately **ignored** — that contrast is intentional and
+argued in [The exception](#the-exception-a-read-only-extension-config-is-symlinked)
+below.
+
 The **Ignored** rows above are illustrative, not exhaustive — Pi adds runtime
 state between releases (`missions/`, `profiles/`, `web-search-cache/`, and
 `run-history.jsonl` were all added after this repo was created). The enforcement
@@ -53,9 +61,12 @@ enforces the direction that matters.
    needs a credential, commit an `auth.example.json` under
    `optional/<name>/` and document it in that bundle's README.
 
-2. **Does Pi write it at runtime?** → ignored, and it must be added to both
-   `.gitignore` and `PI_NOT_SYNCED` in `scripts/lib.sh` (see the invariant
-   section below).
+2. **Does the extension write it at runtime?** → ignored, and it must be added to
+   both `.gitignore` and `PI_NOT_SYNCED` in `scripts/lib.sh` (see the invariant
+   section below). "Owned by an extension" is **not** the test — an extension
+   config that is only ever read is tracked and symlinked instead; compare
+   [`i-have-adhd.json`](#the-exception-a-read-only-extension-config-is-symlinked)
+   against `auto-compact.json`.
 
 3. **Is it per-machine state derived from tracked inputs?** → generated. Do not
    commit it and do not symlink it. Add a render step rather than a file.
@@ -119,6 +130,58 @@ Step 3 exists for the adopt-on-an-existing-machine case and logs
 `infer  enabled from existing settings: …`. It only fires when no state file
 exists, so once `setup.sh` has run, the state file is authoritative.
 
+### `packages` Order Is Not Drift
+
+`packages` is a **set**, not a sequence. Two arrays with the same members in a
+different order are equal, and no reader — `doctor.sh`, `sync-settings.mjs`, or a
+human — may depend on the position of an entry. Two writers legitimately
+disagree about the order:
+
+- **Emission is canonical.** `render-settings.mjs` clones `settings.core.json`
+  and then appends each enabled optional's packages, so a rendered array is
+  always *core members first, then the optionals' members, each in its manifest's
+  own order*. That is the order `./setup.sh` writes.
+- **`pi install` appends.** It does not choose a position, so a package installed
+  while an optional bundle is enabled lands *after* that bundle's package. With
+  `opencode-go` enabled and `pi-tps-status` installed afterwards, live reads
+  `… pi-lens, pi-opencode-go, pi-tps-status` while the render is
+  `… pi-lens, pi-tps-status, pi-opencode-go`.
+- **`sync-settings.mjs` inherits the live order** of whatever is left after the
+  enabled optionals' packages are stripped, so `settings.core.json` itself is not
+  order-canonical either. Do not hand-reorder it to "fix" that.
+
+So `--check` compares `packages` as a set: `render-settings.mjs` sorts a copy of
+both sides before comparing, and a set-equal pair is not drift. The
+normalisation is that one function (`canonical()`), scoped to the literal key
+`packages` — not to "all arrays" — and everything else stays as strict as it was:
+
+- A **membership** difference still drifts: a missing spec and an extra spec both
+  exit `1`.
+- A **duplicate** is a real defect rather than reordering, so the sort preserves
+  duplicates and `["a", "a", "b"]` still differs from the deduplicated render's
+  `["a", "b"]`.
+- **Every other key** — its value, its presence, and the key order — is compared
+  exactly as serialised, and a mismatch still exits `1`.
+- `--check` still writes nothing, including the state file, and a missing or
+  unparseable live file is still drift.
+- The **write** path is untouched: `./setup.sh` still treats a reordered file as
+  a change and re-renders it into canonical order, so emission stays canonical
+  even though the check tolerates the other order.
+
+One accepted side effect: because the check compares parsed values, a
+**reformatted** (whitespace-only) live file is no longer drift. That is
+desirable — the two files are semantically identical — and it does not weaken the
+check into "compares nothing", because JSONC still fails (`JSON.parse` rejects
+it) and every key and value is still compared.
+
+Verify offline — no network, no `pi`:
+
+```bash
+# set-equal `packages` in a different order → `ok`, exit 0
+node scripts/render-settings.mjs . <live-with-reordered-packages> <state> --check
+# a missing, extra, or duplicated spec, or any other key changed → `drift`, exit 1
+```
+
 ### Per-machine extension config is not symlinked
 
 Some extensions own a settings file under the Pi config dir, named
@@ -152,11 +215,44 @@ new package can start owning a file in the agent dir at any time, and
 `doctor.sh` only knows the names this list declares. Adding one is a two-file
 change, never just the ignore rule.
 
-The resources that do work symlinked (`themes/`, `prompts/`, `AGENTS.md`, …) are
-edited by us or by Pi, not rewritten by a runtime config writer. Files rewritten
-at runtime must live outside the repo, which is why these two are named
-individually in `.gitignore` (no `pi-agent/*-config.json` glob — see the
-invariant below) and reported by `sync.sh`.
+The resources that do work symlinked (`themes/`, `prompts/`, `AGENTS.md`,
+`i-have-adhd.json`, …) are edited by us or by Pi, not rewritten by a runtime
+config writer. Files rewritten at runtime must live outside the repo, which is
+why these are named individually in `.gitignore` (no `pi-agent/*-config.json`
+glob — see the invariant below) and reported by `sync.sh`.
+
+### The exception: a read-only extension config *is* symlinked
+
+`~/.pi/agent/i-have-adhd.json`, owned by the `i-have-adhd` package
+(`https://github.com/ayghri/i-have-adhd`) is in that same directory and is
+**tracked and symlinked**: it is in `PI_FILES`, it is in neither `.gitignore` nor
+`PI_NOT_SYNCED`, and `setup.sh` links `pi-agent/i-have-adhd.json` into place.
+
+That is not an inconsistency, because the rule above is mechanical rather than
+"anything under the agent dir is per-machine". Measured against the package's
+`extensions/i-have-adhd.ts`: the config is read once at startup with
+`readFileSync` and the extension contains **no write call at all** — no
+`writeFileSync`, no `appendFile`, no `renameSync`, no `mkdirSync`. A session
+toggle goes through `pi.appendEntry` into the session history, never into this
+file. So neither trap applies, and the two keys (`alwaysOn`, `hideStatus`) are
+portable intent rather than machine state — exactly the kind of thing the repo
+exists to reproduce with `./setup.sh`.
+
+The failure mode to watch is a package *update*: if upstream ever gains a config
+command that writes the file, this flips into the `pi-vcc` case (a
+`writeFileSync` follows the symlink and writes per-machine state straight into
+the tracked file, `doctor.sh` then reports drift). Before trusting the symlink,
+re-measure the package:
+
+```bash
+# installed git-spec packages live under ~/.pi/agent/git/<host>/<owner>/<repo>/
+grep -rn "writeFileSync\|appendFile\|renameSync\|mkdirSync" \
+  "$HOME/.pi/agent/git/github.com/ayghri/i-have-adhd/extensions"
+```
+
+So classify an extension config by its **write behaviour**, not by its location.
+A read-only one belongs in `PI_FILES`; a rewritten one belongs in `PI_NOT_SYNCED`
+**and** `.gitignore`.
 
 ---
 
@@ -269,7 +365,9 @@ Package *catalogs* are deliberately not stored — only the package **specs**
 
 - **Do not commit `~/.pi/agent/settings.json`** or symlink it. It is per-machine output.
 - **Do not symlink a secret or a piece of runtime state.** Symlinking is only for
-  the tracked resource directories and `AGENTS.md`.
+  the tracked resource directories, `AGENTS.md`, and a config file that its owner
+  only ever *reads* (`i-have-adhd.json` — see
+  [The exception](#the-exception-a-read-only-extension-config-is-symlinked)).
 - **Do not add an npm `@version` pin** to a package spec. Unpinned is the
   documented choice so `pi update --extensions` (run by `setup.sh`) can move
   forward; pinning silently disables updates for that spec.

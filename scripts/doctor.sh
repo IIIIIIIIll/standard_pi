@@ -84,7 +84,7 @@ for name in "${PI_FILES[@]}" "${PI_DIRS[@]}"; do
     warn "$name not linked (run ./setup.sh)"
   fi
 done
-[ "$found" = 1 ] || printf '  \033[2m·\033[0m none in repo yet (AGENTS.md, themes/, prompts/, tools/, skills/, agents/, extensions/)\n'
+[ "$found" = 1 ] || printf '  \033[2m·\033[0m none in repo yet (AGENTS.md, i-have-adhd.json, themes/, prompts/, tools/, skills/, agents/, extensions/)\n'
 
 echo "==> Trellis subagent bridge"
 bridge_src="$PI_SRC/extensions/trellis-subagents-bridge/index.ts"

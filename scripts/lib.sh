@@ -16,7 +16,7 @@ PI_SETUP_LIB_LOADED=1
 # Resource directories symlinked into the Pi config dir when present in the repo.
 readonly PI_DIRS=(themes prompts tools skills agents extensions)
 # Resource files symlinked the same way.
-readonly PI_FILES=(AGENTS.md)
+readonly PI_FILES=(AGENTS.md i-have-adhd.json)
 
 # Machine-local Pi paths that are deliberately never synced. sync.sh reports
 # them under "Managed elsewhere"; doctor.sh checks that every one is covered by

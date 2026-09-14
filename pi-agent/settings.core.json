@@ -9,7 +9,8 @@
     "npm:@thunstack/auto-compact",
     "npm:pi-mcp-adapter",
     "npm:pi-lens",
-    "npm:pi-tps-status"
+    "npm:pi-tps-status",
+    "https://github.com/ayghri/i-have-adhd"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",

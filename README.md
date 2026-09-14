@@ -13,10 +13,10 @@ update**, including pulling the latest skills from upstream.
 It does six things:
 
 1. renders `~/.pi/agent/settings.json` from core settings + this machine's optional bundles
-2. symlinks the resource dirs that exist in the repo — `AGENTS.md`,
-   `themes/`, `prompts/`, `tools/`, `skills/`, `agents/`, `extensions/`
-   (today only `extensions/` is present; the others link themselves the moment
-   they appear)
+2. symlinks the resource files and dirs that exist in the repo — `AGENTS.md`,
+   `i-have-adhd.json`, `themes/`, `prompts/`, `tools/`, `skills/`, `agents/`,
+   `extensions/` (today only `extensions/` and `i-have-adhd.json` are present;
+   the others link themselves the moment they appear)
 3. seeds `~/.pi/agent/auth.json` from the template if absent
 4. installs/refreshes skills **from their upstream sources** (see below)
 5. refreshes Pi plugin packages (`pi update --extensions`)
@@ -71,7 +71,7 @@ Currently installed, all from [`mattpocock/skills`](https://github.com/mattpococ
 | `pi-agent/settings.core.json` | `~/.pi/agent/settings.json` | **Rendered** — core settings, same everywhere |
 | `optional/<name>/manifest.json` | `~/.pi/agent/settings.json` | **Rendered** — only where enabled |
 | `pi-agent/auth.json.example` | `~/.pi/agent/auth.json` | Copied once as a template; the real file stays local |
-| `pi-agent/AGENTS.md`, `pi-agent/{themes,prompts,tools,skills,agents,extensions}/` | `~/.pi/agent/…` | **Symlinked** (if present) |
+| `pi-agent/AGENTS.md`, `pi-agent/i-have-adhd.json`, `pi-agent/{themes,prompts,tools,skills,agents,extensions}/` | `~/.pi/agent/…` | **Symlinked** (if present) |
 | `skills.json` | `~/.agents/skills/` | **Fetched from upstream** by `setup.sh` |
 | `setup.sh` | — | The entry point |
 | `scripts/` | — | Helpers, sync, optional toggles, doctor |
@@ -103,6 +103,7 @@ Anything under `packages` is installed on every machine. Currently:
 | `npm:pi-mcp-adapter` | MCP servers behind a single proxy tool instead of their full tool lists; reads `.mcp.json` and host configs, adds `/mcp` and `/mcp setup` |
 | `npm:pi-lens` | Language-aware feedback on every write/edit — LSP diagnostics, linters/type-checkers, formatters, ast-grep/tree-sitter rules, `/lens-map` |
 | `npm:pi-tps-status` | Live tokens-per-second meter in the status bar, with TTFT/token modes and provider-usage reconciliation; `/tps` configures it |
+| `https://github.com/ayghri/i-have-adhd` | ADHD-shaped output — answer or next action first, numbered steps, no preamble. `/i-have-adhd` (or `stop adhd mode`) toggles it for the session; `/skill:i-have-adhd` is the aliased skill entry point |
 
 `pi-subagents` also dispatches the Trellis role agents. A dispatched child runs as
 its own Pi session, so `pi-agent/extensions/trellis-subagents-bridge/` keeps it
@@ -129,6 +130,23 @@ summarizer and only produces an `extension_error` on every compaction. See
 `~/.pi/agent/pi-vcc-config.json` keeps `overrideDefaultCompaction: true`. Do not
 set `reserveTokens`: pi-vcc removes the LLM summarization call, so the summary
 budget it feeds is irrelevant, and the percentage trigger is the intended lever.
+
+`i-have-adhd` is the one installed package whose config is **tracked and
+symlinked**, because the extension only ever *reads* it — unlike the compaction
+and web-search files above, nothing rewrites it at runtime. So
+[`pi-agent/i-have-adhd.json`](pi-agent/i-have-adhd.json) is the source of truth,
+linked into `~/.pi/agent/` by `setup.sh`:
+
+```json
+{ "alwaysOn": true, "hideStatus": true }
+```
+
+`alwaysOn` starts every session with the rules active — the same effect as the
+`.i-have-adhd-always` flag file, which still works. `hideStatus` keeps the
+`● ADHD ON` status-bar entry hidden; the rules and `/i-have-adhd` are unaffected.
+Both keys are read once at extension startup, so restart Pi after changing them,
+and a saved per-session choice (`stop adhd mode`) wins over `alwaysOn` for that
+session.
 
 ### Optional — `optional/<name>/`
 
@@ -165,8 +183,9 @@ scripts/optional.sh enable my-plugin
 
 ## Day-to-day
 
-Symlinked resources (`AGENTS.md`, `themes/`, `prompts/`, `tools/`, `skills/`,
-`agents/`, `extensions/`) are already repo changes as you edit them — just commit.
+Symlinked resources (`AGENTS.md`, `i-have-adhd.json`, `themes/`, `prompts/`,
+`tools/`, `skills/`, `agents/`, `extensions/`) are already repo changes as you
+edit them — just commit.
 
 Settings need one explicit step, because `settings.json` is generated:
 

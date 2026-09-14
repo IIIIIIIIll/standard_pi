@@ -5,7 +5,7 @@
 # Does everything, and is safe to re-run (that is also how you update):
 #
 #   1. render ~/.pi/agent/settings.json from core + this machine's optionals
-#   2. symlink AGENTS.md and resource dirs (themes/prompts/tools/skills/agents/extensions)
+#   2. symlink AGENTS.md, i-have-adhd.json and resource dirs (themes/prompts/tools/skills/agents/extensions)
 #   3. seed ~/.pi/agent/auth.json from the template if absent
 #   4. install/refresh skills from their upstream sources (skills.json)
 #   5. refresh Pi plugin packages
