@@ -21,7 +21,8 @@ Always-on settings, identical on every machine. It is the base that
     "npm:@sting8k/pi-vcc",
     "npm:@thunstack/auto-compact",
     "npm:pi-mcp-adapter",
-    "npm:pi-lens"
+    "npm:pi-lens",
+    "npm:pi-tps-status"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",
@@ -54,6 +55,7 @@ Rules:
 | `npm:@thunstack/auto-compact` | early percentage-triggered compaction, session toggle, TUI panel | owns "when to compact" — see [Compaction](#compaction) |
 | `npm:pi-mcp-adapter` | MCP servers behind one proxy tool (~200 tokens) instead of every server's full tool list; reads `.mcp.json`, `~/.config/mcp/mcp.json`, and host configs; adds `/mcp`, `/mcp setup`, `mcp-auth` | the on-demand path into the MCP ecosystem without paying for it in context |
 | `npm:pi-lens` | language-aware feedback on every write/edit: LSP diagnostics and navigation, linters/type-checkers, format/autofix, ast-grep and tree-sitter rules, ranked `symbol_search`, `/lens-map` | edits get checked by the real toolchain instead of by the model's own reading |
+| `npm:pi-tps-status` | live tokens-per-second meter in the status bar: TTFT and token-count modes, three counting strategies, provider-usage reconciliation, `/tps` settings | streaming throughput is otherwise invisible; it keeps its config outside `~/.pi/agent/`, at `$XDG_CONFIG_HOME/pi-tps-status/config.json` (like `pi-lens`), so it adds nothing to the path lists |
 
 Both are self-contained: neither needs a tracked config file in this repo, and
 neither writes into `~/.pi/agent/`. `pi-mcp-adapter` is inert until an MCP config
@@ -67,6 +69,11 @@ pi-lens state under `pi-agent/`. It downloads LSP servers and tool binaries on
 first use (`PI_LENS_DISABLE_LSP_INSTALL`, `PI_LENS_DISABLE_TOOL_INSTALL` opt out),
 which is why a fresh machine needs network on the first session, not at setup.
 Its project config is `.pi-lens.json` (project root, outermost wins per field).
+
+`pi-tps-status` follows `pi-lens` in keeping its state outside `~/.pi/agent/`: the
+`/tps` settings persist to `$XDG_CONFIG_HOME/pi-tps-status/config.json`
+(`~/.config/pi-tps-status/config.json` by default, written atomically), so it
+also appears in neither `scripts/lib.sh`'s path lists nor `.gitignore`.
 
 `pi-web-access` is the one core package that *does* own a per-machine file in the
 agent dir: `~/.pi/agent/web-search.json` — provider selection, proxy, `authFetch`

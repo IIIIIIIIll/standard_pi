@@ -102,6 +102,7 @@ Anything under `packages` is installed on every machine. Currently:
 | `npm:@thunstack/auto-compact` | Compacts early at a configurable **percentage** of context, plus `/auto-compact` and `/auto-compact-config` |
 | `npm:pi-mcp-adapter` | MCP servers behind a single proxy tool instead of their full tool lists; reads `.mcp.json` and host configs, adds `/mcp` and `/mcp setup` |
 | `npm:pi-lens` | Language-aware feedback on every write/edit — LSP diagnostics, linters/type-checkers, formatters, ast-grep/tree-sitter rules, `/lens-map` |
+| `npm:pi-tps-status` | Live tokens-per-second meter in the status bar, with TTFT/token modes and provider-usage reconciliation; `/tps` configures it |
 
 `pi-subagents` also dispatches the Trellis role agents. A dispatched child runs as
 its own Pi session, so `pi-agent/extensions/trellis-subagents-bridge/` keeps it

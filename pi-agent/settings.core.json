@@ -8,7 +8,8 @@
     "npm:@sting8k/pi-vcc",
     "npm:@thunstack/auto-compact",
     "npm:pi-mcp-adapter",
-    "npm:pi-lens"
+    "npm:pi-lens",
+    "npm:pi-tps-status"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",
