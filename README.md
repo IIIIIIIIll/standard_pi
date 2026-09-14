@@ -103,6 +103,7 @@ Anything under `packages` is installed on every machine. Currently:
 | `npm:pi-mcp-adapter` | MCP servers behind a single proxy tool instead of their full tool lists; reads `.mcp.json` and host configs, adds `/mcp` and `/mcp setup` |
 | `npm:pi-lens` | Language-aware feedback on every write/edit — LSP diagnostics, linters/type-checkers, formatters, ast-grep/tree-sitter rules, `/lens-map` |
 | `npm:pi-tps-status` | Live tokens-per-second meter in the status bar, with TTFT/token modes and provider-usage reconciliation; `/tps` configures it |
+| `npm:pi-timer` | Per-run elapsed timer in the footer — `runs for` while the agent is working, `ran for` after it stops, reset on the next run |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped output — answer or next action first, numbered steps, no preamble. `/i-have-adhd` (or `stop adhd mode`) toggles it for the session; `/skill:i-have-adhd` is the aliased skill entry point |
 
 `pi-subagents` also dispatches the Trellis role agents. A dispatched child runs as

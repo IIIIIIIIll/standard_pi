@@ -23,6 +23,7 @@ Always-on settings, identical on every machine. It is the base that
     "npm:pi-mcp-adapter",
     "npm:pi-lens",
     "npm:pi-tps-status",
+    "npm:pi-timer",
     "https://github.com/ayghri/i-have-adhd"
   ],
   "theme": "dark",
@@ -57,6 +58,7 @@ Rules:
 | `npm:pi-mcp-adapter` | MCP servers behind one proxy tool (~200 tokens) instead of every server's full tool list; reads `.mcp.json`, `~/.config/mcp/mcp.json`, and host configs; adds `/mcp`, `/mcp setup`, `mcp-auth` | the on-demand path into the MCP ecosystem without paying for it in context |
 | `npm:pi-lens` | language-aware feedback on every write/edit: LSP diagnostics and navigation, linters/type-checkers, format/autofix, ast-grep and tree-sitter rules, ranked `symbol_search`, `/lens-map` | edits get checked by the real toolchain instead of by the model's own reading |
 | `npm:pi-tps-status` | live tokens-per-second meter in the status bar: TTFT and token-count modes, three counting strategies, provider-usage reconciliation, `/tps` settings | streaming throughput is otherwise invisible; it keeps its config outside `~/.pi/agent/`, at `$XDG_CONFIG_HOME/pi-tps-status/config.json` (like `pi-lens`), so it adds nothing to the path lists |
+| `npm:pi-timer` | per-run elapsed timer in the footer: `runs for` while the agent works, `ran for` once it stops, reset on the next run | run duration is otherwise invisible while it is accumulating, and the number is what makes "is this model slow or is this task big?" answerable; the extension imports no `fs` at all — it reads nothing and writes nothing, so it has no config file and adds nothing to the path lists |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped replies -- answer or next action first, numbered steps, progress restated each turn, concrete time estimates, no preamble; `/i-have-adhd` (or `stop adhd mode`) toggles it per session, `/skill:i-have-adhd` is the aliased skill | output *shape* is a standing preference rather than a per-task prompt, so it belongs to every machine; it is the one package here with a tracked, symlinked config file (`pi-agent/i-have-adhd.json`) -- see below |
 
 Both are self-contained: neither needs a tracked config file in this repo, and
@@ -76,6 +78,11 @@ Its project config is `.pi-lens.json` (project root, outermost wins per field).
 `/tps` settings persist to `$XDG_CONFIG_HOME/pi-tps-status/config.json`
 (`~/.config/pi-tps-status/config.json` by default, written atomically), so it
 also appears in neither `scripts/lib.sh`'s path lists nor `.gitignore`.
+
+`pi-timer` is the only package here with no state whatsoever: `extensions/run-timer.ts`
+imports no `fs`, so it has no config file to track, ignore, or symlink — a session
+start and every run start/end are held in memory and rendered inline via
+`ctx.ui.setFooter()`. Nothing to add to `scripts/lib.sh` or `.gitignore`.
 
 `pi-web-access` is the one core package that *does* own a per-machine file in the
 agent dir: `~/.pi/agent/web-search.json` — provider selection, proxy, `authFetch`
