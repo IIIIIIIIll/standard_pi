@@ -20,6 +20,20 @@ block describing what it does and its flags, and then strict mode.
 set -euo pipefail
 ```
 
+### Formatting is owned by pi-lens
+
+`pi-lens` rewrites `*.sh` and `*.md` on write: it reflows `case` arms onto their
+own lines, expands `a; b` one-liners, normalises `<<<"$x"` spacing, and re-spaces
+Markdown table separators. So the snippets on this page are **illustrative, not
+byte-stable** — they show the current formatted shape, and a reformat of the real
+file leaves a quoted snippet behind silently.
+
+When a snippet and its file disagree, **the file wins**: update the snippet in the
+same change. This is a second source of the staleness the
+[change propagation guide](../guides/change-propagation-guide.md) warns about for
+"a user-facing string … **and every spec file that quotes it verbatim**", and it
+is not caused by anyone editing the script by hand.
+
 `setup.sh` goes further: that header block **is** its `--help` text, extracted by
 an awk program that prints comment lines until the first non-comment line.
 
@@ -45,9 +59,15 @@ problem, and it owns its own exit code by counting failures.
 ```bash
 problems=0
 notes=0
-ok()   { printf '  \033[32m✓\033[0m %s\n' "$1"; }
-warn() { printf '  \033[33m!\033[0m %s\n' "$1"; notes=$((notes + 1)); }
-bad()  { printf '  \033[31m✗\033[0m %s\n' "$1"; problems=$((problems + 1)); }
+ok() { printf '  \033[32m✓\033[0m %s\n' "$1"; }
+warn() {
+  printf '  \033[33m!\033[0m %s\n' "$1"
+  notes=$((notes + 1))
+}
+bad() {
+  printf '  \033[31m✗\033[0m %s\n' "$1"
+  problems=$((problems + 1))
+}
 ```
 
 If you add a check to `doctor.sh`, call `ok`/`warn`/`bad`; never `exit` early and
@@ -100,7 +120,10 @@ gitignored and is the single record of which optional bundles are enabled here.
 Every script that needs Node terminates early if it is absent:
 
 ```bash
-command -v node >/dev/null 2>&1 || { echo "node is required (Pi ships on Node/npm)" >&2; exit 1; }
+command -v node >/dev/null 2>&1 || {
+  echo "node is required (Pi ships on Node/npm)" >&2
+  exit 1
+}
 ```
 
 ---
@@ -261,11 +284,30 @@ arm is `*` with a usage message on **stderr** and exit `2`:
 # abridged — the real loop also handles --skip-skills, --skip-plugins, --skip-verify
 while [ $# -gt 0 ]; do
   case "$1" in
-    --with) WITH+=("${2:?--with requires a name}"); EXPLICIT=1; shift 2 ;;
-    --none) WITH=(); EXPLICIT=1; shift ;;
-    -y|--yes) ASSUME_YES=1; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "unknown option: $1" >&2; echo; usage; exit 2 ;;
+  --with)
+    WITH+=("${2:?--with requires a name}")
+    EXPLICIT=1
+    shift 2
+    ;;
+  --none)
+    WITH=()
+    EXPLICIT=1
+    shift
+    ;;
+  -y | --yes)
+    ASSUME_YES=1
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "unknown option: $1" >&2
+    echo
+    usage
+    exit 2
+    ;;
   esac
 done
 ```

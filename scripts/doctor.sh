@@ -12,9 +12,15 @@ SKILLS_DST="${AGENTS_SKILLS_DIR:-$HOME/.agents/skills}"
 
 problems=0
 notes=0
-ok()   { printf '  \033[32m✓\033[0m %s\n' "$1"; }
-warn() { printf '  \033[33m!\033[0m %s\n' "$1"; notes=$((notes + 1)); }
-bad()  { printf '  \033[31m✗\033[0m %s\n' "$1"; problems=$((problems + 1)); }
+ok() { printf '  \033[32m✓\033[0m %s\n' "$1"; }
+warn() {
+  printf '  \033[33m!\033[0m %s\n' "$1"
+  notes=$((notes + 1))
+}
+bad() {
+  printf '  \033[31m✗\033[0m %s\n' "$1"
+  problems=$((problems + 1))
+}
 
 echo "==> Repo"
 if [ -d "$REPO_DIR/.git" ]; then
@@ -22,7 +28,8 @@ if [ -d "$REPO_DIR/.git" ]; then
   remote="$(git -C "$REPO_DIR" remote get-url origin 2>/dev/null || true)"
   [ -n "$remote" ] && ok "remote: $remote" || warn "no 'origin' remote configured"
   if [ -n "$(git -C "$REPO_DIR" status --short)" ]; then
-    warn "uncommitted changes:"; git -C "$REPO_DIR" status --short | sed 's/^/      /'
+    warn "uncommitted changes:"
+    git -C "$REPO_DIR" status --short | sed 's/^/      /'
   else
     ok "working tree clean"
   fi
@@ -53,14 +60,15 @@ fi
 
 echo "==> Optional bundles"
 if command -v node >/dev/null 2>&1 && [ -d "$REPO_DIR/optional" ]; then
-  cur="$( [ -f "$STATE" ] && node -e 'console.log((JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).optionals||[]).join("\n"))' "$STATE" || true )"
+  cur="$([ -f "$STATE" ] && node -e 'console.log((JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).optionals||[]).join("\n"))' "$STATE" || true)"
   any=0
   for m in "$REPO_DIR"/optional/*/manifest.json; do
     [ -e "$m" ] || continue
     name="$(basename "$(dirname "$m")")"
     case "$name" in _*) continue ;; esac
     any=1
-    if printf '%s\n' "$cur" | grep -qx "$name"; then ok "$name (enabled)"
+    if printf '%s\n' "$cur" | grep -qx "$name"; then
+      ok "$name (enabled)"
     else printf '  \033[2m·\033[0m %s (available)\n' "$name"; fi
   done
   [ "$any" = 1 ] || warn "no optional bundles defined"
@@ -71,7 +79,8 @@ fi
 echo "==> Symlinked resources  ($PI_DST)"
 found=0
 for name in "${PI_FILES[@]}" "${PI_DIRS[@]}"; do
-  src="$PI_SRC/$name"; dst="$PI_DST/$name"
+  src="$PI_SRC/$name"
+  dst="$PI_DST/$name"
   [ -e "$src" ] || continue
   found=1
   if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
@@ -151,7 +160,7 @@ else
     while IFS= read -r t; do
       [ -n "$t" ] || continue
       printf '%s\n' "$declared" | grep -qxF "$t" || unknown_tools+=("$t")
-    done <<< "$ext_names"
+    done <<<"$ext_names"
     if [ ${#unknown_tools[@]} -gt 0 ]; then
       bad "generated extension registers tool(s) the bridge does not deactivate:"
       for t in "${unknown_tools[@]}"; do printf '      %s\n' "$t"; done
@@ -166,7 +175,8 @@ fi
 echo "==> Credentials"
 if [ -f "$PI_DST/auth.json" ]; then
   perms="$(stat -c '%a' "$PI_DST/auth.json" 2>/dev/null || stat -f '%Lp' "$PI_DST/auth.json")"
-  if [ "$perms" = "600" ]; then ok "auth.json present, mode 600"
+  if [ "$perms" = "600" ]; then
+    ok "auth.json present, mode 600"
   else warn "auth.json mode is $perms (expected 600)"; fi
 else
   warn "auth.json missing (run ./setup.sh, then add your keys)"
@@ -175,13 +185,14 @@ fi
 echo "==> Secret scan (tracked files)"
 if [ -d "$REPO_DIR/.git" ]; then
   hits="$(git -C "$REPO_DIR" grep -nEI \
-      -e 'api[_-]?key"?[[:space:]]*[:=][[:space:]]*"[A-Za-z0-9_-]{16,}' \
-      -e 'sk-[A-Za-z0-9]{20,}' \
-      -e 'ghp_[A-Za-z0-9]{20,}' \
-      -e 'Bearer [[:space:]]*[A-Za-z0-9._-]{20,}' \
-      -- . 2>/dev/null | grep -v 'example' || true)"
+    -e 'api[_-]?key"?[[:space:]]*[:=][[:space:]]*"[A-Za-z0-9_-]{16,}' \
+    -e 'sk-[A-Za-z0-9]{20,}' \
+    -e 'ghp_[A-Za-z0-9]{20,}' \
+    -e 'Bearer [[:space:]]*[A-Za-z0-9._-]{20,}' \
+    -- . 2>/dev/null | grep -v 'example' || true)"
   if [ -n "$hits" ]; then
-    bad "possible secrets in tracked files:"; printf '%s\n' "$hits" | sed 's/^/      /'
+    bad "possible secrets in tracked files:"
+    printf '%s\n' "$hits" | sed 's/^/      /'
   else
     ok "no obvious secrets tracked"
   fi
@@ -213,7 +224,8 @@ if [ -f "$REPO_DIR/skills.json" ]; then
   if node "$REPO_DIR/scripts/install-skills.mjs" "$REPO_DIR" --check >/tmp/pi-doctor-skills.$$ 2>&1; then
     ok "$total skill(s) installed from upstream"
   else
-    bad "missing skills (run ./setup.sh):"; sed 's/^/      /' /tmp/pi-doctor-skills.$$
+    bad "missing skills (run ./setup.sh):"
+    sed 's/^/      /' /tmp/pi-doctor-skills.$$
   fi
   rm -f /tmp/pi-doctor-skills.$$
   prov="${SKILLS_DST%/skills}/.pi-setup-skills.json"

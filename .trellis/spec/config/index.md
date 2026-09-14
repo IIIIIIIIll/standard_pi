@@ -13,7 +13,7 @@ that determines whether it is committed, symlinked, regenerated, or ignored.
 Four surfaces exist, and every config file belongs to exactly one of them:
 
 | Surface | Meaning | Lifecycle |
-|---------|---------|-----------|
+| --------- | --------- | ----------- |
 | **Tracked** | Committed, reviewed, shared by every machine | edit + `git commit` |
 | **Symlinked** | Lives in the repo, `~/.pi/agent/<name>` points at it | edit + commit (already live) |
 | **Generated** | Rendered per machine from tracked inputs | `./setup.sh` or `scripts/sync.sh` |
@@ -29,7 +29,7 @@ generated and will be overwritten on the next render), and committing
 ## Guidelines Index
 
 | Guide | Description |
-|-------|-------------|
+| ------- | ------------- |
 | [Layout And Surfaces](./layout-and-surfaces.md) | The full file map, the decision tree for a new file, and `settings.json` backup/rendering rules |
 | [Optional Bundles](./optional-bundles.md) | `optional/<name>/manifest.json` contract, the `_` convention, per-machine state |
 | [Pi Resources](./pi-resources.md) | `settings.core.json`, `skills.json`, `extensions/` layout, and the permission policy |

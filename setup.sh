@@ -48,21 +48,52 @@ usage() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --with) WITH+=("${2:?--with requires a name}"); EXPLICIT=1; shift 2 ;;
-    --none) WITH=(); EXPLICIT=1; shift ;;
-    -y|--yes) ASSUME_YES=1; shift ;;
-    --skip-skills) SKIP_SKILLS=1; shift ;;
-    --skip-plugins) SKIP_PLUGINS=1; shift ;;
-    --skip-verify) SKIP_VERIFY=1; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "unknown option: $1" >&2; echo; usage; exit 2 ;;
+  --with)
+    WITH+=("${2:?--with requires a name}")
+    EXPLICIT=1
+    shift 2
+    ;;
+  --none)
+    WITH=()
+    EXPLICIT=1
+    shift
+    ;;
+  -y | --yes)
+    ASSUME_YES=1
+    shift
+    ;;
+  --skip-skills)
+    SKIP_SKILLS=1
+    shift
+    ;;
+  --skip-plugins)
+    SKIP_PLUGINS=1
+    shift
+    ;;
+  --skip-verify)
+    SKIP_VERIFY=1
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "unknown option: $1" >&2
+    echo
+    usage
+    exit 2
+    ;;
   esac
 done
 
 say() { printf '  %-8s %s\n' "$1" "$2"; }
 note() { printf '  \033[33m!\033[0m %s\n' "$1"; }
 
-command -v node >/dev/null 2>&1 || { echo "node is required (Pi ships on Node/npm)" >&2; exit 1; }
+command -v node >/dev/null 2>&1 || {
+  echo "node is required (Pi ships on Node/npm)" >&2
+  exit 1
+}
 
 available_optionals() {
   find "$REPO_DIR/optional" -mindepth 1 -maxdepth 1 -type d ! -name '_*' \
