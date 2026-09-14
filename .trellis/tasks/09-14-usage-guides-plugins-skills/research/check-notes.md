@@ -35,7 +35,7 @@ failure-mode proofs belong to Step 8 and live in **§8** of this file.
 | 15 | `/todos` | `@juicesharp/rpiv-todo/tool/types.ts:13` — `export const COMMAND_NAME = "todos";` |
 | 16 | `ctrl+shift+t` collapses the panel | `@juicesharp/rpiv-todo/config.ts:9-10` — `pi-coding-agent keybinding ids (\`modifier+key\`, e.g. \`ctrl+shift+t\`, \`alt+o\`).` / `Defaults to \`"ctrl+shift+t"\`.` |
 | 17 | permission dialog hotkeys `y` / `s` / `n` / `r`, each arming then confirming | `@gotgenes/pi-permission-system/README.md:68` — `In an interactive TUI session the prompt is an inline keybind dialog — \`y\` approve, \`s\` approve for this session, \`n\` deny, \`r\` deny with a reason — where each hotkey arms and a second press confirms (configurable via \`doublePressToConfirm\`).` |
-| 18 | `/permission-system` settings command (`show` / `path` / `reset` / `help`) | **Corrected after review.** `@gotgenes/pi-permission-system/src/index.ts:237` — `registerPermissionSystemCommand(pi, {`; registration at `src/config/config-modal.ts:253` — `pi.registerCommand("permission-system", {`; subcommands at `src/config/config-modal.ts:46` — `"Usage: /permission-system [show|path|reset|help] (or run /permission-system with no args to open settings modal)"`; documented at `docs/configuration.md:897` — `` `/permission-system show` likewise lists the expanded directional rules… ``. This row replaces an earlier pair that claimed no slash command exists — the README registers none, so a README-only read produced a false negative; the registration lives in the source |
+| 18 | `/permission-system` settings command (`show` / `path` / `reset` / `help`) | **Corrected after review.** `@gotgenes/pi-permission-system/src/index.ts:237` — `registerPermissionSystemCommand(pi, {`; registration at `src/config/config-modal.ts:253` — `pi.registerCommand("permission-system", {`; subcommands at `src/config/config-modal.ts:46` — `"Usage: /permission-system [show | path | reset | help] (or run /permission-system with no args to open settings modal)"`; documented at`docs/configuration.md:897` — `` `/permission-system show` likewise lists the expanded directional rules… ``. This row replaces an earlier pair that claimed no slash command exists — the README registers none, so a README-only read produced a false negative; the registration lives in the source |
 | 19 | `/pi-vcc` | `@sting8k/pi-vcc/README.md:64` — `- **\`/pi-vcc\`** — manual compaction, keeps the last 1 user turn by default.`; registration at`@sting8k/pi-vcc/src/commands/pi-vcc.ts:6` — `pi.registerCommand("pi-vcc", {` |
 | 20 | `/pi-vcc keep:N [prompt]` | `@sting8k/pi-vcc/README.md:65` — `- **\`/pi-vcc keep:N [prompt]\`** — keep the last \`N\` user turns; optional prompt is sent to the agent after compaction.` |
 | 21 | `/pi-vcc-recall <query> [scope:all]` | `@sting8k/pi-vcc/README.md:134` — `/pi-vcc-recall auth token scope:all`; registration at `@sting8k/pi-vcc/src/commands/vcc-recall.ts:12` — `pi.registerCommand("pi-vcc-recall", {` |
@@ -334,7 +334,7 @@ working tree), not a new `warn` from this check.
 | File | Change |
 | ------ | -------- |
 | `config/layout-and-surfaces.md` | `docs/` row in the file map (**Tracked prose**); decision-tree step 7 now routes "how do I use it" to `docs/` and states it is never symlinked |
-| `config/pi-resources.md` | ownership split at the top of the package inventory (this file wins; exactly two accepted overlaps); new `## The`docs/`coverage check` section with the heading contract, sources of truth, fail-loud table and exit codes; `skills.json` section cross-links `docs/skills.md` |
+| `config/pi-resources.md` | ownership split at the top of the package inventory (this file wins; exactly two accepted overlaps); new "The `docs/` coverage check" section with the heading contract, sources of truth, fail-loud table and exit codes; `skills.json` section cross-links `docs/skills.md` |
 | `config/index.md` | Quality Check line for `node scripts/check-docs.mjs .` |
 | `scripts/index.md` | `check-docs` added to the `\| Node ESM \|` row; Quality Check line for both exit 0 and exit 2 |
 | `index.md` | helper count "four" → "five"; "The One Rule To Internalize" now names `docs/` as a hand-maintained copy and `check-docs.mjs` as the only thing checking it |
@@ -401,3 +401,49 @@ the parent with `--skip-plugins --skip-skills --skip-mcp` (identical output) and
 once unfiltered (exit 0), not by the reviewer; AC 12's grep is weakened by the
 disclosed `gitignored` → `untracked` substitution and was ruled honestly disclosed,
 not a rationalisation.
+
+## 12. Commit provenance
+
+Committed as `0f46c9f` — *feat(docs): daily-use guides for the shipped plugins,
+skills, and agents*. 25 files: the four `docs/` pages, `scripts/check-docs.mjs`, the
+`doctor.sh` section, `README.md`, six spec files, and this task directory.
+
+**This commit was staged line-selectively, not file-selectively.** Three tasks were
+in flight in one working tree, and in several files this task's lines sat in the
+same diff hunk as another task's. Each shared file's staged content was therefore
+built from `HEAD` plus only this task's lines (`git hash-object` +
+`git update-index --cacheinfo`) and verified with
+`git show HEAD:<file> | grep -c` for the other task's fingerprints.
+
+Three consequences a future reader will otherwise trip over:
+
+- **`.trellis/spec/index.md` reads "four dependency-free Node ESM helpers" in this
+  commit**, and the `| Node ESM |` row lists four names without
+  `register-mcp-server.mjs`. That is correct for this point in history: HEAD had
+  three, and this task adds one. The working tree reads "five" because the MCP
+  task's fourth helper is not committed yet.
+- **`README.md`'s script table in this commit** carries the `check-docs.mjs` row
+  before `sync.sh`; the MCP task's `register-mcp-server.mjs` row is not in it.
+- **At handoff, `git diff HEAD` on the six shared files contains only the other
+  task's lines** — checked, zero of this task's lines pending — so their commit
+  completes the combined state without duplicating anything.
+
+Two hazards this hit, both worth knowing:
+
+1. **`git update-index --chmod=+x <path>` re-hashes that path from the working
+   tree**, silently restoring another task's content into the staged blob (and it
+   did: the first amend re-introduced their `doctor.sh` section). Set the mode
+   atomically instead — `git update-index --cacheinfo 100755,<full-40-char-sha>,<path>`
+   — and use the full SHA: an abbreviated one fails with
+   `option 'cacheinfo' expects <mode>,<sha1>,<path>`.
+2. **A concurrent agent staged `scripts/doctor.sh` and this task's propagation
+   guide between staging and commit**, so the first attempt (`fab9a52`) carried
+   their 27-line MCP section and their MCP propagation row. Both were stripped by
+   amending; never trust a staged tree you verified more than a moment ago when
+   another agent is live in the same worktree.
+
+**What was verified is the committed tree, not the working tree:** `git archive
+HEAD | tar -x` into a temp directory, then `node --check`, `bash -n`, `node
+scripts/check-docs.mjs .` (ok, 12 plugins and 6 skills), counts 12/6/6, AC 12 grep
+empty, and `scripts/doctor.sh` mode `100755` (the first staging attempt had
+silently dropped it to `100644`).
