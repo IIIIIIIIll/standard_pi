@@ -212,3 +212,46 @@ Option 1 from design.md: --check in render-settings.mjs now compares packages as
 ### Status
 
 [OK] **Completed**
+
+
+## Session 7: Daily-use docs layer + a docs coverage check
+<!-- trellis-session: v=2 fp=583d1813f07a325b -->
+
+**Date**: 2026-09-14
+**Task**: Daily-use docs layer + a docs coverage check
+**Branch**: `main`
+
+### Summary
+
+Added a tracked docs/ layer (plugins, skills, agents) with one entry per shipped item, and scripts/check-docs.mjs wired into doctor.sh as a fail-loud membership check. Three review rounds; the only BLOCKER was a false fact (the permission system does register /permission-system), closed with the installed-source citations.
+
+### Main Changes
+
+- docs/{plugins,skills,agents}.md + docs/README.md: 12 plugin entries, 6 skill entries, 3 role agents and 3 prompts, each with What it is / Reach for it when / Invoke / Config, every invocation token read from the installed package
+- scripts/check-docs.mjs: compares ### entry ids as sets against settings.core.json packages and skills.json names, reporting a missing entry and a stray entry separately; doctor.sh runs it as ==> Docs coverage, and an unreadable input or an emptied file is a bad, never a silent pass
+- README.md: pointers into docs/ from the plugins and skills sections, a Layout row, and the new helper in the script table; six spec files record docs/ as a tracked prose surface, the checker contract, and both change-propagation rows
+- Committed with line-selective staging because three tasks shared one working tree; the staged-value decisions and two staging hazards are recorded in the task check-notes section 12
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0f46c9f` | feat(docs): daily-use guides for the shipped plugins, skills, and agents |
+| `d042603` | chore(task): record commit provenance for 09-14-usage-guides-plugins-skills |
+
+### Testing
+
+- [OK] ./setup.sh twice, both fully and with --skip-plugins --skip-skills --skip-mcp: identical output, exit 0
+- [OK] ./scripts/doctor.sh: exit 0 with the Docs coverage section reporting 12 plugins and 6 skills, no new warn against the pre-change baseline
+- [OK] node scripts/check-docs.mjs . exit 0; five failure modes on a mktemp fixture each exit 1 naming the offending id or file; no-argument usage exits 2; node --check and bash -n pass
+- [OK] render-settings --check reports no drift; the commit checked out in isolation runs every doctor.sh section with no unbound variable
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- The other two tasks still hold the shared files (README.md, doctor.sh, four spec files) uncommitted; their commits complete the combined state - none of this task lines are pending
+- Observation for the MCP task: doctor.sh references $MCP_CFG while scripts/lib.sh defining it is still uncommitted, so the two must land together; a commit with only one of them dies under set -u
+- Observation: doctor.sh guards its git sections with [ -d "$REPO_DIR/.git" ], which is false in a linked worktree (.git is a file there), so git worktree verification silently skips Repo, secret-scan and ignore-coverage; git -C ... rev-parse --git-dir is the portable test

@@ -172,6 +172,15 @@ cd /tmp/verify-<sha> && ./scripts/doctor.sh    # must not die mid-section
 git worktree remove --force /tmp/verify-<sha>
 ```
 
+Three failures there are expected, and none belongs to the commit: a worktree has a
+`.git` **file** rather than a directory, so `doctor.sh` reports `not a git
+repository`; and the live symlinks in `~/.pi/agent/` still point at the main
+checkout, so `i-have-adhd.json` and `extensions/` are reported as pointing
+elsewhere. Measured on `cbcf93d`: exit `1` with exactly those three lines, against
+exit `0` in the main tree. For this one step, read the *message* rather than the
+exit code — the opposite of the rule above, and the only place in this chain where
+that is true.
+
 This is the `set -u` hazard from
 [../scripts/shell-guidelines.md](../scripts/shell-guidelines.md) arriving through
 version control instead of through an edit: a constant defined in one commit and
