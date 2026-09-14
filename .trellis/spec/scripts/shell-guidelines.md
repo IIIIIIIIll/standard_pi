@@ -390,7 +390,7 @@ The scripts distinguish **fatal** from **non-fatal** failures, and the choice is
 intentional in each case:
 
 | Situation | Behaviour | Evidence |
-|-----------|-----------|----------|
+| ----------- | ----------- | ---------- |
 | Node missing, unknown flag, unknown optional | fatal (`exit 1`/`2`) | `setup.sh`, `optional.sh` |
 | Skill install has problems | warn, continue | `setup.sh` uses `\|\| note "skill install had problems; see above"` |
 | `pi update --extensions` fails | warn, continue | `setup.sh` |
