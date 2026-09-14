@@ -1,0 +1,2 @@
+{"file": ".trellis/tasks/09-14-omp-agent-hub-port/research/omp-agent-hub-findings.md", "reason": "Evidence for every design claim: measurements, file paths, and the verified-vs-unverified split. Read before planning any port work."}
+{"file": ".trellis/tasks/09-14-omp-agent-hub-port/design.md", "reason": "The nine adaptation deltas, the session-navigation contract, and the rejected alternatives. Read before writing extension code."}

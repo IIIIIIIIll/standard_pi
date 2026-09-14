@@ -1,0 +1,62 @@
+src/agent-hub-projection.ts(93,36): error TS7006: Parameter 'content' implicitly has an 'any' type.
+src/agent-hub-renderer.ts(2,10): error TS2305: Module '"@earendil-works/pi-tui"' has no exported member 'Ellipsis'.
+src/agent-hub-renderer.ts(43,58): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+src/agent-hub-renderer.ts(56,71): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+src/agent-hub-renderer.ts(72,26): error TS2693: 'ThinkingLevel' only refers to a type, but is being used as a value here.
+src/agent-hub-renderer.ts(72,57): error TS2693: 'ThinkingLevel' only refers to a type, but is being used as a value here.
+src/agent-hub.ts(21,2): error TS2305: Module '"@earendil-works/pi-tui"' has no exported member 'padding'.
+src/agent-hub.ts(22,2): error TS2305: Module '"@earendil-works/pi-tui"' has no exported member 'routeSelectListMouse'.
+src/agent-hub.ts(23,2): error TS2305: Module '"@earendil-works/pi-tui"' has no exported member 'routeSgrMouseInput'.
+src/agent-hub.ts(24,7): error TS2305: Module '"@earendil-works/pi-tui"' has no exported member 'SelectListMouseTarget'.
+src/agent-hub.ts(291,11): error TS4113: This member cannot have an 'override' modifier because it is not declared in the base class 'Container'.
+src/agent-hub.ts(306,11): error TS2416: Property 'render' in type 'AgentHubOverlayComponent' is not assignable to the same property in base type 'Container'.
+  Type '(width: number) => readonly string[]' is not assignable to type '(width: number) => string[]'.
+    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+src/agent-hub.ts(320,32): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/agent-hub.ts(388,50): error TS2741: Property 'invalidate' is missing in type 'AgentTranscriptViewer' but required in type 'Component'.
+src/agent-hub.ts(389,21): error TS2741: Property 'invalidate' is missing in type 'AgentTranscriptViewer' but required in type 'Component'.
+src/agent-hub.ts(404,67): error TS2345: Argument of type 'this' is not assignable to parameter of type 'Component | null'.
+  Type 'AgentHubOverlayComponent' is not assignable to type 'Component'.
+    The types returned by 'render(...)' are incompatible between these types.
+      The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+        Type 'this' is not assignable to type 'Component'.
+          Type 'AgentHubOverlayComponent' is not assignable to type 'Component'.
+            The types returned by 'render(...)' are incompatible between these types.
+              The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+src/agent-hub.ts(429,45): error TS7006: Parameter 'ref' implicitly has an 'any' type.
+src/agent-hub.ts(436,6): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/agent-hub.ts(436,9): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/agent-hub.ts(445,6): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/agent-hub.ts(445,9): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/agent-transcript-viewer.ts(18,46): error TS2305: Module '"@earendil-works/pi-tui"' has no exported member 'routeSgrMouseInput'.
+src/agent-transcript-viewer.ts(75,30): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/agent-transcript-viewer.ts(127,44): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+src/agent-transcript-viewer.ts(173,37): error TS2739: Type 'never[]' is missing the following properties from type 'Component': render, invalidate
+src/agent-transcript-viewer.ts(176,20): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/agent-transcript-viewer.ts(176,52): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/agent-transcript-viewer.ts(179,19): error TS2554: Expected 2-3 arguments, but got 1.
+src/agent-transcript-viewer.ts(180,17): error TS2339: Property 'setMaxHeight' does not exist on type 'Editor'.
+src/agent-transcript-viewer.ts(446,29): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/agent-transcript-viewer.ts(448,23): error TS2551: Property 'scroll' does not exist on type 'ScrollView'. Did you mean 'scrollTo'?
+src/agent-transcript-viewer.ts(497,24): error TS2339: Property 'handleScrollKey' does not exist on type 'ScrollView'.
+src/agent-transcript-viewer.ts(503,21): error TS2551: Property 'scroll' does not exist on type 'ScrollView'. Did you mean 'scrollTo'?
+src/agent-transcript-viewer.ts(505,21): error TS2551: Property 'scroll' does not exist on type 'ScrollView'. Did you mean 'scrollTo'?
+src/agent-transcript-viewer.ts(507,21): error TS2551: Property 'scrollToTop' does not exist on type 'ScrollView'. Did you mean 'scrollTop'?
+src/agent-transcript-viewer.ts(509,21): error TS2339: Property 'scrollToBottom' does not exist on type 'ScrollView'.
+src/agent-transcript-viewer.ts(519,41): error TS2339: Property 'getScrollOffset' does not exist on type 'ScrollView'.
+src/agent-transcript-viewer.ts(519,79): error TS2339: Property 'getMaxScrollOffset' does not exist on type 'ScrollView'.
+src/agent-transcript-viewer.ts(553,2): error TS2416: Property 'render' in type 'AgentTranscriptViewer' is not assignable to the same property in base type 'Component'.
+  Type '(width: number) => readonly string[]' is not assignable to type '(width: number) => string[]'.
+    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+src/agent-transcript-viewer.ts(581,20): error TS2339: Property 'setLines' does not exist on type 'ScrollView'.
+src/agent-transcript-viewer.ts(582,20): error TS2339: Property 'setHeight' does not exist on type 'ScrollView'.
+src/agent-transcript-viewer.ts(583,44): error TS2339: Property 'scrollToBottom' does not exist on type 'ScrollView'.
+src/overlay-box.ts(9,26): error TS2305: Module '"@earendil-works/pi-tui"' has no exported member 'padding'.
+src/overlay-box.ts(115,2): error TS2416: Property 'render' in type 'PanelDivider' is not assignable to the same property in base type 'Component'.
+  Type '() => readonly string[]' is not assignable to type '(width: number) => string[]'.
+    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+src/overlay-box.ts(185,44): error TS2339: Property 'dispose' does not exist on type 'Component'.
+src/overlay-box.ts(189,44): error TS2339: Property 'setIgnoreTight' does not exist on type 'Component'.
+src/overlay-box.ts(209,2): error TS2416: Property 'render' in type 'OverlayPanel' is not assignable to the same property in base type 'Component'.
+  Type '(width: number) => readonly string[]' is not assignable to type '(width: number) => string[]'.
+    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.

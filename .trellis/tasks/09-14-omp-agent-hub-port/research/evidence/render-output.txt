@@ -1,0 +1,134 @@
+
+WIDE — two-pane roster + inspector  (width 120)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ Agent Hub ───────────────────────────────────────────────────────────┬──────────────────────────────────────────────╮
+│ Roster· Flat / By parent ·● 2 running·● 2 idle·○ 1 parked·✖ 1 aborted │ ● auth-routes                                │
+│ $6.28·21m30s active agent time·95 req·225 tools·404.7k tok·4/6 timed· │ api-refactor/1                               │
+│ 6/6 measured                                                          │ running·7m00s active·active 0s               │
+│                                                                       │ default·claude-sonnet-4-6 high               │
+│ › ● api-refactor/1  auth-routes  ↳ api-refactor                       │                                              │
+│     default·claude-sonnet-4-6 high·0s                                 │ Task                                         │
+│     refactor the auth routes and keep the tests green·$1.18·7m00s     │ refactor the auth routes and keep the tests  │
+│     active·18 req·44 tools·64.0k tok                                  │ green                                        │
+│   ● api-refactor  ⧉ 2               default·claude-sonnet-4-6 high·0s │                                              │
+│     refactor the auth routes and keep the tests green·$3.42·11m00s    │ Current                                      │
+│     active·42 req·118 tools·184.3k tok                                │ bash · bun test auth.spec.ts                 │
+│   ● api-refactor/2  schema-review  ↳ api-refactor                     │                                              │
+│     default·gpt-5.3-codex high·0s                                     │ Usage                                        │
+│     $0.0000·time —·0 req·0 tools·0 tok                                │ $1.18·7m00s active·18 req·44 tools·64.0k tok │
+│   ● advisor-review  advisor/round2  read-only                         │ ━━━─────── 51.2k/200.0k 26%                  │
+│     advisor·gpt-5.3-codex high·1s                                     │                                              │
+│     $0.620·2m00s active·9 req·3 tools·48.0k tok                       │ Lineage                                      │
+│   ○ docs-pass  ⧉ 1                        default·claude-haiku-4-5·2s │ Spawned by api-refactor                      │
+│     $0.940·9m30s span·22 req·51 tools·96.4k tok                       │ Registered 2026-09-14 22:39:27 +08:00        │
+│   ✖ flaky-test-hunt                                                9s │                                              │
+│     $0.120·1m30s active·4 req·9 tools·12.0k tok                       │ Changes                                      │
+│                                                                       │ Shared workspace · per-agent LoC not attrib[0m…[0m │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+┤───────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────├
+│ j/k/wheel:select  PgUp/PgDn:details  Enter/click:open  t:by parent  r:revive  x:kill  Esc:close                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+WIDE — tree view (t)  (width 120, tree view)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─ Agent Hub ───────────────────────────────────────────────────────────┬──────────────────────────────────────────────╮
+│ Roster· Flat / By parent ·● 2 running·● 2 idle·○ 1 parked·✖ 1 aborted │ ● auth-routes                                │
+│ $6.28·21m30s active agent time·95 req·225 tools·404.7k tok·4/6 timed· │ api-refactor/1                               │
+│ 6/6 measured                                                          │ running·7m00s active·active 0s               │
+│                                                                       │ default·claude-sonnet-4-6 high               │
+│   ● api-refactor  ⧉ 2               default·claude-sonnet-4-6 high·0s │                                              │
+│     refactor the auth routes and keep the tests green·$3.42·11m00s    │ Task                                         │
+│     active·42 req·118 tools·184.3k tok                                │ refactor the auth routes and keep the tests  │
+│ › ● ├── api-refactor/1  auth-routes                                   │ green                                        │
+│       default·claude-sonnet-4-6 high·0s                               │                                              │
+│       refactor the auth routes and keep the tests green·$1.18·7m00s   │ Current                                      │
+│       active·18 req·44 tools·64.0k tok                                │ bash · bun test auth.spec.ts                 │
+│   ● └── api-refactor/2  schema-review   default·gpt-5.3-codex high·0s │                                              │
+│       $0.0000·time —·0 req·0 tools·0 tok                              │ Usage                                        │
+│   ● advisor-review  advisor/round2  read-only                         │ $1.18·7m00s active·18 req·44 tools·64.0k tok │
+│     advisor·gpt-5.3-codex high·1s                                     │ ━━━─────── 51.2k/200.0k 26%                  │
+│     $0.620·2m00s active·9 req·3 tools·48.0k tok                       │                                              │
+│   ○ docs-pass  ⧉ 1                        default·claude-haiku-4-5·2s │ Lineage                                      │
+│     $0.940·9m30s span·22 req·51 tools·96.4k tok                       │ Spawned by api-refactor                      │
+│   ✖ flaky-test-hunt                                                9s │ Registered 2026-09-14 22:39:27 +08:00        │
+│     $0.120·1m30s active·4 req·9 tools·12.0k tok                       │                                              │
+│                                                                       │ Changes                                      │
+│                                                                       │ Shared workspace · per-agent LoC not attrib[0m…[0m │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+│                                                                       │                                              │
+┤───────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────├
+│ j/k/wheel:select  PgUp/PgDn:details  Enter/click:open  t:flat  r:revive  x:kill  Esc:close                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+NARROW — roster only  (width 60)
+────────────────────────────────────────────────────────────
+╭─ Agent Hub ──────────────────────────────────────────────╮
+│ Roster· Flat / By parent ·● 2 running·● 2 idle·○ 1       │
+│ parked·✖ 1 aborted                                       │
+│ $6.28·21m30s active agent time·95 req·225 tools·404.7k   │
+│ tok·4/6 timed·6/6 measured                               │
+│                                                          │
+│ › ● api-refactor/1  auth-routes  ↳ api-refactor          │
+│     default·claude-sonnet-4-6 high·0s                    │
+│     refactor the auth routes and keep the tests green·   │
+│     $1.18·7m00s active·18 req·44 tools·64.0k tok         │
+│   ● api-refactor  ⧉ 2  default·claude-sonnet-4-6 high·0s │
+│     refactor the auth routes and keep the tests green·   │
+│     $3.42·11m00s active·42 req·118 tools·184.3k tok      │
+│   ● api-refactor/2  schema-review  ↳ api-refactor        │
+│     default·gpt-5.3-codex high·0s                        │
+│     $0.0000·time —·0 req·0 tools·0 tok                   │
+│   ● advisor-review  advisor/round2  read-only            │
+│     advisor·gpt-5.3-codex high·1s                        │
+│     $0.620·2m00s active·9 req·3 tools·48.0k tok          │
+│   ○ docs-pass  ⧉ 1           default·claude-haiku-4-5·2s │
+│     $0.940·9m30s span·22 req·51 tools·96.4k tok          │
+│   ✖ flaky-test-hunt                                   9s │
+│     $0.120·1m30s active·4 req·9 tools·12.0k tok          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+┤──────────────────────────────────────────────────────────├
+│ j/k:select  Enter:open  t:by parent  Tab:details  r/x[0m...[0m │
+╰──────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────
+
+rows rendered: 6 agents seeded
