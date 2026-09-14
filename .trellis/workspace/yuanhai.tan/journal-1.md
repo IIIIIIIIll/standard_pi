@@ -189,3 +189,26 @@ Closed the residual coupling left by the subagent bridge: it deactivated the shi
 ### Next Steps
 
 - Extraction is all-or-nothing: partial reformatting of the generated registrations is invisible, and a tool registered from a sibling file is never scanned. Recorded as a boundary rather than fixed.
+
+
+## Session 6: Make the render drift check insensitive to package order
+<!-- trellis-session: v=2 fp=5c5d0b9c42f91d87 -->
+
+**Date**: 2026-09-14
+**Task**: Make the render drift check insensitive to package order
+**Branch**: `main`
+
+### Summary
+
+Option 1 from design.md: --check in render-settings.mjs now compares packages as a sorted multiset, so a set-equal array reordered by pi install is no longer drift; duplicates, membership, key order and every other value stay strict, and the write path is untouched so setup.sh still canonicalises. Rule documented in layout-and-surfaces.md. Verified with 17 offline cases, two byte-identical setup.sh runs, and sync.sh reporting same. b91810a resynced the shell-guidelines.md snippets that pi-lens autoformatting had invalidated.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `dbdc8a6` | Compare packages as a set in the render drift check |
+| `b91810a` | Apply pi-lens formatting and resync the spec snippets it invalidated |
+
+### Status
+
+[OK] **Completed**
