@@ -231,8 +231,15 @@ everywhere.
 set is a *whitelist* rather than an inventory: the resource directories need not
 exist yet, and `link()` silently skips a source that is absent. The not-synced
 paths (`PI_NOT_SYNCED`) are the other data list: `sync.sh` reports them and
-`doctor.sh` checks that each is gitignored. All three have a single definition in
+`doctor.sh` checks that each is gitignored. All four definitions live in
 `scripts/lib.sh`, which every script that touches those paths must source:
+
+```bash
+readonly PI_DIRS=(themes prompts tools skills agents extensions)
+readonly PI_FILES=(AGENTS.md i-have-adhd.json)
+readonly PI_NOT_SYNCED=(auth.json … sessions/ npm/ …)
+readonly MCP_CFG="$HOME/.config/mcp/mcp.json"
+```
 
 ```bash
 LIB="$REPO_DIR/scripts/lib.sh"
@@ -246,7 +253,8 @@ fi
 
 Rules that follow:
 
-- **Never re-declare `PI_DIRS`, `PI_FILES`, or `PI_NOT_SYNCED` in a consumer.**
+- **Never re-declare `PI_DIRS`, `PI_FILES`, `PI_NOT_SYNCED` or `MCP_CFG` in a
+  consumer.**
   They are `readonly`,
   so a second copy is rejected (`PI_DIRS: readonly variable`) instead of silently
   replacing the list. The *values* therefore cannot diverge, but the failure
@@ -264,11 +272,27 @@ Rules that follow:
   with an `unbound variable` instead of naming the missing file. `doctor.sh` uses
   `bad` + `exit 1` instead of the `echo` + `exit 1` shown here.
 - **Keep `lib.sh` to the path lists (data only).** `setup.sh` is the bootstrap entry point;
-  do not couple it to more of `scripts/`. `PI_DIRS`, `PI_FILES` and
-  `PI_NOT_SYNCED` are the whole contract — no behaviour (`say`, `note`, the `node`
+  do not couple it to more of `scripts/`. `PI_DIRS`, `PI_FILES`, `PI_NOT_SYNCED` and
+  the `MCP_CFG` destination are the whole contract — no behaviour (`say`, `note`, the `node`
   preflight, `link()`) belongs here. `PI_NOT_SYNCED` is stored in canonical
   slash-form for directories (`sessions/`, `npm/`, …), because `git check-ignore`
   distinguishes `pi-agent/sessions` from `pi-agent/sessions/`.
+- **`MCP_CFG` is not `PI_`-prefixed on purpose.** The prefix marks a harness path
+  under `PI_DST`, and `sync.sh` enumerates and reports that tree. The global MCP
+  config is a different root with a different owner (every MCP-aware tool on the
+  machine writes it), so naming it `PI_*` would imply it belongs to the sync
+  report. `install-mcp.sh` writes it, `doctor.sh` checks it, and neither
+  `sync.sh` nor `PI_NOT_SYNCED` knows it exists.
+- **`MCP_CFG` follows the reader, not the XDG standard.** It is
+  `$HOME/.config/mcp/mcp.json` rather than
+  `${XDG_CONFIG_HOME:-$HOME/.config}/mcp/mcp.json`, because `pi-mcp-adapter`
+  hardcodes `join(homedir(), ".config", "mcp", "mcp.json")`
+  (`dist/config.js:12`) and never reads `XDG_CONFIG_HOME`. A script that honoured
+  the variable would write where the adapter does not look, and `doctor.sh` —
+  reading the same constant back — would still report green. `doctor.sh` warns
+  when `XDG_CONFIG_HOME` points elsewhere so the mismatch is visible. This is the
+  one path list here whose value tracks another program's resolver rather than
+  the environment; a bare `$HOME` is deliberate, not an oversight.
 
 See [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md)
 for the sites that still have to be edited by hand when the list changes.
@@ -281,7 +305,8 @@ Flags are parsed in a `while [ $# -gt 0 ]` loop with a `case`, and the terminati
 arm is `*` with a usage message on **stderr** and exit `2`:
 
 ```bash
-# abridged — the real loop also handles --skip-skills, --skip-plugins, --skip-verify
+# abridged — the real loop also handles --skip-skills, --skip-plugins,
+# --skip-mcp, --skip-verify
 while [ $# -gt 0 ]; do
   case "$1" in
   --with)

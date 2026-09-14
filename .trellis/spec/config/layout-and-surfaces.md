@@ -25,7 +25,8 @@
 | `~/.pi/agent/extensions/*/logs/` | — | **Ignored** | the extension |
 | `~/.agents/skills/<name>/` | — | **Fetched from upstream** | `install-skills.mjs` |
 | `~/.agents/.pi-setup-skills.json` | — | **Generated, outside repo** | `install-skills.mjs` |
-| `~/.pi/agent/{auto-compact.json,pi-vcc-config.json,web-search.json}` | — | **Ignored** | the owning extension |
+| `~/.config/mcp/mcp.json` | — | **Generated, outside repo** | `scripts/install-mcp.sh` |
+| `~/.pi/agent/{auto-compact.json,pi-vcc-config.json,web-search.json,mcp-cache.json}` | — | **Ignored** | the owning extension |
 | `~/.pi/agent/settings.json.pre-render-<stamp>` | — | **Ignored backup** | `render-settings.mjs` |
 | `<path>.bak-<stamp>` | — | **Ignored backup** | `setup.sh::link()`, `render-settings.mjs` |
 | `.pi/`, `.agents/` | — | **Ignored** (Trellis-generated adapters) | `trellis` CLI |
@@ -53,6 +54,17 @@ points are `.gitignore` and `PI_NOT_SYNCED` in `scripts/lib.sh`; see
 [The `.gitignore` / Skip-List Invariant](#the-gitignore--skip-list-invariant) for
 how they relate — they are deliberately **not** identical, and `doctor.sh`
 enforces the direction that matters.
+
+`~/.config/mcp/mcp.json` is the second **Generated, outside repo** row, and it is
+outside on the same terms as `~/.agents/.pi-setup-skills.json`: the file does not
+live under `PI_DST`, so it takes no `PI_DIRS` / `PI_FILES` entry; the
+`PI_NOT_SYNCED` entries are checked as `pi-agent/<name>`, so a path outside the
+repo cannot be expressed there at all; and there is no repo path for `.gitignore`
+to cover. The repo stores the *instruction* to register the server (one line in
+`scripts/install-mcp.sh`) rather than the file — see
+[pi-resources.md](./pi-resources.md#the-global-mcp-config). Its path in
+`scripts/lib.sh` follows the reader's resolution, not the XDG standard; that
+section explains why.
 
 ---
 
@@ -357,7 +369,7 @@ actively checks the important one. Do not add them:
 | `~/.pi/agent/{missions,profiles,web-search-cache}/`, `~/.pi/agent/run-history.jsonl` | Per-machine runtime state Pi writes: mission state, profiles, search cache, and the run log. Added to the two enforcement lists on 2026-09-13. |
 | `~/.pi/agent/cache/` | Pi's scratch cache. Ignored and reported; see the invariant section above. |
 | `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory. Ignored and reported; see the invariant section above. |
-| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json` | Extension-owned per-machine config, rewritten at runtime. `web-search.json` is `pi-web-access`'s provider/proxy/credential store — committing it leaks keys. Ignored and reported; see the invariant section above. |
+| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json`, `mcp-cache.json` | Extension-owned per-machine config, rewritten at runtime. `web-search.json` is `pi-web-access`'s provider/proxy/credential store — committing it leaks keys. `mcp-cache.json` is `pi-mcp-adapter`'s cache of each registered server's tool schemas and instructions: remote content, not a credential. Ignored and reported; see the invariant section above. |
 | `~/.pi/agent/sessions/` | Per-machine conversation history. |
 | `~/.pi/agent/npm/`, `git/`, `bin/` | Installed `node_modules`, cloned repos, platform binaries. |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts. |

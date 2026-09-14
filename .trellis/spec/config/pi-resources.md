@@ -76,13 +76,18 @@ compares.
 | `npm:pi-mcp-adapter` | MCP servers behind one proxy tool (~200 tokens) instead of every server's full tool list; reads `.mcp.json`, `~/.config/mcp/mcp.json`, and host configs; adds `/mcp`, `/mcp setup`, `mcp-auth` | the on-demand path into the MCP ecosystem without paying for it in context |
 | `npm:pi-lens` | language-aware feedback on every write/edit: LSP diagnostics and navigation, linters/type-checkers, format/autofix, ast-grep and tree-sitter rules, ranked `symbol_search`, `/lens-map` | edits get checked by the real toolchain instead of by the model's own reading |
 | `npm:pi-tps-status` | live tokens-per-second meter in the status bar: TTFT and token-count modes, three counting strategies, provider-usage reconciliation, `/tps` settings | streaming throughput is otherwise invisible; it keeps its config outside `~/.pi/agent/`, at `$XDG_CONFIG_HOME/pi-tps-status/config.json` (like `pi-lens`), so it adds nothing to the path lists |
-| `npm:pi-timer` | per-run elapsed timer in the footer: `runs for` while the agent works, `ran for` once it stops, reset on the next run | run duration is otherwise invisible while it is accumulating, and the number is what makes "is this model slow or is this task big?" answerable; the extension imports no `fs` at all — it reads nothing and writes nothing, so it has no config file and adds nothing to the path lists |
+| `npm:pi-timer` | per-run elapsed timer in the footer: `runs for` while the agent works, `ran for` once it stops, reset on the next run | run duration is otherwise invisible while it is accumulating, and the number is what makes "is this model slow or is this task big?" answerable; the extension imports no `fs` at all — it reads nothing and writes nothing, so it has no config file and adds nothing to the path lists. It **replaces the whole footer** via `ctx.ui.setFooter()`, which is why `cache-hit-rate.ts` has to republish the cache-hit percentage it drops |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped replies -- answer or next action first, numbered steps, progress restated each turn, concrete time estimates, no preamble; `/i-have-adhd` (or `stop adhd mode`) toggles it per session, `/skill:i-have-adhd` is the aliased skill | output *shape* is a standing preference rather than a per-task prompt, so it belongs to every machine; it is the one package here with a tracked, symlinked config file (`pi-agent/i-have-adhd.json`) -- see below |
 
 Both are self-contained: neither needs a tracked config file in this repo, and
-neither writes into `~/.pi/agent/`. `pi-mcp-adapter` is inert until an MCP config
-exists (it ships no servers) — configure with `/mcp setup`, which previews every
-file it would change. `pi-lens` keeps **everything** under its own machine-global
+neither writes into `~/.pi/agent/`. `pi-mcp-adapter` ships no MCP servers of its own, so the harness supplies one:
+`setup.sh` installs `codebase-memory-mcp` and registers it in
+`~/.config/mcp/mcp.json` — the **global** layer, shared with every MCP-aware tool
+on the machine. That is an always-on core cost, so it is worth stating plainly:
+**37.3 MB downloaded and 293 MB on disk** per machine. `/mcp setup` previews every
+file it would change; see
+[The global MCP config](#the-global-mcp-config) for the surface and why no path
+list holds it. `pi-lens` keeps **everything** under its own machine-global
 root: config at `~/.pi-lens/config.json`, managed tool binaries at
 `~/.pi-lens/bin/`, per-project state at `~/.pi-lens/projects/<slug>/`, plus its
 global logs. That is deliberately outside `~/.pi/agent/`, so it appears in
@@ -101,6 +106,15 @@ also appears in neither `scripts/lib.sh`'s path lists nor `.gitignore`.
 imports no `fs`, so it has no config file to track, ignore, or symlink — a session
 start and every run start/end are held in memory and rendered inline via
 `ctx.ui.setFooter()`. Nothing to add to `scripts/lib.sh` or `.gitignore`.
+
+That `setFooter()` call is also **why the hand-placed `cache-hit-rate.ts`
+extension exists**, and the two must be read together: the extension API exposes
+no composable footer primitive, so pi-timer rebuilds the footer by hand from a
+copy of an older one. Its rebuild pushes `↑ ↓ R W $ ctx%` and **not** pi core's
+`CH<rate>%` segment, so installing pi-timer silently removes the cache-hit
+percentage. See
+[`cache-hit-rate.ts`](#cache-hit-ratets) below for why the repair is a status
+line rather than a patched footer.
 
 `pi-web-access` is the one core package that *does* own a per-machine file in the
 agent dir: `~/.pi/agent/web-search.json` — provider selection, proxy, `authFetch`
@@ -203,6 +217,124 @@ Both settings files (`~/.pi/agent/auto-compact.json`,
 `~/.pi/agent/pi-vcc-config.json`) are per-machine, untracked and **never
 symlinked** — see
 [layout-and-surfaces.md](./layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked).
+
+### The global MCP config
+
+The harness registers the MCP servers it installs in `~/.config/mcp/mcp.json`.
+`setup.sh` calls `scripts/install-mcp.sh`, which installs `codebase-memory-mcp`
+with upstream's `--skip-config`, then `scripts/register-mcp-server.mjs` merges one
+entry into that file:
+
+```json
+{
+  "mcpServers": {
+    "codebase-memory-mcp": {
+      "command": "codebase-memory-mcp",
+      "args": [],
+      "lifecycle": "lazy"
+    }
+  }
+}
+```
+
+**What it costs.** `codebase-memory-mcp` 0.10.8 is **37.3 MB downloaded** and
+**293 MB on disk** once the binary is extracted (measured 2026-09-14;
+`ls -l ~/.local/bin/codebase-memory-mcp`). That is the number behind the decision
+to make the server always-on core rather than an optional bundle: the server is
+core because every machine should have code intelligence, and a 293 MB binary is
+what that buys. Say it plainly rather than leaving it to be discovered.
+
+**What it costs in context is a different number, and it is small.** The adapter
+keeps the server's metadata outside the context: the 15 tool definitions are
+21,585 bytes of JSON — ~5,400 tokens at 4 bytes/token, ~6,700 at the 3.2
+bytes/token JSON schemas actually run at — and they live in
+`~/.pi/agent/mcp-cache.json` (23 KB on disk), reached on demand through
+`mcp({ search })` / `mcp({ describe })`. What sits in the model's tool list
+instead is the `mcp` proxy (~200 tokens, already paid by `pi-mcp-adapter` on
+every machine) plus one `mcp__<server>` namespace tool per registered server,
+measured at ~100 tokens for this one. That namespace tool appears only once the
+cache has been populated, so a machine that has never contacted the server pays
+nothing for it. The variable cost is per call — a `search_graph` result runs from
+a few hundred to a few thousand tokens — and nothing here reduces that. So the
+293 MB is a **disk** decision, not a context one: do not re-open the always-on
+choice on token grounds.
+
+The cache itself is a runtime file `pi-mcp-adapter` owns, so it is named in both
+`.gitignore` and `PI_NOT_SYNCED` alongside the other agent-dir files a package
+rewrites. It is not credential-bearing — the adapter hashes a bearer token into
+`configHash` rather than storing it (`dist/metadata-cache.js:78`) — but it holds
+remote content and must never become repo material.
+
+Facts a contributor must not break:
+
+- **It is Generated, outside the repo** — the category
+  `~/.agents/.pi-setup-skills.json` already occupies, not a fifth surface. It is
+  outside on the same terms, which is why
+  [layout-and-surfaces.md](./layout-and-surfaces.md)'s map carries it: it does not
+  live under `PI_DST`, so it takes no `PI_DIRS` / `PI_FILES` entry; the
+  `PI_NOT_SYNCED` entries are checked as `pi-agent/<name>`, so a path outside the
+  repo cannot be expressed there at all; and there is no repo path for
+  `.gitignore` to cover. The path is defined once in `scripts/lib.sh` as
+  `MCP_CFG`, not `PI_`-prefixed because that prefix means a harness path under
+  `PI_DST`.
+- **`MCP_CFG` follows the reader, not the XDG standard.** It is
+  `$HOME/.config/mcp/mcp.json`, because `pi-mcp-adapter` hardcodes
+  `join(homedir(), ".config", "mcp", "mcp.json")` (`dist/config.js:12`) and
+  ignores `XDG_CONFIG_HOME`. Honouring the variable here would register the server
+  where the adapter never looks — and `doctor.sh`, reading the same constant back,
+  would still report green. `doctor.sh` emits a `warn` when `XDG_CONFIG_HOME`
+  points somewhere else, so the mismatch is visible rather than silent. Do not
+  "fix" the constant to the XDG-resolved path.
+- **`sync.sh` and `sync-settings.mjs` never see it**: they enumerate `PI_DST`.
+  Adding it to any of those lists means the surface decision has been misread.
+- **Its owner writes it with an atomic rename** (`config.ts:1029`), so it can
+  never be a symlink or a repo-rendered file — the trap
+  [layout-and-surfaces.md](./layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked)
+  documents for `auto-compact.json`. The repo stores the *instruction* to
+  register the server, not the file.
+- **This repo is not the only writer.** `/mcp setup`, `/mcp enable`/`disable` and
+  hand edits all reach it, so the merge only ever adds its own key and preserves
+  every other server. Four shapes are **refused** (exit `1`, no write, no backup)
+  rather than repaired: an unparseable file; a root that is not an object; a
+  non-object `mcpServers` value; and a file that spells the key `mcp-servers`
+  instead of `mcpServers`. The first prevents deleting every other server with a
+  parse-failure reset, the middle two prevent a rekeying spread (a string
+  `mcpServers` would become `{"0":"o",…}`) or a merge that reports success and
+  registers nothing, and the last prevents shadowing — the adapter reads
+  `raw.mcpServers ?? raw["mcp-servers"] ?? {}` and prefers camelCase.
+- **The helper is deliberately stricter than the reader on three inputs.**
+  `pi-mcp-adapter` parses the file with `parseJsonWithComments` (comments and
+  trailing commas tolerated) and treats `mcpServers: null` as absent —
+  `isRecord(null)` is false, so it reads `{}`. `register-mcp-server.mjs` uses
+  strict `JSON.parse` and refuses `null` outright, so a file the adapter happily
+  reads can exit `1` here and `doctor.sh` turns that into a `bad`. Keep the
+  asymmetry: the helper is not the file's owner and cannot tell intent from
+  damage, and a `null` in that key means a truncated or corrupt write rather than
+  a request to clear it. Relaxing any of the three buys nothing and hides damage.
+- **`command` is PATH-resolved, never absolute.** Upstream's own generated entry
+  carries an absolute `$HOME`-rooted path; that would make a machine-specific
+  value the thing this repo reproduces, and the file is shared across tools.
+- **`--skip-config` is mandatory when running upstream's installer.** Without it
+  the installer writes `~/.pi/agent/AGENTS.md`, `~/.pi/agent/skills/` and
+  `~/.pi/agent/extensions/cbmem.ts` — and that last directory is a symlink into
+  this repo, so `cbmem.ts` would land in the git working tree. Pi reaches the
+  graph through the MCP client here, not through the generated extension.
+- **`--skip-config` does not stop every upstream side effect.** The binary's
+  install step also appends a PATH line to `~/.bashrc` under a
+  `# Added by codebase-memory-mcp install` comment, and leaves a 12.9 KB copy of
+  `install.sh` at `~/.local/bin/install.sh`. The appended line is the install
+  directory **already expanded to an absolute path** — the writer's template is
+  `export PATH="%s:$PATH"`, measured here as
+  `export PATH="/home/tan/.local/bin:$PATH"` — so it is not the portable `$HOME`
+  form and must not be quoted as one. `--skip-config` prevents neither, both are
+  invisible to `git status` and to `doctor.sh`, and this repo does not edit files
+  it does not own — so they are documented, not removed. The `~/.local/bin` PATH
+  entry is also what makes `install-mcp.sh`'s post-install `command -v` re-check
+  succeed.
+- **`doctor.sh` treats "no binary and no config" as a single `warn`**, because
+  `--skip-mcp` is a legitimate machine choice and that machine must still reach
+  `All good.`. A binary that is present with a missing or drifted config is a
+  `bad`.
 
 ---
 
@@ -392,6 +524,48 @@ phase and both generalize to any extension in this layer:
   test suppresses the injection for exactly the sessions whose documents quote it.
   The failure is silent and self-inflicted: writing the tag down is what triggers
   it.
+
+### `cache-hit-rate.ts`
+
+Republishes the cache-hit percentage that `npm:pi-timer` destroys.
+
+Pi's built-in footer computes `CH<rate>%` from the **latest** assistant message
+(`cacheRead / (input + cacheRead + cacheWrite)`) and gates the display on
+cumulative `cacheRead`/`cacheWrite` being non-zero. `pi-timer` replaces that
+whole footer through `ctx.ui.setFooter()` — its rebuild is a copy of an older
+footer and pushes `↑ ↓ R W $ ctx%` with no `CH` segment. This extension recovers
+the number through a surface both footers render.
+
+Facts a contributor must not break:
+
+- **It is a repair, not a feature.** If pi core or pi-timer ever prints the
+  cache-hit rate again, delete this file — do not keep it "in case". Two sources
+  for the same footer number is the drift this layer exists to avoid.
+- **It publishes via `ctx.ui.setStatus()`, not `setFooter()`.** Pi core's footer
+  and pi-timer's rebuild both render `footerData.getExtensionStatuses()`, so one
+  status string works under either. Reimplementing this as a footer component
+  would restore the exact single-owner problem it was written to dodge — the
+  next package to call `setFooter()` would erase it again.
+- **The rate is the latest message's, not a session average.** Mirroring pi
+  core's derivation is the whole point; an average over the session is a
+  different (and wrong) number that quietly disagrees with `/status`. The
+  accumulation was checked against core's own `latestCacheHitRate` loop on 121
+  logged sessions and matched on all 121.
+- **A trailing message with no prompt tokens hides the segment — do not
+  "improve" that.** Core takes the rate from the latest assistant message only,
+  so an all-zero final message leaves nothing to show and core blanks it. Keeping
+  the *previous* non-null rate is the tempting alternative and it is wrong: it
+  shows a number core does not, which is a second source of truth for the same
+  footer value. Blanking is also self-correcting — the next message with usage
+  restores it.
+- **It owns no state.** No config file, no `fs` import, nothing persisted, so it
+  changes neither path list in `scripts/lib.sh` nor `.gitignore`. It clears the
+  status when no cache usage exists yet, so a fresh session shows nothing rather
+  than `0.0%`.
+- **It is global.** Pi loads `~/.pi/agent/extensions/` in every project, so it
+  reads only the session it is handed and returns silently when the session
+  manager or UI context is absent. Its key is `cache-hit`, which sorts before
+  pi-tps-status's `tps` on pi-timer's alphabetically ordered status line.
 
 ---
 

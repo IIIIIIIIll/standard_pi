@@ -10,7 +10,7 @@ git clone git@github.com:IIIIIIIIll/my_pi_setup.git ~/my_pi_setup
 That is the whole thing. `setup.sh` is idempotent — **re-running it is how you
 update**, including pulling the latest skills from upstream.
 
-It does six things:
+It does seven things:
 
 1. renders `~/.pi/agent/settings.json` from core settings + this machine's optional bundles
 2. symlinks the resource files and dirs that exist in the repo — `AGENTS.md`,
@@ -20,7 +20,9 @@ It does six things:
 3. seeds `~/.pi/agent/auth.json` from the template if absent
 4. installs/refreshes skills **from their upstream sources** (see below)
 5. refreshes Pi plugin packages (`pi update --extensions`)
-6. verifies everything with `scripts/doctor.sh`
+6. installs the `codebase-memory-mcp` binary and registers it in the machine-global
+   MCP config (see [MCP server](#the-mcp-server--installed-not-a-package))
+7. verifies everything with `scripts/doctor.sh`
 
 Then add credentials and start Pi:
 
@@ -30,7 +32,7 @@ pi
 ```
 
 Run `./setup.sh --help` for flags (`--with`, `--none`, `--yes`, `--skip-skills`,
-`--skip-plugins`, `--skip-verify`).
+`--skip-plugins`, `--skip-mcp`, `--skip-verify`).
 
 ---
 
@@ -118,9 +120,58 @@ its own Pi session, so `pi-agent/extensions/trellis-subagents-bridge/` keeps it
 pointed at the session's active task — see
 [extensions/README.md](pi-agent/extensions/README.md#trellis-subagents-bridge).
 
+`pi-timer` replaces Pi's built-in footer wholesale, and its rebuild is a copy of
+an older one — which drops the cache-hit percentage the built-in footer shows.
+`pi-agent/extensions/cache-hit-rate.ts` republishes it as a status line that both
+footers render — see
+[extensions/README.md](pi-agent/extensions/README.md#cache-hit-rate).
+
 What each role agent is for, the prompt form that actually works, and how to drive
 the plugins above day to day: [`docs/`](docs/README.md) —
 [plugins](docs/plugins.md), [skills](docs/skills.md), [agents](docs/agents.md).
+
+### The MCP server — installed, not a package
+
+`pi-mcp-adapter` ships no servers of its own, so `setup.sh` installs
+[`codebase-memory-mcp`](https://github.com/DeusData/codebase-memory-mcp) and
+registers it in the machine-global MCP config at `~/.config/mcp/mcp.json`. That
+path is `$HOME/.config/mcp/mcp.json` even when `XDG_CONFIG_HOME` is set, because
+the adapter ignores that variable; `doctor.sh` notes the mismatch when it applies.
+
+```json
+{
+  "mcpServers": {
+    "codebase-memory-mcp": {
+      "command": "codebase-memory-mcp",
+      "args": [],
+      "lifecycle": "lazy"
+    }
+  }
+}
+```
+
+- The `command` is the PATH-resolved name, never an absolute path, because this
+  file is shared and must not carry a machine-specific value.
+- That file is **shared by every MCP-aware tool on the machine**, and it lives
+  outside `~/.pi/agent/`, so it is not synced into this repo. Merge, never
+  replace: `scripts/register-mcp-server.mjs` owns exactly one key and leaves any
+  other server alone. It refuses — writes nothing — on an unparseable file, on a
+  root that is not an object, on a non-object `mcpServers` value, and on a file
+  that spells the key `mcp-servers` instead of `mcpServers`.
+- The upstream installer runs with `--skip-config` on purpose: without it, it
+  would write a `cbmem.ts` Pi extension, `AGENTS.md` and `skills/` into
+  `~/.pi/agent/` — which `setup.sh` owns. Pi reaches the graph over MCP instead.
+- **What it costs:** 37.3 MB downloaded, **293 MB on disk** per machine. That is
+  the price of the server being core rather than an optional bundle.
+- `--skip-config` does not stop every upstream side effect: the install step also
+  appends a PATH line to `~/.bashrc` and leaves a copy of `install.sh` at
+  `~/.local/bin/install.sh`. Neither is visible to `git status` or to
+  `doctor.sh`, and this repo does not edit files it does not own — remove them by
+  hand if you do not want them. The binary itself lands in `~/.local/bin`, so the
+  post-install `command -v` re-check assumes that directory is on `PATH`.
+- `scripts/install-mcp.sh --force` reinstalls the binary (that is the update
+  path); `./setup.sh --skip-mcp` opts out on a machine that does not want it.
+  Inside Pi, `/mcp` lists what the adapter can see.
 
 Compaction is split between the last two: `auto-compact` decides **when**
 (percentage of context) and `pi-vcc` decides **how** (algorithmic extraction, no
@@ -207,6 +258,7 @@ Settings need one explicit step, because `settings.json` is generated:
 | `pi install …` an always-on plugin | `scripts/sync.sh` → commit |
 | Want a plugin only on this machine | `scripts/optional.sh scaffold` + enable |
 | Want newer skills | `./setup.sh` (re-fetch) |
+| Want the MCP server installed or updated | `./setup.sh` (install if absent), or `scripts/install-mcp.sh --force` to reinstall the binary |
 
 ```bash
 scripts/sync.sh
@@ -234,8 +286,9 @@ git add -A && git commit -m "…" && git push
 | `~/.pi/agent/run-history.jsonl` | Per-machine run history log |
 | `~/.pi/agent/web-search-cache/` | Cached web-search results, re-fetchable |
 | `~/.pi/agent/cache/` | Pi's scratch cache |
-| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json` | Extension-owned per-machine config; rewritten at runtime, so never symlinked — see [spec/config/layout-and-surfaces.md](.trellis/spec/config/layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked). `web-search.json` also holds provider credentials |
+| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json`, `mcp-cache.json` | Extension-owned per-machine config; rewritten at runtime, so never symlinked — see [spec/config/layout-and-surfaces.md](.trellis/spec/config/layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked). `web-search.json` also holds provider credentials, and `mcp-cache.json` caches remote tool metadata |
 | `~/.pi-lens/` | pi-lens's own machine-global root — config, managed LSP/tool binaries, per-project caches, logs. Outside `~/.pi/agent/`, so it is not one of `scripts/lib.sh`'s paths |
+| `~/.config/mcp/mcp.json` | MCP servers for every MCP-aware tool on the machine, written by `scripts/install-mcp.sh`. Outside `~/.pi/agent/`, so it is not one of `scripts/lib.sh`'s paths |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts |
 
 > **Security:** `auth.json` is gitignored and `doctor.sh` fails if it ever becomes
@@ -251,6 +304,8 @@ git add -A && git commit -m "…" && git push
 | `setup.sh` | The entry point: everything above, idempotent. |
 | `scripts/optional.sh list \| enable \| disable \| scaffold` | Per-machine optional plugin bundles. |
 | `scripts/install-skills.mjs` | Fetches skills from `skills.json` sources (`--check` verifies without network). |
+| `scripts/install-mcp.sh` | Installs `codebase-memory-mcp` if absent (upstream installer, `--skip-config`) and registers it in `~/.config/mcp/mcp.json`; `--force` reinstalls the binary. |
+| `scripts/register-mcp-server.mjs` | The JSON helper that helper uses: merges one server entry, backs up before overwrite, `--check` for drift without writing. |
 | `scripts/check-docs.mjs` | Compares the entry ids in `docs/plugins.md` and `docs/skills.md` against `settings.core.json` and `skills.json`; run by `doctor.sh`, and it fails loudly rather than skipping when an input is unreadable. |
 | `scripts/sync.sh` | Folds live settings into `settings.core.json`, stripping optional contributions. |
 | `scripts/doctor.sh` | Checks symlinks, render drift, skills, docs coverage, `auth.json` permissions, git cleanliness, and scans tracked files for secrets. |

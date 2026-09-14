@@ -11,12 +11,13 @@ It is not an application: there is no server, no UI, no database, no test suite.
 
 The whole product is:
 
-- four bash scripts that render, symlink, sync, and verify harness state
-- four dependency-free Node ESM helpers that do the JSON work
+- five bash scripts that render, symlink, sync, install, and verify harness state
+- five dependency-free Node ESM helpers that do the JSON work
 - JSON config files that Pi reads (`settings.core.json`, `optional/*/manifest.json`, `skills.json`)
 - Markdown that explains the above
 
-Roughly 600 lines of authored code total. `git clone && ./setup.sh` is the
+Roughly 1,250 lines of authored code total (`wc -l setup.sh scripts/*.sh
+scripts/*.mjs`). `git clone && ./setup.sh` is the
 install path, and **re-running `./setup.sh` is the update path** — idempotency
 is the central design constraint, not a nice-to-have.
 
@@ -25,7 +26,7 @@ is the central design constraint, not a nice-to-have.
 ## Spec Layers
 
 | Layer | Covers | Read before |
-|-------|--------|-------------|
+| ------- | -------- | ------------- |
 | [scripts/](./scripts/index.md) | `setup.sh`, `scripts/*.sh`, `scripts/*.mjs` — bash and Node conventions | Changing anything executable |
 | [config/](./config/index.md) | Tracked/symlinked/generated surfaces, `optional/*/manifest.json`, `settings.core.json`, `skills.json`, permissions | Changing any `.json` config or adding a resource dir |
 | [guides/](./guides/index.md) | Thinking guides, including the [change-propagation guide](./guides/change-propagation-guide.md) which is the most load-bearing one for this repo | Whenever you change a constant that appears in more than one file |

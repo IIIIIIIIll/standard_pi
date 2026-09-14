@@ -9,7 +9,8 @@
 #   3. seed ~/.pi/agent/auth.json from the template if absent
 #   4. install/refresh skills from their upstream sources (skills.json)
 #   5. refresh Pi plugin packages
-#   6. verify with scripts/doctor.sh
+#   6. install the codebase-memory MCP binary and register it machine-globally
+#   7. verify with scripts/doctor.sh
 #
 # Usage:
 #   ./setup.sh                         keep saved optional choices (prompt if new)
@@ -18,6 +19,7 @@
 #   ./setup.sh --yes                   never prompt
 #   ./setup.sh --skip-skills           leave skills alone (offline, etc.)
 #   ./setup.sh --skip-plugins          leave plugins alone
+#   ./setup.sh --skip-mcp              leave the MCP server alone
 #   ./setup.sh --skip-verify           skip doctor
 #
 set -euo pipefail
@@ -40,6 +42,7 @@ EXPLICIT=0
 ASSUME_YES=0
 SKIP_SKILLS=0
 SKIP_PLUGINS=0
+SKIP_MCP=0
 SKIP_VERIFY=0
 
 usage() {
@@ -68,6 +71,10 @@ while [ $# -gt 0 ]; do
     ;;
   --skip-plugins)
     SKIP_PLUGINS=1
+    shift
+    ;;
+  --skip-mcp)
+    SKIP_MCP=1
     shift
     ;;
   --skip-verify)
@@ -206,7 +213,16 @@ if [ "$SKIP_PLUGINS" = 0 ] && command -v pi >/dev/null 2>&1; then
   rm -f /tmp/pi-setup-plugins.$$
 fi
 
-# --- 6. verify -----------------------------------------------------------------
+# --- 6. MCP server ---------------------------------------------------------------
+
+echo "==> MCP servers"
+if [ "$SKIP_MCP" = 1 ]; then
+  say skip "install-mcp.sh (--skip-mcp)"
+else
+  "$REPO_DIR/scripts/install-mcp.sh" || note "MCP install had problems; see above"
+fi
+
+# --- 7. verify -----------------------------------------------------------------
 
 echo
 if [ "$SKIP_VERIFY" = 0 ]; then

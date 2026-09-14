@@ -30,6 +30,10 @@ pi-agent/agent-memory/
 pi-agent/auto-compact.json
 pi-agent/pi-vcc-config.json
 pi-agent/web-search.json
+# pi-mcp-adapter's per-server tool-metadata cache, rewritten at runtime. Not
+# credential-bearing — it hashes the bearer token into configHash rather than
+# storing it — but it is remote content and never repo material.
+pi-agent/mcp-cache.json
 
 pi-agent/sessions/
 pi-agent/npm/

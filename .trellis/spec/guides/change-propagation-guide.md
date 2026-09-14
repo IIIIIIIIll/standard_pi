@@ -73,6 +73,7 @@ grep -n "^| " README.md                                 # the tables
 | The name of a script or path | its own file, every caller, every message naming it, `.gitignore` comments, `README.md` | stale instructions, as happened when `install.sh` was folded into `setup.sh` |
 | Ignores / deny rules | `.gitignore`, `extensions/pi-permission-system/config.json`, `README.md` | a secret or `node_modules` gets committed |
 | Plugin list | `settings.core.json` `packages`, `README.md` plugin table, the owning `optional/*/manifest.json`, `docs/plugins.md` (one entry per package — checked by `scripts/check-docs.mjs`), `.trellis/spec/config/pi-resources.md` inventory | an undocumented or double-declared plugin, or a `doctor.sh` `bad` |
+| MCP server registration (`scripts/install-mcp.sh`, `scripts/register-mcp-server.mjs`, `~/.config/mcp/mcp.json`) | `scripts/lib.sh` (the single definition: `MCP_CFG`), `setup.sh` (header-comment step list + `--skip-mcp`), `scripts/doctor.sh` (the `==> MCP server` section, including its `XDG_CONFIG_HOME` note), `README.md` (setup list, flag list, day-to-day table, "not stored here" table, script table), `spec/index.md` (bash/helper counts), `spec/scripts/index.md` (runtime table, preflight count, `100755` list), `spec/scripts/shell-guidelines.md` (the widened `lib.sh` contract plus the `MCP_CFG`-follows-the-reader rule), `spec/config/pi-resources.md` (the `pi-mcp-adapter` paragraph and "The global MCP config"), `spec/config/layout-and-surfaces.md` (the map row) | the binary is installed but unreachable, or `doctor.sh` reports a false `bad`. Deliberately **not** a site: `.gitignore`, `PI_NOT_SYNCED`, `sync.sh`, `sync-settings.mjs`, `~/.pi/agent/mcp.json` — the config lives outside the repo, so adding it to any of those means the surface was misread. Changing `MCP_CFG`'s *value* also means re-measuring `pi-mcp-adapter`'s resolver: it identifies its own config path, not the environment |
 | Shipped dispatch tool names | `pi-agent/extensions/trellis-subagents-bridge/index.ts` (`SHIPPED_TOOLS` — **the single definition**), `scripts/doctor.sh` (reads that declaration and compares it against the generated extension), and the generated `.pi/extensions/trellis/index.ts` that registers them — which this repo **cannot edit** | the shipped dispatch path becomes callable again and its competing prompt guidance returns, silently: `trellis update` renames a tool and nothing notices. `doctor.sh` fails instead |
 | Installed skills | `skills.json`, `README.md` "Currently installed", `~/.agents/.pi-setup-skills.json` (generated), `docs/skills.md` (one entry per skill — checked by `scripts/check-docs.mjs`), `.trellis/spec/config/pi-resources.md` `skills.json` section | README lists a skill that is never installed, or a `doctor.sh` `bad` |
 | `_`-prefix exclusion | `optional.sh` `find`, `render-settings.mjs` `listOptionals`, `doctor.sh` `case`, `optional/_template/README.md` | `_template` becomes an enable-able bundle |
@@ -144,6 +145,37 @@ What each step actually proves:
 `doctor.sh`'s exit code is meaningful: `0` with `All good.`, `0` with notes
 (informational, e.g. no `origin` remote), or `1` with `N problem(s) found.`
 Never treat a non-zero exit as noise.
+
+### When another task is editing the same tree
+
+A green tree and a green commit are different claims. With two tasks in flight in
+one working tree, either one's commit can take a **shared** file (`README.md`,
+`scripts/doctor.sh`, the spec trees) while the other task's half of that file stays
+uncommitted — and the committed file then references something that does not exist
+at its own commit.
+
+Measured 2026-09-14: a docs commit swept up `doctor.sh`'s new `==> MCP server`
+section, which expands `$MCP_CFG`, a constant defined in the still-uncommitted
+`scripts/lib.sh`. `doctor.sh` runs under `set -u`, so at that commit it died:
+
+```
+./scripts/doctor.sh: line 79: MCP_CFG: unbound variable   # exit 1
+```
+
+The tree looked fine; only the commit was broken. So the chain gains one step
+whenever the tree is shared — check the commit out in isolation and run the
+reporter there:
+
+```bash
+git worktree add -f --detach /tmp/verify-<sha> <sha>
+cd /tmp/verify-<sha> && ./scripts/doctor.sh    # must not die mid-section
+git worktree remove --force /tmp/verify-<sha>
+```
+
+This is the `set -u` hazard from
+[../scripts/shell-guidelines.md](../scripts/shell-guidelines.md) arriving through
+version control instead of through an edit: a constant defined in one commit and
+referenced in another.
 
 ---
 

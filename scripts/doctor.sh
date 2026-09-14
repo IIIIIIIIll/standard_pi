@@ -76,6 +76,33 @@ else
   warn "node unavailable or optional/ missing"
 fi
 
+echo "==> MCP server  ($MCP_CFG)"
+# MCP_CFG follows pi-mcp-adapter's hardcoded homedir path rather than the XDG
+# standard (see scripts/lib.sh). Say so out loud when the two disagree, otherwise
+# the path printed above looks like a bug on an XDG machine.
+if [ -n "${XDG_CONFIG_HOME:-}" ] && [ "${XDG_CONFIG_HOME%/}" != "${HOME%/}/.config" ]; then
+  warn "XDG_CONFIG_HOME=$XDG_CONFIG_HOME is set, but pi-mcp-adapter ignores it; the registration is at $MCP_CFG"
+fi
+if command -v codebase-memory-mcp >/dev/null 2>&1; then
+  ok "codebase-memory-mcp: $(command -v codebase-memory-mcp)"
+  has_cbm=1
+else
+  warn "codebase-memory-mcp not on PATH (run ./setup.sh, or --skip-mcp to opt out)"
+  has_cbm=0
+fi
+if [ -f "$MCP_CFG" ]; then
+  if ! command -v node >/dev/null 2>&1; then
+    warn "cannot verify $MCP_CFG — node unavailable"
+  elif out="$(node "$REPO_DIR/scripts/register-mcp-server.mjs" "$MCP_CFG" codebase-memory-mcp codebase-memory-mcp --check 2>&1)"; then
+    ok "codebase-memory-mcp registered in $MCP_CFG"
+  else
+    printf '%s\n' "$out" | sed 's/^/      /'
+    bad "registration in $MCP_CFG does not match (run ./setup.sh)"
+  fi
+elif [ "$has_cbm" = 1 ]; then
+  bad "codebase-memory-mcp is installed but $MCP_CFG is missing (run ./setup.sh)"
+fi
+
 echo "==> Symlinked resources  ($PI_DST)"
 found=0
 for name in "${PI_FILES[@]}" "${PI_DIRS[@]}"; do
