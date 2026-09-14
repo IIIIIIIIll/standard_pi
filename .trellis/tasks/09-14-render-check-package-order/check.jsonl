@@ -1,0 +1,9 @@
+{"file": ".trellis/spec/config/index.md", "reason": "config-layer quality check: strict JSON, doctor.sh render --check reports no drift, git cleanliness after a settings change"}
+{"file": ".trellis/spec/scripts/index.md", "reason": "scripts-layer quality check: bash -n on the changed shell, ./setup.sh idempotency, doctor.sh outcome"}
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "the doctor.sh conventions the check must match, including a proven failure path rather than a check that always prints ok"}
+{"file": ".trellis/spec/scripts/node-guidelines.md", "reason": "verify the --check path keeps its documented exit codes and output shape, and that the fix did not weaken the comparison into one that always passes"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "the acceptance criterion requires the surviving ordering rule to be written down here; the checker confirms it was actually documented, not just implemented"}
+{"file": ".trellis/spec/config/optional-bundles.md", "reason": "confirm the settings/settings.core.json non-overlap rule still holds and that optional-bundle ordering semantics did not silently change"}
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "cross-check the package inventory description still matches the packages array behaviour after the change"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "the verify chain the checker must run, plus the multi-site fact table used to find any other site that encodes packages order"}
+{"file": ".trellis/spec/guides/index.md", "reason": "AI cross-review false-positive patterns and the verify-against-code rule, so the checker does not flag a deliberate set-equality choice as a weakened check"}

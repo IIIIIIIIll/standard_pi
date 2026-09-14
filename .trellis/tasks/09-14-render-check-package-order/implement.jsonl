@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "owns the 'settings.json Is Generated, Never A Symlink' section (line 78) and the enabling-set precedence; the PRD names this file as the required home for any ordering rule that survives the fix"}
+{"file": ".trellis/spec/config/optional-bundles.md", "reason": "the core-then-optional manifest concatenation is exactly what makes render order disagree with install order; the non-overlap rule constrains any reordering"}
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "its 'The package inventory' section defines what the packages array means and the settings.core.json contract, so the chosen option is judged against the real invariants"}
+{"file": ".trellis/spec/config/index.md", "reason": "config-layer pre-development checklist: strict JSON, auth.json untracked, doctor.sh cleanliness after a settings change"}
+{"file": ".trellis/spec/scripts/node-guidelines.md", "reason": "render-settings.mjs and sync-settings.mjs are .mjs; this fixes the exit-code contract, the --check output format, and the JSON write discipline the fix must not disturb"}
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "doctor.sh conventions: the ok/warn/bad helpers, no early exit, and the proven-failure-path rule the drift check must satisfy"}
+{"file": ".trellis/spec/scripts/index.md", "reason": "scripts-layer pre-development checklist and the tiny-JSON-read-from-bash pattern the scripts here follow"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "the PRD names it for the multi-site facts; gives the verify chain (setup.sh twice, sync, doctor) and the search-before-edit rule"}
