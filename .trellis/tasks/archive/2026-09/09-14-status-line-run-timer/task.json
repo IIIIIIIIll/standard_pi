@@ -3,7 +3,7 @@
   "name": "status-line-run-timer",
   "title": "Replace pi-timer with a status-line run timer",
   "description": "Drop the npm:pi-timer package, which replaces Pi's built-in footer wholesale and silently removes its cache-hit percentage, and publish a hand-placed run timer through ctx.ui.setStatus() on the footer status line instead. Deletes pi-agent/extensions/cache-hit-rate.ts, whose only job was to repair the segment pi-timer dropped.",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "yuanhai.tan",
   "assignee": "yuanhai.tan",
   "createdAt": "2026-09-14",
-  "completedAt": null,
+  "completedAt": "2026-09-15",
   "branch": "main",
   "base_branch": "main",
   "worktree_path": null,
@@ -22,5 +22,7 @@
   "parent": null,
   "relatedFiles": [],
   "notes": "",
-  "meta": {}
+  "meta": {
+    "commit": "707f017"
+  }
 }

@@ -133,26 +133,53 @@ file.
 
 ## Acceptance Criteria
 
-- [ ] `git grep -n 'pi-timer' -- ':!*/archive/*' ':!.trellis/tasks/09-14-status-line-run-timer/*'`
+- [x] `git grep -n 'pi-timer' -- ':!*/archive/*' ':!.trellis/tasks/09-14-status-line-run-timer/*'`
       returns matches **only** inside the intentional prose in R8 (the removal
       note), never in a package list, a table row, or an npm package name.
-- [ ] `./scripts/doctor.sh` ends `No problems.` and its `==> Settings` section
+- [x] `./scripts/doctor.sh` ends `No problems.` and its `==> Settings` section
       reports `settings.json matches core + enabled optionals`.
-- [ ] `node scripts/render-settings.mjs <repo> <live> <state> --check` exits 0.
-- [ ] `node scripts/check-docs.mjs <repo>` exits 0 and reports **11** plugins.
-- [ ] `git grep -n 'cache-hit-rate' -- ':!*/archive/*' ':!.trellis/tasks/09-14-status-line-run-timer/*'`
+- [x] `node scripts/render-settings.mjs <repo> <live> <state> --check` exits 0.
+- [x] `node scripts/check-docs.mjs <repo>` exits 0 and reports **11** plugins.
+- [x] `git grep -n 'cache-hit-rate' -- ':!*/archive/*' ':!.trellis/tasks/09-14-status-line-run-timer/*'`
       returns nothing outside the R8 removal note.
-- [ ] `pi-agent/extensions/run-timer.ts` exists, is discovered at
+- [x] `pi-agent/extensions/run-timer.ts` exists, is discovered at
       `~/.pi/agent/extensions/run-timer.ts` through the existing symlink, and
       contains no `setFooter` call.
-- [ ] `pi --print --no-tools "reply with exactly: ok"` prints `ok` with no
+- [x] `pi --print --no-tools "reply with exactly: ok"` prints `ok` with no
       `Failed to load extension` line (control: a deliberately broken extension
       does print one).
-- [ ] Human-verified after `/reload`: line 2 shows `CH<rate>%` again, and line 3
+- [x] Human-verified after `/reload`: line 2 shows `CH<rate>%` again, and line 3
       shows `⏱ <time>` followed by the TPS meter, with the time advancing during a
       run and freezing when it ends.
-- [ ] Human-verified after `/reload`: no `Cache:` status remains on line 3 — the
+- [x] Human-verified after `/reload`: no `Cache:` status remains on line 3 — the
       built-in footer's own `CH` is the only cache display.
+
+### Verification record (2026-09-14)
+
+All nine criteria were checked on HEAD `707f017`, after the `/reload` gate.
+
+| # | Criterion | How it was verified |
+| --- | ----------- | --------------------- |
+| 1 | pi-timer only in removal prose | `trellis-check`, independent pass; also `git grep -nE '^\s*"npm:pi-timer"\|\| \`npm:pi-timer\`\|^### \`npm:pi-timer\`'` → exit 1, no match |
+| 2 | `doctor.sh` ends `No problems.` and Settings matches | parent; `✓ settings.json matches core + enabled optionals` |
+| 3 | `render-settings.mjs --check` exits 0 | parent; `exit=0` |
+| 4 | `check-docs.mjs` reports 11 plugins | parent; `docs cover 11 plugins and 6 skills`, exit 0 |
+| 5 | no `cache-hit-rate` outside the removal note | `trellis-check`; only `pi-resources.md:534` and `extensions/README.md:83` |
+| 6 | extension discovered, no `setFooter` call | `ls ~/.pi/agent/extensions/run-timer.ts` resolves; `doctor.sh` → `✓ no setFooter() call in 2 extension file(s)` |
+| 7 | loads with no error | parent; `ok` printed, negative control with a broken extension printed `Failed to load extension … LOAD-CHECK-MARKER` |
+| 8 | `CH` back, timer advances then freezes | human, after `/reload` — reported "CH is back" and "⏱ shows and counts up" |
+| 9 | no `Cache:` on line 3 | human, after `/reload` — reported clean |
+
+Criteria 8 and 9 are the only ones no check can observe, so they are the only
+ones resting on a human report. Everything else was re-run on the committed
+revision, and the commit itself was verified in isolation with `git worktree`
+(12 sections printed, the three expected worktree artifacts only).
+
+Two criteria worth noting for a future reader: criterion 5 found no
+`cache-hit-rate.ts` deletion in the commit **because git never tracked that
+file** — it was an untracked local extension kept live by the
+`~/.pi/agent/extensions` symlink — and criterion 6's "2 extension files" is the
+complete set, verified by `find`, not a sample.
 
 ## Out Of Scope
 
