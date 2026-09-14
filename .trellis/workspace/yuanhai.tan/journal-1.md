@@ -255,3 +255,25 @@ Added a tracked docs/ layer (plugins, skills, agents) with one entry per shipped
 - The other two tasks still hold the shared files (README.md, doctor.sh, four spec files) uncommitted; their commits complete the combined state - none of this task lines are pending
 - Observation for the MCP task: doctor.sh references $MCP_CFG while scripts/lib.sh defining it is still uncommitted, so the two must land together; a commit with only one of them dies under set -u
 - Observation: doctor.sh guards its git sections with [ -d "$REPO_DIR/.git" ], which is false in a linked worktree (.git is a file there), so git worktree verification silently skips Repo, secret-scan and ignore-coverage; git -C ... rev-parse --git-dir is the portable test
+
+
+## Session 8: Install and register the codebase-memory MCP server
+<!-- trellis-session: v=2 fp=0963db3acf1bdec7 -->
+
+**Date**: 2026-09-14
+**Task**: Install and register the codebase-memory MCP server
+**Branch**: `main`
+
+### Summary
+
+Added scripts/install-mcp.sh and scripts/register-mcp-server.mjs, wired setup.sh behind --skip-mcp, added doctor.sh's MCP section, and put MCP_CFG in lib.sh as the single definition following the adapter's homedir resolver rather than XDG. Verified end to end: doctor.sh green with 18 covered ignore paths, mcp({ search }) returns the registered server's tools, and cbcf93d checked out in isolation runs doctor.sh to completion. Also added the adapter's runtime mcp-cache.json to .gitignore and PI_NOT_SYNCED, the only agent-dir file of its kind missing from both.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cbcf93d` | feat(mcp): install and register codebase-memory-mcp as an always-on server |
+
+### Status
+
+[OK] **Completed**
