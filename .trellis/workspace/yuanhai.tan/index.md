@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 8
-- **Last Active**: 2026-09-14
+- **Total Sessions**: 9
+- **Last Active**: 2026-09-15
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~279 | Active |
+| `journal-1.md` | ~301 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 9 | 2026-09-15 | Restore Pi's footer by re-homing the run timer on the status line | `707f017` | `main` |
 | 8 | 2026-09-14 | Install and register the codebase-memory MCP server | `cbcf93d` | `main` |
 | 7 | 2026-09-14 | Daily-use docs layer + a docs coverage check | `0f46c9f`, `d042603` | `main` |
 | 6 | 2026-09-14 | Make the render drift check insensitive to package order | `dbdc8a6`, `b91810a` | `main` |

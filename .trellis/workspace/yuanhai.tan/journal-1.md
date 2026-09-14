@@ -277,3 +277,25 @@ Added scripts/install-mcp.sh and scripts/register-mcp-server.mjs, wired setup.sh
 ### Status
 
 [OK] **Completed**
+
+
+## Session 9: Restore Pi's footer by re-homing the run timer on the status line
+<!-- trellis-session: v=2 fp=d05fe7587ca3253f -->
+
+**Date**: 2026-09-15
+**Task**: Restore Pi's footer by re-homing the run timer on the status line
+**Branch**: `main`
+
+### Summary
+
+Removed npm:pi-timer, which installed its per-run timer by replacing Pi's entire footer with a hand-written copy of an older one — silently dropping core's CH<rate>% cache-hit segment — and re-homed the timer as a ctx.ui.setStatus("run-timer") string published by a new pi-agent/extensions/run-timer.ts. Added a doctor.sh "==> Footer ownership" section that fails when any extension source calls ctx.ui.setFooter(), deleted the hand-placed cache-hit-rate.ts repair extension that existed only to compensate for pi-timer, and propagated the 12->11 package change through README.md, docs/plugins.md, docs/README.md and the spec. All nine acceptance criteria verified on 707f017, including the two only a human can observe: CH is back on footer line 2 and the timer counts on line 3 ahead of the TPS meter. Two failures were found and fixed on the way: the task's own plan claimed the spec's quoted settings.core.json block was machine-checked when no script reads that file (the block had already drifted, and the false claim caused string-equality to be reported without being measured), and the new footer check used a one-level glob that printed ok for nested sources it never read.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `707f017` | feat(status): replace pi-timer with a setStatus-only run timer |
+
+### Status
+
+[OK] **Completed**
