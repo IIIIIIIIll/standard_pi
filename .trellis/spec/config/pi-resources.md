@@ -44,7 +44,7 @@ Rules:
 ### The package inventory
 
 | Package | What it adds | Why it is core |
-|---------|--------------|----------------|
+| --------- | -------------- | ---------------- |
 | `npm:pi-subagents` | Sub-agent delegation, parallel review, scripted workflows | the delegation mechanism itself |
 | `npm:pi-web-access` | `web_search`, `fetch_content`, source verification | every machine needs research |
 | `npm:@juicesharp/rpiv-ask-user-question` | structured questionnaire overlay | prevents guessing at requirements |
@@ -68,6 +68,18 @@ first use (`PI_LENS_DISABLE_LSP_INSTALL`, `PI_LENS_DISABLE_TOOL_INSTALL` opt out
 which is why a fresh machine needs network on the first session, not at setup.
 Its project config is `.pi-lens.json` (project root, outermost wins per field).
 
+`pi-web-access` is the one core package that *does* own a per-machine file in the
+agent dir: `~/.pi/agent/web-search.json` — provider selection, proxy, `authFetch`
+profiles, curator defaults, and the API keys for those providers. The package
+writes it with a plain `writeFileSync`, so a symlink would send per-machine state
+straight into the repo; it is ignored and reported instead, like the compaction
+configs. Treat it as secret-bearing: `doctor.sh`'s shape-based scan will not
+reliably catch a key it contains. Its search cache is a separate path,
+`~/.pi/agent/web-search-cache/`, already on both lists. It resolves the file
+differently from Pi's own paths — `PI_CODING_AGENT_DIR`, then an existing
+`$XDG_CONFIG_HOME/pi/` file, then a legacy `~/.pi/` file, then the default — so a
+machine that ever used XDG has the config somewhere else entirely.
+
 `@gotgenes/pi-permission-system` is npm-installed but reads its policy from
 `extensions/pi-permission-system/config.json`, which is why that config is
 committed here rather than living in the package.
@@ -79,7 +91,7 @@ Pi's native auto-compaction triggers at `contextWindow - reserveTokens`
 too late to be useful. Two packages split the job:
 
 | Concern | Owner | Setting |
-|---------|-------|---------|
+| --------- | ------- | --------- |
 | **When** to compact | `auto-compact` | `thresholdPercent` (per-machine; 30 here) |
 | **How** to summarize | `pi-vcc` | `overrideDefaultCompaction: true` — algorithmic, **no LLM call** |
 | Final backstop | Pi core | `reserveTokens: 16384`, untouched (~98%) |
@@ -191,7 +203,7 @@ auto-discovered for every project and hot-reloadable with `/reload`. `setup.sh`
 symlinks it here, so anything added is versioned with the harness.
 
 | Path | What it is |
-|------|------------|
+| ------ | ------------ |
 | `<name>.ts` | a single-file extension |
 | `<name>/index.ts` | a multi-file extension |
 | `<name>/config.json` | conventional per-extension config the extension reads |

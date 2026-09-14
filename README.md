@@ -13,7 +13,10 @@ update**, including pulling the latest skills from upstream.
 It does six things:
 
 1. renders `~/.pi/agent/settings.json` from core settings + this machine's optional bundles
-2. symlinks `AGENTS.md` and resource dirs (`themes/`, `prompts/`, `tools/`, `skills/`, `agents/`, `extensions/`)
+2. symlinks the resource dirs that exist in the repo — `AGENTS.md`,
+   `themes/`, `prompts/`, `tools/`, `skills/`, `agents/`, `extensions/`
+   (today only `extensions/` is present; the others link themselves the moment
+   they appear)
 3. seeds `~/.pi/agent/auth.json` from the template if absent
 4. installs/refreshes skills **from their upstream sources** (see below)
 5. refreshes Pi plugin packages (`pi update --extensions`)
@@ -64,7 +67,7 @@ Currently installed, all from [`mattpocock/skills`](https://github.com/mattpococ
 ## Layout
 
 | Path | Live location | How it is applied |
-|------|---------------|-------------------|
+| ------ | --------------- | ------------------- |
 | `pi-agent/settings.core.json` | `~/.pi/agent/settings.json` | **Rendered** — core settings, same everywhere |
 | `optional/<name>/manifest.json` | `~/.pi/agent/settings.json` | **Rendered** — only where enabled |
 | `pi-agent/auth.json.example` | `~/.pi/agent/auth.json` | Copied once as a template; the real file stays local |
@@ -89,7 +92,7 @@ settings.core.json  +  enabled optional manifests  ->  ~/.pi/agent/settings.json
 Anything under `packages` is installed on every machine. Currently:
 
 | Package | What it adds |
-|---------|--------------|
+| --------- | -------------- |
 | `npm:pi-subagents` | Sub-agent delegation, parallel review, scripted workflows |
 | `npm:pi-web-access` | `web_search`, `fetch_content`, and source verification tools |
 | `npm:@gotgenes/pi-permission-system` | The only thing gating tool calls — Pi itself has no permission prompts. Committed policy is deliberately permissive (`"*": "allow"`) plus a real `deny` lock that survives `yoloMode`: [`extensions/pi-permission-system/config.json`](pi-agent/extensions/README.md#permission-policy) |
@@ -114,8 +117,13 @@ copy. So `~/.pi/agent/auto-compact.json` is a one-time local setup
 step, not something the repo can reproduce:
 
 ```json
-{ "version": 1, "enabledAtSessionStart": true, "thresholdPercent": 30, "autoResume": true }
+{ "version": 1, "enabledAtSessionStart": true, "thresholdPercent": 30, "autoResume": true, "additionalCompactionInstruction": "" }
 ```
+
+The trailing empty `additionalCompactionInstruction` is what the extension saves
+here: under `overrideDefaultCompaction: true` a non-empty value cannot reach the
+summarizer and only produces an `extension_error` on every compaction. See
+[spec/config/pi-resources.md](.trellis/spec/config/pi-resources.md#compaction).
 
 `~/.pi/agent/pi-vcc-config.json` keeps `overrideDefaultCompaction: true`. Do not
 set `reserveTokens`: pi-vcc removes the LLM summarization call, so the summary
@@ -162,7 +170,7 @@ Symlinked resources (`AGENTS.md`, `themes/`, `prompts/`, `tools/`, `skills/`,
 Settings need one explicit step, because `settings.json` is generated:
 
 | You did this in Pi | Do this |
-|--------------------|---------|
+| -------------------- | --------- |
 | Changed a core setting (theme, thinking level, …) | `scripts/sync.sh` → commit |
 | `pi install …` an always-on plugin | `scripts/sync.sh` → commit |
 | Want a plugin only on this machine | `scripts/optional.sh scaffold` + enable |
@@ -182,7 +190,7 @@ git add -A && git commit -m "…" && git push
 ## What is intentionally *not* stored here
 
 | Path | Why |
-|------|-----|
+| ------ | ----- |
 | `~/.pi/agent/auth.json` | Real API keys — secrets never enter git |
 | `~/.agents/skills/`, `~/.pi/agent/skills/` | Fetched from upstream via `skills.json` |
 | `~/.pi/agent/models-store.json` | Model catalog cached from `https://pi.dev/api/models/providers/<id>` |
@@ -194,7 +202,7 @@ git add -A && git commit -m "…" && git push
 | `~/.pi/agent/run-history.jsonl` | Per-machine run history log |
 | `~/.pi/agent/web-search-cache/` | Cached web-search results, re-fetchable |
 | `~/.pi/agent/cache/` | Pi's scratch cache |
-| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json` | Extension-owned per-machine config; rewritten at runtime, so never symlinked — see [spec/config/layout-and-surfaces.md](.trellis/spec/config/layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked) |
+| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json` | Extension-owned per-machine config; rewritten at runtime, so never symlinked — see [spec/config/layout-and-surfaces.md](.trellis/spec/config/layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked). `web-search.json` also holds provider credentials |
 | `~/.pi-lens/` | pi-lens's own machine-global root — config, managed LSP/tool binaries, per-project caches, logs. Outside `~/.pi/agent/`, so it is not one of `scripts/lib.sh`'s paths |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts |
 
@@ -207,7 +215,7 @@ git add -A && git commit -m "…" && git push
 ## Scripts
 
 | Script | What it does |
-|--------|--------------|
+| -------- | -------------- |
 | `setup.sh` | The entry point: everything above, idempotent. |
 | `scripts/optional.sh list \| enable \| disable \| scaffold` | Per-machine optional plugin bundles. |
 | `scripts/install-skills.mjs` | Fetches skills from `skills.json` sources (`--check` verifies without network). |
@@ -215,5 +223,6 @@ git add -A && git commit -m "…" && git push
 | `scripts/doctor.sh` | Checks symlinks, render drift, skills, `auth.json` permissions, git cleanliness, and scans tracked files for secrets. |
 | `scripts/render-settings.mjs`, `scripts/sync-settings.mjs` | Node helpers used by the shell scripts. |
 
-Override the Pi config directory with `PI_CODING_AGENT_DIR`, and the skills
-directory with `AGENTS_SKILLS_DIR`, if you keep them somewhere non-default.
+Override the Pi config directory with `PI_CODING_AGENT_DIR` — Pi reads that one
+itself. The scripts here additionally honour `AGENTS_SKILLS_DIR` for the skills
+destination they install into; that variable belongs to this repo, not to Pi.

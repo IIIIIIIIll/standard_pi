@@ -16,7 +16,8 @@ the provider itself — Pi fetches the `opencode-go` model catalog from
 This records the choice in `~/.pi/agent/.pi-setup-state.json` and re-renders
 `~/.pi/agent/settings.json`, adding:
 
-- package `npm:@oscarfalero/pi-opencode-go@0.1.1`
+- package `npm:@oscarfalero/pi-opencode-go` (**unpinned**, so
+  `pi update --extensions` can move it forward)
 - `defaultProvider: "opencode-go"`, `defaultModel: "deepseek-v4.1-flash"`
 
 ## Credentials

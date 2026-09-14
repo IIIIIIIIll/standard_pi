@@ -23,12 +23,12 @@ Real example, measured on this repo — the set of symlinked resource directorie
 them):
 
 | # | Location | Form |
-|---|----------|------|
-| — | `scripts/lib.sh:16-18` | **the single definition** — `readonly PI_DIRS=(…)` / `PI_FILES=(…)`, sourced by all three scripts |
+| --- | ---------- | ------ |
+| — | `scripts/lib.sh:17-19` | **the single definition** — `readonly PI_DIRS=(…)` / `PI_FILES=(…)`, sourced by all three scripts |
 | 1 | `setup.sh:8` | header comment (`--help` text) |
 | 2 | `scripts/doctor.sh:87` | inline "none in repo yet" message listing the names |
-| 3 | `README.md:16,71` | overview: numbered setup step + Layout table |
-| 4 | `README.md:134` | Day-to-day prose list |
+| 3 | `README.md:16,74` | overview: numbered setup step + Layout table |
+| 4 | `README.md:167` | Day-to-day prose list |
 
 The three scripts carry no copy of their own: `setup.sh`, `scripts/sync.sh`, and
 `scripts/doctor.sh` each source `scripts/lib.sh`, and the arrays are `readonly`,
@@ -65,10 +65,10 @@ grep -n "^| " README.md                                 # the tables
 ## Known Multi-Site Facts
 
 | Fact | Sites that must change together | Severity if missed |
-|------|--------------------------------|--------------------|
+| ------ | -------------------------------- | -------------------- |
 | Symlinked resource dirs (`PI_DIRS`) | `scripts/lib.sh` (the single definition), `setup.sh` (header comment), `doctor.sh` (inline message), `README.md` (setup step, Layout table, Day-to-day prose) | a new dir is never linked in one direction, or `doctor.sh` reports a false problem |
 | Symlinked files (`PI_FILES`) | `scripts/lib.sh` (the single definition), plus the same non-code sites whenever the file name is listed | same |
-| "Not stored here" paths | `scripts/lib.sh` (the single definition: `PI_NOT_SYNCED`), `.gitignore`, `README.md` table | a runtime path becomes commit-able; `doctor.sh` catches the `.gitignore` half, the README prose is unguarded |
+| "Not stored here" paths | `scripts/lib.sh` (the single definition: `PI_NOT_SYNCED`), `.gitignore`, `README.md` table, and every spec section that names the paths (`config/layout-and-surfaces.md`, `config/pi-resources.md`) | a runtime path becomes commit-able; `doctor.sh` catches the `.gitignore` half, the README and spec prose are unguarded |
 | A user-facing string (an error/help message) | the script that prints it, `.gitignore` comments, `README.md` prose, **and every spec file that quotes it verbatim** | a user follows an instruction that cannot work |
 | The name of a script or path | its own file, every caller, every message naming it, `.gitignore` comments, `README.md` | stale instructions, as happened when `install.sh` was folded into `setup.sh` |
 | Ignores / deny rules | `.gitignore`, `extensions/pi-permission-system/config.json`, `README.md` | a secret or `node_modules` gets committed |
@@ -112,7 +112,7 @@ change set is:
 
 Five edit steps for one directory — the single array definition plus the four
 hand-maintained sites above. Site 3 is two separate `README.md` lines (`16` and
-`71`), so the line changes number six. That is the shape of a change in this
+`74`), so the line changes number six. That is the shape of a change in this
 repo; treat it as normal rather than as a sign something is wrong.
 
 ---
@@ -135,7 +135,7 @@ git status --short                   # must be clean, unless you meant to change
 What each step actually proves:
 
 | Step | Catches |
-|------|---------|
+| ------ | --------- |
 | `./setup.sh` twice | non-idempotent `link()` / render logic, a backup written on every run |
 | `./setup.sh` → `./scripts/sync.sh` | asymmetry between render and sync — the highest-value check here, because render/sync are the two directions of the same mapping |
 | `./scripts/doctor.sh` | drift, wrong symlink target, `auth.json` mode, a tracked secret, missing skills |

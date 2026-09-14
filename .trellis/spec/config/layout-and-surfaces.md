@@ -7,7 +7,7 @@
 ## The Map
 
 | Repo path | Live location | Surface | Applied by |
-|-----------|---------------|---------|------------|
+| ----------- | --------------- | --------- | ------------ |
 | `pi-agent/settings.core.json` | — (input) | Tracked | `render-settings.mjs` reads it |
 | `optional/<name>/manifest.json` | — (input) | Tracked | `render-settings.mjs` reads it when enabled |
 | `optional/<name>/README.md` | — | Tracked | — |
@@ -24,6 +24,7 @@
 | `~/.pi/agent/extensions/*/logs/` | — | **Ignored** | the extension |
 | `~/.agents/skills/<name>/` | — | **Fetched from upstream** | `install-skills.mjs` |
 | `~/.agents/.pi-setup-skills.json` | — | **Generated, outside repo** | `install-skills.mjs` |
+| `~/.pi/agent/{auto-compact.json,pi-vcc-config.json,web-search.json}` | — | **Ignored** | the owning extension |
 | `~/.pi/agent/settings.json.pre-render-<stamp>` | — | **Ignored backup** | `render-settings.mjs` |
 | `<path>.bak-<stamp>` | — | **Ignored backup** | `setup.sh::link()`, `render-settings.mjs` |
 | `.pi/`, `.agents/` | — | **Ignored** (Trellis-generated adapters) | `trellis` CLI |
@@ -122,7 +123,8 @@ exists, so once `setup.sh` has run, the state file is authoritative.
 
 Some extensions own a settings file under the Pi config dir, named
 `~/.pi/agent/<extension>-config.json` (`auto-compact.json`,
-`pi-vcc-config.json`). These are **per-machine, untracked**, declared in both
+`pi-vcc-config.json`), or a differently-named one of their own (`web-search.json`,
+owned by `pi-web-access`). These are **per-machine, untracked**, declared in both
 `.gitignore` and `PI_NOT_SYNCED`, and deliberately **not** added to `PI_FILES`.
 
 `PI_FILES` exists for "a repo file that should appear in `~/.pi/agent`", so
@@ -136,9 +138,19 @@ reasons depending on the extension:
   `setup.sh`'s `link()` moves the real file to `<name>.bak-<stamp>` and re-links
   the repo version — discarding the settings the user just saved, recoverable
   only from the backup.
-- `pi-vcc-config.json` is written with a plain `writeFileSync`, which **follows**
+- `pi-vcc-config.json` and `web-search.json` are written with a plain
+  `writeFileSync` (`pi-web-access` does this in its `index.ts`), which **follows**
   the symlink, so per-machine settings would be written straight into the
-  tracked repo file (dirty tree, per-machine state committable).
+  tracked repo file (dirty tree, per-machine state committable). For
+  `web-search.json` that is worse than a dirty tree: the package documents the
+  file as a credential store — it holds API keys for the search providers — so a
+  symlinked or committed copy leaks secrets that `doctor.sh`'s shape-based scan
+  will not reliably catch.
+
+The `web-search.json` trap is also a reminder that this category is not closed: a
+new package can start owning a file in the agent dir at any time, and
+`doctor.sh` only knows the names this list declares. Adding one is a two-file
+change, never just the ignore rule.
 
 The resources that do work symlinked (`themes/`, `prompts/`, `AGENTS.md`, …) are
 edited by us or by Pi, not rewritten by a runtime config writer. Files rewritten
@@ -196,7 +208,7 @@ matters. The three lists were reconciled on 2026-09-13. The divergence found
 before the fix:
 
 | Path | `.gitignore` (before) | `PI_NOT_SYNCED` (before) | Resolution |
-|------|-----------------------|--------------------------|------------|
+| ------ | ----------------------- | -------------------------- | ------------ |
 | `cache/` | yes | **no** | added to `PI_NOT_SYNCED` |
 | `trust.json` | **no** | yes | added to `.gitignore` |
 | `agent-memory/` | **no** | yes | added to `.gitignore` |
@@ -236,13 +248,14 @@ These are excluded for a reason, documented in `README.md`, and `doctor.sh`
 actively checks the important one. Do not add them:
 
 | Path | Why |
-|------|-----|
+| ------ | ----- |
 | `~/.pi/agent/auth.json` | Live API keys. `doctor.sh` fails if tracked. |
 | `~/.agents/skills/` | Fetched from upstream via `skills.json`; vendoring makes it go stale. |
 | `~/.pi/agent/models-store.json`, `models.json` | Model catalog cached from `https://pi.dev/api/models/providers/<id>`. |
 | `~/.pi/agent/{missions,profiles,web-search-cache}/`, `~/.pi/agent/run-history.jsonl` | Per-machine runtime state Pi writes: mission state, profiles, search cache, and the run log. Added to the two enforcement lists on 2026-09-13. |
 | `~/.pi/agent/cache/` | Pi's scratch cache. Ignored and reported; see the invariant section above. |
 | `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory. Ignored and reported; see the invariant section above. |
+| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json` | Extension-owned per-machine config, rewritten at runtime. `web-search.json` is `pi-web-access`'s provider/proxy/credential store — committing it leaks keys. Ignored and reported; see the invariant section above. |
 | `~/.pi/agent/sessions/` | Per-machine conversation history. |
 | `~/.pi/agent/npm/`, `git/`, `bin/` | Installed `node_modules`, cloned repos, platform binaries. |
 | `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts. |

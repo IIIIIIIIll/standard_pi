@@ -23,11 +23,13 @@ pi-agent/trust.json
 pi-agent/agent-memory/
 
 # Extension-owned per-machine config. These are rewritten at runtime
-# (auto-compact by renameSync, pi-vcc in place), so they must NOT be symlinked
-# into the repo — see .trellis/spec/config/layout-and-surfaces.md. Reported by
-# scripts/sync.sh.
+# (auto-compact by renameSync; pi-vcc and pi-web-access in place), so they must
+# NOT be symlinked into the repo — see
+# .trellis/spec/config/layout-and-surfaces.md. Reported by scripts/sync.sh.
+# web-search.json is also pi-web-access's credential store, so it is secret-bearing.
 pi-agent/auto-compact.json
 pi-agent/pi-vcc-config.json
+pi-agent/web-search.json
 
 pi-agent/sessions/
 pi-agent/npm/
