@@ -442,3 +442,20 @@ user re-run, because every script is idempotent.
   renamed or removed, grep for its name across the repo — user-facing strings
   (`render-settings.mjs` drift output, `.gitignore` comments) are not exercised by
   any test and go stale silently. Always name a command the user can actually run.
+- **Do not let a verification section report `ok` when it could not read its
+  input.** A check that passes after it stopped reading is worse than no check,
+  because it converts a blind spot into a positive claim. Every "cannot see" exit
+  from a `doctor.sh` section must be a `bad`. Three concrete shapes:
+  - **Empty discovery.** Guard the result and fail: `if [ ${#ext_sources[@]} -eq
+    0 ]; then bad "no extension source found … cannot be verified"; fi`.
+  - **Unreadable input.** `grep` exits `2` on a file it cannot read and `1` on a
+    clean no-match, so test `-gt 1` — testing `-ne 0` would report a failure for
+    every healthy run that simply found nothing.
+  - **Shallow discovery.** Scan recursively. A one-level glob is *enumeration in
+    disguise* (see the anti-pattern above): it silently stops covering a nested
+    file, and the section keeps printing `ok`. The `==> Footer ownership` section
+    is the reference implementation of all three — recursive `find -name '*.ts'`,
+    an array-length guard, and `scan_status -gt 1`. Filtering a scanner's own
+    output is the one place a false positive is acceptable: exempting a genuinely
+    commented-out line costs a reworded comment, while a filter loose enough to
+    hide a real call is unrecoverable.

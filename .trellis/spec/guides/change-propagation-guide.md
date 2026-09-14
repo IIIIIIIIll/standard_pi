@@ -80,6 +80,7 @@ grep -n "^| " README.md                                 # the tables
 | Destination defaults (`PI_CODING_AGENT_DIR`, `AGENTS_SKILLS_DIR`) | all four shell scripts, `install-skills.mjs`, `README.md` | a script reads or writes the wrong directory |
 | Output verb vocabulary | `setup.sh`/`sync.sh` `say`, `doctor.sh` `ok/warn/bad`, every `.mjs` literal | unreadable, unaligned output |
 | `optional/*/manifest.json` schema | the manifests, `_template/README.md`, `config/optional-bundles.md`, `scripts/optional.sh scaffold` | scaffold produces a manifest the renderer rejects |
+| The `settings.core.json` block quoted in [../config/pi-resources.md](../config/pi-resources.md) | `pi-agent/settings.core.json` and the fenced block under the `pi-agent/settings.core.json` heading | the spec quotes a file the renderer reads; a stale quote misleads whoever trusts the spec over the file. **Nothing checks it** — `git grep -n 'pi-resources' -- scripts/ setup.sh` finds no consumer, so keep the block byte-equal by hand |
 
 > **The "Not stored here" lists are deliberately not identical, and one direction
 > is now enforced.** `PI_NOT_SYNCED` in `scripts/lib.sh` is the single definition;
@@ -91,6 +92,51 @@ grep -n "^| " README.md                                 # the tables
 > `../config/layout-and-surfaces.md`
 > §"The `.gitignore` / Skip-List Invariant", including the `git check-ignore`
 > trailing-slash finding before you touch a directory entry.
+
+---
+
+## Before You Trust "Enforced By"
+
+A site labelled *machine-checked* when nothing checks it is worse than one
+labelled *hand-maintained*. The claim reads as **already verified**, so it
+suppresses the very check it describes — and the failure is silent, because
+nobody re-derives a claim that is stated as a fact.
+
+Measured 2026-09-14 on this repo's own planning docs. A task's `design.md` and
+`implement.md` both described the `settings.core.json` block quoted in
+[../config/pi-resources.md](../config/pi-resources.md) as "checked equal to the
+real file". No script reads that file:
+
+```bash
+git grep -n 'pi-resources' -- scripts/ setup.sh     # no match
+```
+
+Two failures landed in the same task from that one sentence:
+
+1. The quoted block had **already** drifted — `"compaction": { "enabled": true },`
+   on one line in the spec against three in the real file. Nothing had noticed,
+   because nothing was looking.
+2. The implementer, reading "it is checked", reported string-equality to its
+   parent **without measuring it**. A false premise became a fabricated
+   verification result three steps downstream, and only an independent check
+   pass caught it.
+
+So, whenever you write or read an "enforced by" column:
+
+- **Name the command, not the idea.** "checked equal to `settings.core.json`" is
+  unfalsifiable. `python3 -c` extracting the fenced block and comparing it to the
+  file is a claim someone can run. If no command comes to mind, the honest entry
+  is "nothing — by hand".
+- **Run it before relying on it**, including when the claim is in a doc you wrote
+  earlier in the same task, and including when the doc is the design you are
+  implementing.
+- **Prefer correcting the claim over inventing a check**, unless the check is
+  genuinely cheap. An accurate "by hand" label is safe; a fictional check is a
+  trap that also destroys trust in every other label in the same table.
+
+The same trap has a second form: a claim that is *true today* but never
+re-evaluated. A quoted copy is a snapshot, so pair every verbatim block with the
+command that proves it still matches, or accept that it will drift.
 
 ---
 
@@ -228,3 +274,5 @@ propagates itself, and only the labels have to be chased by hand.
 - [ ] Checked whether it also appears in a user-facing string, not just code.
 - [ ] Checked `.gitignore` and the permission config if the value is a path.
 - [ ] Ran the full verify chain, including `setup.sh` twice.
+- [ ] For every "enforced by" / "checked by" claim you relied on, ran the
+      command it names — or corrected the claim to "by hand".

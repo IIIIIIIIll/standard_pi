@@ -121,18 +121,6 @@
 
 **Gotcha.** Settings used to live under the `tokenSpeed` key in Pi's own settings file; they are not migrated, so re-run `/tps` after an upgrade.
 
-### `npm:pi-timer`
-
-**What it is.** A per-run elapsed timer in the footer: `runs for` while the agent works, `ran for` once it stops, reset on the next run.
-
-**Reach for it when.** You want to know how long a run actually took, which is the number that makes "is this model slow or is this task big?" answerable.
-
-**Invoke.** Nothing to type — it renders inline in the footer on every run.
-
-**Config.** None — see [`.trellis/spec/config/pi-resources.md`](../.trellis/spec/config/pi-resources.md) for why it needs no file.
-
-**Gotcha.** It calls `ctx.ui.setFooter()` and rebuilds the footer by hand, because Pi exposes no composable footer primitive. That rebuild is a copy of an older footer, so it drops Pi's `CH<rate>%` cache-hit segment. The hand-placed `pi-agent/extensions/cache-hit-rate.ts` republishes that number as a status line; if `Cache: 98.2%` ever disappears from the footer, that extension is the first thing to check.
-
 ### `https://github.com/ayghri/i-have-adhd`
 
 **What it is.** ADHD-shaped replies: answer or next action first, numbered steps, progress restated each turn, concrete time estimates, no preamble — ten rules, canonical copy in the package's `skills/i-have-adhd/SKILL.md`.

@@ -199,6 +199,44 @@ else
   fi
 fi
 
+# Footer ownership. Line 2 of the footer belongs to Pi core. An extension that
+# replaces the footer with `ctx.ui.setFooter()` takes the whole line and silently
+# deletes whatever core added there — that is how `npm:pi-timer` dropped core's
+# `CH<rate>%` segment and its `(sub)` subscription case. Statuses compose
+# (`ctx.ui.setStatus()`); footers do not.
+#
+# Only a CALL is a violation, so a `//` comment line is not an offender: this is
+# the one rule whose explanation is necessarily written in the files it governs.
+# Every "cannot see" path below is a `bad`, following the shipped-tool check —
+# a check that reports `ok` after it has stopped reading is worse than no check.
+echo "==> Footer ownership"
+ext_sources=()
+# Recursive, because an extension may grow a second file. A shallower glob would
+# report `ok` for a source it never read, which is the failure this section exists
+# to prevent. node_modules is excluded: a vendored tree is not our source.
+while IFS= read -r f; do
+  if [ -n "$f" ]; then ext_sources+=("$f"); fi
+done < <(find "$REPO_DIR/pi-agent/extensions" -type f -name '*.ts' \
+  -not -path '*/node_modules/*' 2>/dev/null | sort)
+if [ ${#ext_sources[@]} -eq 0 ]; then
+  bad "no extension source found under pi-agent/extensions/; footer ownership cannot be verified"
+else
+  # Absolute paths, because doctor.sh is runnable from any cwd. Only the printed
+  # form is relative to the repo.
+  footer_hits="$(grep -Hn 'setFooter' "${ext_sources[@]}" 2>/dev/null)"
+  scan_status=$?
+  footer_offenders="$(printf '%s\n' "$footer_hits" | grep -vE ':[0-9]+:[[:space:]]*//' | sed "s|^$REPO_DIR/||")"
+  if [ "$scan_status" -gt 1 ]; then
+    bad "grep could not read every extension source; footer ownership is unverified"
+  elif [ -n "$footer_offenders" ]; then
+    bad "extension(s) call ctx.ui.setFooter(), replacing Pi core's footer:"
+    printf '%s\n' "$footer_offenders" | while IFS= read -r line; do printf '      %s\n' "$line"; done
+    printf '      line 2 belongs to Pi core; publish through ctx.ui.setStatus() instead\n'
+  else
+    ok "no setFooter() call in ${#ext_sources[@]} extension file(s)"
+  fi
+fi
+
 echo "==> Credentials"
 if [ -f "$PI_DST/auth.json" ]; then
   perms="$(stat -c '%a' "$PI_DST/auth.json" 2>/dev/null || stat -f '%Lp' "$PI_DST/auth.json")"

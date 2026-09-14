@@ -5,7 +5,7 @@
 
 | Page | Answers |
 | ---- | ------- |
-| [`plugins.md`](./plugins.md) | "the harness has 12 packages — which one does X, and how do I drive it?" |
+| [`plugins.md`](./plugins.md) | "the harness has 11 packages — which one does X, and how do I drive it?" |
 | [`skills.md`](./skills.md) | "I want a review / a research pass / TDD — which skill, and how is it triggered?" |
 | [`agents.md`](./agents.md) | "what do `trellis-implement` and `/trellis-continue` do, and how do I dispatch them?" |
 

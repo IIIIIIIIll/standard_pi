@@ -1,0 +1,7 @@
+{"file": ".trellis/tasks/09-14-status-line-run-timer/prd.md", "reason": "Acceptance criteria are the checklist the check phase must verify item by item, including the two human-verified footer observations"}
+{"file": ".trellis/tasks/09-14-status-line-run-timer/design.md", "reason": "The declared contract to check the delivered run-timer.ts against: events, state transitions, formatElapsed padding, key ordering, and the no-setFooter rule"}
+{"file": ".trellis/tasks/09-14-status-line-run-timer/implement.md", "reason": "The final battery to re-run and the stop-and-report conditions that must not have been improvised around"}
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "Check that the verbatim settings.core.json copy equals the real file, the pi-timer row and prose are gone, and the run-timer subsection plus ownership rule replaced the cache-hit-rate one"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "Verify the claim that no path list, .gitignore entry, or setup.sh change was required — an unlisted new surface is the failure this file catches"}
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "Verify the new doctor.sh section matches the established ok/bad/warn output shape and its fail-loud-when-blind requirement"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "Re-walk the propagation chain to confirm every dependent site (counts, inventories, checks) was actually updated, not just the ones the plan listed"}

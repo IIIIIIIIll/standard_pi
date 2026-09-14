@@ -9,7 +9,7 @@ with the rest of the harness.
 ## Layout
 
 | Path | What it is |
-|------|------------|
+| ------ | ------------ |
 | `<name>.ts` | A single-file extension |
 | `<name>/index.ts` | A multi-file extension |
 | `<name>/config.json` | Conventional per-extension config the extension reads |
@@ -46,6 +46,48 @@ machine-local, unreproducible, and reverted by `trellis update`.
 
 Because it is global, it is careful about scope: outside a `.trellis/` project,
 or with no active task, it publishes nothing, injects nothing, and writes no file.
+
+## Run timer
+
+`run-timer.ts` shows how long the current run has been going. It publishes one
+`ctx.ui.setStatus()` line — `⏱ 12s`, `⏱ 1m 05s`, `⏱ 1h 02m` — in the accent
+colour while the agent is working, and dim once the run has ended so the finished
+value stays on screen until the next run or the next session. Nothing is shown
+before the first run of a session.
+
+The value is **wall-clock elapsed time** from `agent_start` to now, ticking once
+a second. No session statistic is read or recomputed: this extension counts, and
+nothing else. The minutes and seconds are zero-padded (`1m 05s`) so a counting
+timer does not change width, and therefore layout, every second.
+
+The status key is `run-timer`, which sorts before `tps`. That ordering matters
+because a footer renders the status line by sorting keys, joining them with a
+space, and truncating the **whole joined line** — so the leftmost entry is the one
+a narrow terminal keeps. The timer is never the thing that gets cut; the TPS
+meter loses its tail instead.
+
+It is global, so it stays passive: no config file, no `fs`, nothing persisted.
+No path list in `scripts/lib.sh` or `.gitignore` is changed by it.
+
+### The rule for this directory
+
+> **No extension under `pi-agent/extensions/` may call `ctx.ui.setFooter()`.**
+
+Line 2 belongs to Pi core. A replacement footer is a hand-written copy of one,
+and a copy goes stale: `npm:pi-timer` used `ctx.ui.setFooter()` to add its timer,
+its rebuild pushed `↑ ↓ R W $ ctx%`, and installing that package silently deleted
+Pi core's `CH<rate>%` cache-hit segment and its `(sub)` subscription case.
+Nothing warned, and no upstream release adds them back.
+
+The package was removed for exactly that reason, and the hand-placed
+`cache-hit-rate.ts` — which republished `CH` as a status line to compensate — was
+removed with it. Pi core's footer is the only footer again, so `CH` is back
+because core prints it, not because anything here recomputes it.
+
+`ctx.ui.setStatus(key, text)` is the composable surface instead: one key per
+extension, sorted and joined by whoever owns the footer, withdrawn with
+`setStatus(key, undefined)`. Adding a segment to line 2 is an upstream Pi change,
+never a local `setFooter()` call.
 
 ## Permission policy
 
@@ -88,7 +130,7 @@ trailing commas. Don't "tidy" it into JSONC.
 ### States
 
 | State | Behavior |
-|-------|----------|
+| ------- | ---------- |
 | `allow` | Permits the action silently |
 | `ask` | Prompts for confirmation (forwarded to the parent session from a headless subagent) |
 | `deny` | Blocks the action with an error, naming the rule that decided |

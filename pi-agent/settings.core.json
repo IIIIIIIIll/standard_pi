@@ -10,7 +10,6 @@
     "npm:pi-mcp-adapter",
     "npm:pi-lens",
     "npm:pi-tps-status",
-    "npm:pi-timer",
     "https://github.com/ayghri/i-have-adhd"
   ],
   "theme": "dark",

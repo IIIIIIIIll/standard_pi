@@ -1,0 +1,11 @@
+{"file": ".trellis/tasks/09-14-status-line-run-timer/prd.md", "reason": "Requirements R1-R10 and the acceptance criteria this work must satisfy, including the archived-history exclusions"}
+{"file": ".trellis/tasks/09-14-status-line-run-timer/design.md", "reason": "The timer contract (state machine, formatElapsed, run-timer key ordering), the no-setFooter ownership rule, the doc-and-config map, and the rejected alternatives"}
+{"file": ".trellis/tasks/09-14-status-line-run-timer/implement.md", "reason": "The ordered steps, the load-bearing step order, per-step validation commands, rollback points, and the stop-and-report conditions"}
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "Primary edit target: the verbatim settings.core.json copy, the package inventory, and the pi-agent/extensions/ layer rules that must be rewritten"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "Which surfaces are symlinked vs generated vs ignored — determines whether a new extension file needs any setup.sh or .gitignore change"}
+{"file": ".trellis/spec/config/index.md", "reason": "Config-layer index and the tracked/symlinked/generated/ignored vocabulary that docs/plugins.md entries must use"}
+{"file": ".trellis/spec/config/optional-bundles.md", "reason": "Explains the optional-manifest intersection that sync-settings.mjs strips, which is why the expected settings.core.json diff is exactly one line"}
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "Rules for editing scripts/doctor.sh, including the fail-loud requirement the new footer-ownership check must follow"}
+{"file": ".trellis/spec/scripts/node-guidelines.md", "reason": "The no-build-step / dependency-free convention the new extension and any .mjs harness must respect"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "The propagation chain (render, doctor, docs coverage) that this multi-site change must walk end to end"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Applies directly: the task deletes a reimplementation rather than adding a second one, and must not reintroduce footer math in this repo"}

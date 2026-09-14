@@ -23,12 +23,13 @@ Always-on settings, identical on every machine. It is the base that
     "npm:pi-mcp-adapter",
     "npm:pi-lens",
     "npm:pi-tps-status",
-    "npm:pi-timer",
     "https://github.com/ayghri/i-have-adhd"
   ],
   "theme": "dark",
   "defaultThinkingLevel": "high",
-  "compaction": { "enabled": true },
+  "compaction": {
+    "enabled": true
+  },
   "autocompleteMaxVisible": 7
 }
 ```
@@ -76,7 +77,6 @@ compares.
 | `npm:pi-mcp-adapter` | MCP servers behind one proxy tool (~200 tokens) instead of every server's full tool list; reads `.mcp.json`, `~/.config/mcp/mcp.json`, and host configs; adds `/mcp`, `/mcp setup`, `mcp-auth` | the on-demand path into the MCP ecosystem without paying for it in context |
 | `npm:pi-lens` | language-aware feedback on every write/edit: LSP diagnostics and navigation, linters/type-checkers, format/autofix, ast-grep and tree-sitter rules, ranked `symbol_search`, `/lens-map` | edits get checked by the real toolchain instead of by the model's own reading |
 | `npm:pi-tps-status` | live tokens-per-second meter in the status bar: TTFT and token-count modes, three counting strategies, provider-usage reconciliation, `/tps` settings | streaming throughput is otherwise invisible; it keeps its config outside `~/.pi/agent/`, at `$XDG_CONFIG_HOME/pi-tps-status/config.json` (like `pi-lens`), so it adds nothing to the path lists |
-| `npm:pi-timer` | per-run elapsed timer in the footer: `runs for` while the agent works, `ran for` once it stops, reset on the next run | run duration is otherwise invisible while it is accumulating, and the number is what makes "is this model slow or is this task big?" answerable; the extension imports no `fs` at all — it reads nothing and writes nothing, so it has no config file and adds nothing to the path lists. It **replaces the whole footer** via `ctx.ui.setFooter()`, which is why `cache-hit-rate.ts` has to republish the cache-hit percentage it drops |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped replies -- answer or next action first, numbered steps, progress restated each turn, concrete time estimates, no preamble; `/i-have-adhd` (or `stop adhd mode`) toggles it per session, `/skill:i-have-adhd` is the aliased skill | output *shape* is a standing preference rather than a per-task prompt, so it belongs to every machine; it is the one package here with a tracked, symlinked config file (`pi-agent/i-have-adhd.json`) -- see below |
 
 Both are self-contained: neither needs a tracked config file in this repo, and
@@ -102,19 +102,14 @@ Its project config is `.pi-lens.json` (project root, outermost wins per field).
 (`~/.config/pi-tps-status/config.json` by default, written atomically), so it
 also appears in neither `scripts/lib.sh`'s path lists nor `.gitignore`.
 
-`pi-timer` is the only package here with no state whatsoever: `extensions/run-timer.ts`
-imports no `fs`, so it has no config file to track, ignore, or symlink — a session
-start and every run start/end are held in memory and rendered inline via
-`ctx.ui.setFooter()`. Nothing to add to `scripts/lib.sh` or `.gitignore`.
-
-That `setFooter()` call is also **why the hand-placed `cache-hit-rate.ts`
-extension exists**, and the two must be read together: the extension API exposes
-no composable footer primitive, so pi-timer rebuilds the footer by hand from a
-copy of an older one. Its rebuild pushes `↑ ↓ R W $ ctx%` and **not** pi core's
-`CH<rate>%` segment, so installing pi-timer silently removes the cache-hit
-percentage. See
-[`cache-hit-rate.ts`](#cache-hit-ratets) below for why the repair is a status
-line rather than a patched footer.
+`pi-timer` used to sit in this list, and it is deliberately gone rather than
+kept: it installed its per-run timer by replacing Pi's **whole** footer through
+`ctx.ui.setFooter()`, and its rebuild — a copy of an older footer — silently
+dropped core's `CH<rate>%` cache-hit segment and its `(sub)` subscription case.
+The timer now lives in the hand-placed [`run-timer.ts`](#run-timerts), which
+publishes through `ctx.ui.setStatus()` and leaves line 2 to Pi core. Do not
+re-add the package; see the `run-timer.ts` subsection below for the rule that
+follows from it.
 
 `pi-web-access` is the one core package that *does* own a per-machine file in the
 agent dir: `~/.pi/agent/web-search.json` — provider selection, proxy, `authFetch`
@@ -390,7 +385,7 @@ stays the contributor view.
 
 ## The `docs/` coverage check
 
-`docs/` answers "when do I reach for this, and what do I type" for the 12
+`docs/` answers "when do I reach for this, and what do I type" for the 11
 always-on packages ([`docs/plugins.md`](../../../docs/plugins.md)) and the 6 fetched
 skills ([`docs/skills.md`](../../../docs/skills.md)). Nothing keeps those pages
 current except this check: `scripts/check-docs.mjs`, run by `doctor.sh` as
@@ -525,47 +520,47 @@ phase and both generalize to any extension in this layer:
   The failure is silent and self-inflicted: writing the tag down is what triggers
   it.
 
-### `cache-hit-rate.ts`
+### `run-timer.ts`
 
-Republishes the cache-hit percentage that `npm:pi-timer` destroys.
-
-Pi's built-in footer computes `CH<rate>%` from the **latest** assistant message
-(`cacheRead / (input + cacheRead + cacheWrite)`) and gates the display on
-cumulative `cacheRead`/`cacheWrite` being non-zero. `pi-timer` replaces that
-whole footer through `ctx.ui.setFooter()` — its rebuild is a copy of an older
-footer and pushes `↑ ↓ R W $ ctx%` with no `CH` segment. This extension recovers
-the number through a surface both footers render.
+Publishes how long the current run has been going, on the footer status line —
+one `ctx.ui.setStatus()` string: `⏱ 12s`, `⏱ 1m 05s`, `⏱ 1h 02m`.
 
 Facts a contributor must not break:
 
-- **It is a repair, not a feature.** If pi core or pi-timer ever prints the
-  cache-hit rate again, delete this file — do not keep it "in case". Two sources
-  for the same footer number is the drift this layer exists to avoid.
-- **It publishes via `ctx.ui.setStatus()`, not `setFooter()`.** Pi core's footer
-  and pi-timer's rebuild both render `footerData.getExtensionStatuses()`, so one
-  status string works under either. Reimplementing this as a footer component
-  would restore the exact single-owner problem it was written to dodge — the
-  next package to call `setFooter()` would erase it again.
-- **The rate is the latest message's, not a session average.** Mirroring pi
-  core's derivation is the whole point; an average over the session is a
-  different (and wrong) number that quietly disagrees with `/status`. The
-  accumulation was checked against core's own `latestCacheHitRate` loop on 121
-  logged sessions and matched on all 121.
-- **A trailing message with no prompt tokens hides the segment — do not
-  "improve" that.** Core takes the rate from the latest assistant message only,
-  so an all-zero final message leaves nothing to show and core blanks it. Keeping
-  the *previous* non-null rate is the tempting alternative and it is wrong: it
-  shows a number core does not, which is a second source of truth for the same
-  footer value. Blanking is also self-correcting — the next message with usage
-  restores it.
+- **No extension under `pi-agent/extensions/` may call `ctx.ui.setFooter()`.**
+  Line 2 belongs to Pi core. A replacement footer is a hand-written copy of one,
+  and a copy goes stale: `npm:pi-timer` was removed for exactly this reason — its
+  `setFooter()` rebuild pushed `↑ ↓ R W $ ctx%` and silently deleted core's
+  `CH<rate>%` cache-hit segment and its `(sub)` subscription case, with no warning
+  and no upstream release adding them back. Do not re-add that package. The
+  hand-placed `cache-hit-rate.ts`, which republished `CH` as a status line to
+  compensate, was deleted with it: core's footer shows `CH` again because core
+  owns the line, not because anything in this repo recomputes it. `doctor.sh`'s
+  `==> Footer ownership` section fails when one of these files calls it, and
+  fails when it can find no extension files to scan at all — a check that reports
+  `ok` after it has stopped reading is worse than no check.
+- **It publishes via `ctx.ui.setStatus()` only.** One key, one string, updated by
+  calling again and withdrawn with `undefined` — no footer, no widget, no overlay,
+  no writes. Pi core's footer and any custom footer both render
+  `footerData.getExtensionStatuses()`, so one status string composes under either;
+  that is the property `setFooter()` does not have.
+- **The key is `run-timer`, which sorts before `tps`.** A footer sorts statuses by
+  key, joins them with a space, and truncates the **whole joined line**, so the
+  leftmost entry is the one a narrow terminal keeps. `tps` is the other live key,
+  so the TPS meter loses its tail rather than the timer losing anything.
+- **The value is wall-clock elapsed time from `agent_start` to `agent_end`, and
+  nothing else.** No session statistic is read or recomputed. It renders in the
+  accent colour while the run is live and dim once it has ended, freezing at the
+  final duration until the next run or the next session, and nothing is shown
+  before the first run of a session. A 1s ticker drives the count and is cleared
+  on `agent_end`, `session_switch`, `session_start` and `session_shutdown`, so
+  repeated runs cannot leak an interval.
 - **It owns no state.** No config file, no `fs` import, nothing persisted, so it
-  changes neither path list in `scripts/lib.sh` nor `.gitignore`. It clears the
-  status when no cache usage exists yet, so a fresh session shows nothing rather
-  than `0.0%`.
+  changes neither path list in `scripts/lib.sh` nor `.gitignore`. There is nothing
+  to symlink and nothing to ignore.
 - **It is global.** Pi loads `~/.pi/agent/extensions/` in every project, so it
-  reads only the session it is handed and returns silently when the session
-  manager or UI context is absent. Its key is `cache-hit`, which sorts before
-  pi-tps-status's `tps` on pi-timer's alphabetically ordered status line.
+  drives its display from the run lifecycle it is handed and returns quietly when
+  the UI context is absent.
 
 ---
 
@@ -637,6 +632,48 @@ Facts that must not be forgotten when editing this file:
   resolution such as `confirmation_unavailable` (headless) or `user_approved`.
   The event name alone has misled at least one reader into thinking the policy
   allow had not applied.
+
+### What A Dispatched Child Can And Cannot Run
+
+The gate **reads the command string**. A path that appears literally in the
+command is gated by its direction; a path buried inside a script the command
+invokes is never seen, and the check then passes vacuously. Measured
+2026-09-14, while a `trellis-check` child was verifying this repo against its own
+plan — every row below is an observed `logs/` record, not a reading of the
+config:
+
+| Command string | Gate record | Child outcome |
+| --- | --- | --- |
+| `./scripts/doctor.sh` | `session_approved`, `pattern: null` | runs — no external path is in the string |
+| `cd /tmp && /abs/path/scripts/doctor.sh` | `session_approved` | runs — `/tmp/*` is allowed |
+| `… render-settings.mjs "$HOME/.pi/agent/settings.json" --check` | `waiting` → `forwarded_permission.request_created` | **blocks on a dialog the child cannot see** |
+| `timeout 25 pi remove --help` | `waiting` → forwarded | blocks the same way |
+| `rm -rf <dir>` | `Denied by policy: 'bash' (rule 'rm -rf *')` | refused before it runs; a compound command loses the whole call |
+
+The `pi remove` row is worth separating from the rest: the committed policy has
+no `bash` pattern for it, so it is the external-directory **write** path
+(`pi remove` mutates `~/.pi/agent/npm`) rather than a text match. The behaviour is
+stable either way, and it holds for `--help`, which reads nothing and still asks.
+
+Two rules follow, and a dispatch prompt must state both:
+
+- **Keep `$HOME`, `~`, and `~/.pi` out of the command string.** A check that
+  needs a live-settings path as an argument cannot avoid naming it, so it is the
+  parent's to run: `render-settings.mjs --check` was never runnable by a child.
+  `doctor.sh` and `check-docs.mjs` are unaffected — their external paths are
+  inside the scripts, invisible to the gate. `/tmp` is explicitly safe.
+- **Read `waiting` as "blocked", never as "slow".** `permission_request.waiting`
+  with `decidedBy: null`, followed by
+  `forwarded_permission.request_created`, means the dialog was routed to the
+  **parent session**. A headless child has no way to answer it: it sits there
+  until it is interrupted, or resolves as `confirmation_unavailable`. A 240-second
+  stall in a child's transcript is this, and re-prompting the child does not fix
+  it — the prompt has to stop asking for the command.
+
+Separate from the gate, one shape waits on a **TTY** rather than a dialog:
+`pi remove <pkg>` with no `</dev/null` blocks on an interactive confirmation
+forever. There is no `--yes`; `--help` documents only `-l`, `--approve`, and
+`--no-approve`.
 
 The full rationale, state table, and tuning recipes live in
 `pi-agent/extensions/README.md`. That file is the deep reference; this spec

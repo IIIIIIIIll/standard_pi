@@ -112,7 +112,6 @@ The table below is the inventory; that page is the manual.
 | `npm:pi-mcp-adapter` | MCP servers behind a single proxy tool instead of their full tool lists; reads `.mcp.json` and host configs, adds `/mcp` and `/mcp setup` |
 | `npm:pi-lens` | Language-aware feedback on every write/edit — LSP diagnostics, linters/type-checkers, formatters, ast-grep/tree-sitter rules, `/lens-map` |
 | `npm:pi-tps-status` | Live tokens-per-second meter in the status bar, with TTFT/token modes and provider-usage reconciliation; `/tps` configures it |
-| `npm:pi-timer` | Per-run elapsed timer in the footer — `runs for` while the agent is working, `ran for` after it stops, reset on the next run |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped output — answer or next action first, numbered steps, no preamble. `/i-have-adhd` (or `stop adhd mode`) toggles it for the session; `/skill:i-have-adhd` is the aliased skill entry point |
 
 `pi-subagents` also dispatches the Trellis role agents. A dispatched child runs as
@@ -120,11 +119,11 @@ its own Pi session, so `pi-agent/extensions/trellis-subagents-bridge/` keeps it
 pointed at the session's active task — see
 [extensions/README.md](pi-agent/extensions/README.md#trellis-subagents-bridge).
 
-`pi-timer` replaces Pi's built-in footer wholesale, and its rebuild is a copy of
-an older one — which drops the cache-hit percentage the built-in footer shows.
-`pi-agent/extensions/cache-hit-rate.ts` republishes it as a status line that both
-footers render — see
-[extensions/README.md](pi-agent/extensions/README.md#cache-hit-rate).
+`pi-agent/extensions/run-timer.ts` shows how long the current run has taken, as a
+`⏱ 12s` status line beneath the footer — see
+[extensions/README.md](pi-agent/extensions/README.md#run-timer). Pi's own footer
+is left untouched, so its cache-hit percentage (`CH`) is back where it always
+was.
 
 What each role agent is for, the prompt form that actually works, and how to drive
 the plugins above day to day: [`docs/`](docs/README.md) —
@@ -241,6 +240,18 @@ scripts/optional.sh scaffold my-plugin
 $EDITOR optional/my-plugin/manifest.json
 scripts/optional.sh enable my-plugin
 ```
+
+### Removing a plugin
+
+```bash
+# always-on
+pi remove npm:some-plugin </dev/null && scripts/sync.sh    # then commit
+```
+
+`pi remove` has no `--yes`: with no TTY it waits on a confirmation forever, so
+close stdin when it runs from a script. Then drop its entry from
+[`docs/plugins.md`](docs/plugins.md) — `scripts/check-docs.mjs` fails until the
+docs and `packages` agree again, which is the point.
 
 ---
 
