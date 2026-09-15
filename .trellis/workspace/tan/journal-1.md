@@ -289,3 +289,25 @@ Removed npm:pi-timer, which installed its per-run timer by replacing Pi's entire
 ### Status
 
 [OK] **Completed**
+
+## Session 10: Refuse cross-checkout symlink re-pointing
+<!-- trellis-session: v=2 fp=a805fb82e73089c6 -->
+
+**Date**: 2026-09-15
+**Task**: Refuse cross-checkout symlink re-pointing
+**Branch**: `main`
+
+### Summary
+
+Archived 09-15-install-trellis-step, then closed the hazard it surfaced. setup.sh::link() now separates three shapes: a link resolving to $src is ok; a link into another existing checkout is error+exit 1; a dangling or unrelated link is still replaced silently, so 'mv my_pi_setup elsewhere' keeps working. Readlink -f prints nothing with exit 1 when a link's whole target path is absent, and dirname(dirname('')) is '.', i.e. the repo itself when setup.sh runs from its root -- so a non-empty guard on the resolved path is load-bearing; without it every moved clone would be refused. No new flag: PI_CODING_AGENT_DIR is the documented escape hatch. Verified with three probes using scratch PI_CODING_AGENT_DIR dirs so ~/.pi/agent was never a test subject, plus the full chain (setup.sh twice byte-identical, doctor All good). Also corrected pre-existing spec drift: shell-guidelines.md quoted four inline comments setup.sh never had and omitted the refusal printf; the snippet is now the file's code verbatim with the diff command that proves it inlined. Both tasks archived, tree clean.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4e44e22` | fix(setup): refuse to re-point live symlinks across checkouts |
+| `b2d1970` | chore(task): record the cross-checkout guard's evidence |
+
+### Status
+
+[OK] **Completed**

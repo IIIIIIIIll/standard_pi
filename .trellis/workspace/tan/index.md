@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 9
+- **Total Sessions**: 10
 - **Last Active**: 2026-09-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~301 | Active |
+| `journal-1.md` | ~314 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 | --- | ------ | ------- | --------- | -------- |
+| 10 | 2026-09-15 | Refuse cross-checkout symlink re-pointing | `4e44e22`, `b2d1970` | `main` |
 | 9 | 2026-09-15 | Restore Pi's footer by re-homing the run timer on the status line | `707f017` | `main` |
 | 8 | 2026-09-14 | Install and register the codebase-memory MCP server | `cbcf93d` | `main` |
 | 7 | 2026-09-14 | Daily-use docs layer + a docs coverage check | `0f46c9f`, `d042603` | `main` |
