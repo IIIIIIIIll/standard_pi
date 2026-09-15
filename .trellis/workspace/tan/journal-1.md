@@ -311,3 +311,51 @@ Archived 09-15-install-trellis-step, then closed the hazard it surfaced. setup.s
 ### Status
 
 [OK] **Completed**
+
+
+## Session 11: Carry the role gates to dispatched children, and guard three invariants
+<!-- trellis-session: v=2 fp=e105a118398bdaf2 -->
+
+**Date**: 2026-09-16
+**Task**: Carry the role gates to dispatched children, and guard three invariants
+**Branch**: `main`
+
+### Summary
+
+Two tasks. First, a doctor.sh check that the generated Trellis extension still returns early on the child-inert marker ahead of its first registration call, with CHILD_INERT_MARKER declared once in the bridge and read by the check. Then the main task: the four workflow gates written into .trellis/spec/ as the content home, and delivered to a dispatched child by the repo-owned bridge, which relays the agent name from the dispatch tool_call and selects the task manifest whose stem is a suffix of it, so a check child is fed check.jsonl instead of the hardcoded implement.jsonl. The parent also sets the child-inert marker persistently, so the child's copy of the generated extension returns at load and it stops receiving the parent's planning breadcrumb. Two defects were caught by measurement rather than by reading. (1) The child branch was unreachable: BRIDGE_CHILD_MARKER was read by both role predicates and assigned nowhere, so isOtherChild() was true in every child and the child returned at extension load; with the parent also setting the inert marker, every dispatched child would have received nothing at all, which is worse than before the bridge existed, and doctor.sh stayed green throughout. (2) {agent}.jsonl was never upstream's rule: .pi/extensions/trellis/index.ts:90-95 is a hardcoded role table, which R1 forbids copying, so {agent}.jsonl would have resolved to trellis-check.jsonl, missed, and fallen through to the union on every dispatch. Both are now fixed and both are recorded as conventions in pi-resources.md. A third small commit adds the mechanical detector for the first class: doctor.sh fails when any *_MARKER/_ENV constant declared in the bridge has no assignment.
+
+### Main Changes
+
+- doctor.sh: a check that the generated extension's child-inert guard is textually first, not merely present; CHILD_INERT_MARKER declared once in the bridge and read off that declaration
+- doctor.sh: a check that every *_MARKER/_ENV constant declared in the bridge has a process.env[<name>] = line; it is what catches a marker that is read but never set
+- .trellis/spec/index.md carries the four gates - G1 in Pre-Development Checklist, G2/G3/G4 under Quality Check - with the config/ and scripts/ indexes carrying only their layer's instance and G4 referencing the propagation guide rather than restating it
+- bridge: relay the dispatched agent name and select the manifest by stem suffix, append the curated bodies then prd/design/implement, read the caps from config.yaml, refuse a path that escapes the repo root, skip a body already in the prompt, and cache the block per session
+- bridge: the parent sets both role markers together, persistently and gated on a resolved task, so a session with no active task sets neither
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `afb4237` | feat(doctor): guard the child-inert contract on the generated extension |
+| `2f58e45` | chore(task): archive 09-15-doctor-child-inert-guard |
+| `b7cce25` | feat(bridge): deliver the role gates to a dispatched child |
+| `8550e4a` | fix(doctor): fail when a bridge role marker is never assigned |
+| `d76e427` | chore(task): archive 09-15-harden-pi-role-agents |
+
+### Testing
+
+- [OK] child-inert guard arms, each on the real generated file with a hash-proven restore: guard deleted, guard moved below the first registration, reflowed comparison, declaration commented out, and three planted-comment false greens that the first pattern wrongly accepted
+- [OK] delivery probe: an async check child received both check.jsonl-only entries as full bodies and quoted all four gates, and its session file carries no trellis-runtime-context record where the pre-change child carries one - the on-disk proof it went inert
+- [OK] nested-pi A/B for the persistent marker's cost: with TRELLIS_SUBAGENT_CHILD=1 a spawned pi reports no Trellis task context; without it, it reports the active task
+- [OK] marker-assignment arms: healthy tree ok (3 markers), assignment deleted bad naming it, declarations commented out bad, unassigned decoy marker bad
+- [OK] full chain: bash -n, node --check, setup.sh twice byte-identical, sync.sh reports same, doctor.sh All good.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Recorded, not outstanding: when the bridge loses the word SHIPPED_TOOLS entirely the outer chain reports a bad and both marker checks are skipped - never silently green, and the fix is a restructure of that chain
+- prd/design/implement arrive as index lines rather than bodies for a task whose curated set exhausts max_total_bytes; that is upstream's own order (curated first), not a regression
+- The marker-assignment check proves an assignment exists, not that it sits in the right place or is gated on a resolved task; those need reading
