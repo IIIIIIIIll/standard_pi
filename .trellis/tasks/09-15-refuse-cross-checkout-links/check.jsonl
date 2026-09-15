@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "Verify the quoted link() snippet and the branch rules still match the file after the change"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "Verify the verify-chain section and the link() contract text agree with the new behaviour"}

@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "Quotes setup.sh::link() as the reference implementation and enumerates its branches as the contract; R5 requires both the snippet and the rule list to change"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "R6: the cross-checkout verification section that must record the new PI_CODING_AGENT_DIR requirement, and the anti-pattern list on never claiming a check that cannot run"}
+{"file": ".trellis/tasks/archive/2026-09/09-15-install-trellis-step/prd.md", "reason": "The Completion Record that first recorded this hazard, including how it was triggered and why the fix was deferred"}
