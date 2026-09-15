@@ -332,6 +332,47 @@ else
       fi
     fi
   fi
+
+  # A role marker the bridge's predicates read must have a line that ASSIGNS it.
+  #
+  # Measured 2026-09-15: BRIDGE_CHILD_MARKER was read by isBridgeChild() and
+  # isOtherChild() and assigned nowhere, so isOtherChild() was true in every
+  # child, the child branch returned at extension load, and every dispatched
+  # child silently received no context at all — no curated manifest, no task
+  # artifacts, and no breadcrumb either. doctor.sh was green throughout: the
+  # extension loaded, the child reported no_task, and nothing looked at the
+  # constant. `grep -c 'process.env[BRIDGE_CHILD_MARKER] = '` returning 0 was the
+  # whole bug. The delivery probe found it; reading the diff did not.
+  #
+  # Scope is the bridge's OWN markers only. A name it inherits or observes
+  # (PI_SUBAGENT_CHILD, TRELLIS_CONTEXT_ID) is read-only here by design and is
+  # not this file's to set, so demanding an assignment for it would be wrong.
+  # The extraction therefore takes whole `const` identifiers and filters by
+  # suffix, rather than matching a suffix and truncating the name: a truncated
+  # name would produce a false `bad` for a marker that is correctly assigned.
+  #
+  # This is a floor, not a ceiling, and the label says so: it proves an
+  # assignment exists somewhere in the file, not that it sits in the right place
+  # or is gated on a resolved task. Those need reading.
+  bridge_markers="$(grep -oE '^const [A-Z_]+ ' "$bridge_src" 2>/dev/null | awk '{print $2}' |
+    grep -E '_(MARKER|ENV)$' | sort -u)"
+  if [ -z "$bridge_markers" ]; then
+    bad "read no role marker declaration from $bridge_file (empty or reformatted?); the markers its predicates read cannot be verified"
+  else
+    unassigned_markers=()
+    while IFS= read -r m; do
+      [ -n "$m" ] || continue
+      grep -qF "process.env[$m] = " "$bridge_src" 2>/dev/null || unassigned_markers+=("$m")
+    done <<<"$bridge_markers"
+    if [ ${#unassigned_markers[@]} -gt 0 ]; then
+      bad "bridge marker(s) read but never assigned: ${unassigned_markers[*]}"
+      printf '      a marker the role predicates read must be set somewhere in %s\n' "$bridge_file"
+      printf '      measured 2026-09-15: this is how every dispatched child silently lost its context\n'
+    else
+      n_markers="$(printf '%s\n' "$bridge_markers" | grep -c .)"
+      ok "bridge role marker(s) assigned ($n_markers: $(printf '%s\n' "$bridge_markers" | tr '\n' ' '))"
+    fi
+  fi
 fi
 
 # Footer ownership. Line 2 of the footer belongs to Pi core. An extension that

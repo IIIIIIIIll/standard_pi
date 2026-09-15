@@ -541,6 +541,18 @@ Facts a contributor must not break:
   **or** returns on it only after the first registration call — a guard below the
   registrations registers everything and then returns. The predicate tests the
   constant, never the literal, so the name appears exactly once in this file.
+- **Every marker the predicates read has a line that assigns it, and `doctor.sh`
+  checks that.** Measured 2026-09-15: `BRIDGE_CHILD_MARKER` was read by
+  `isBridgeChild()` and `isOtherChild()` and assigned nowhere, so `isOtherChild()`
+  was true in every child, the child branch returned at extension load, and every
+  dispatched child silently received nothing — no curated manifest, no task
+  artifacts, and no breadcrumb, which is worse than before the bridge existed.
+  `doctor.sh` was green throughout. Both markers are now set together in
+  `markChildren`, gated on a resolved task so a session with no active task sets
+  neither, and the check fails when a `*_MARKER` / `*_ENV` constant declared in
+  this file has no `process.env[<name>] =` line. Names the bridge **inherits**
+  (`PI_SUBAGENT_CHILD`, `TRELLIS_CONTEXT_ID`) are read-only here by design and are
+  deliberately out of scope — the bridge must not set them.
 - The child's pointer is removed on `session_shutdown`. A crashed child leaves it
   behind; that is accepted rather than pruned.
 
