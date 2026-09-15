@@ -217,17 +217,27 @@ function activeTaskDir(root: string, key: string | null): string | null {
 //      publish(), find no runtime pointer at the child's own key, and DELETE the
 //      key the shipped tool just set — a regression from pre-bridge behaviour.
 //   3. parent session — neither marker. The bridge's parent role.
+// The generated Trellis extension returns immediately when this name is "1" in
+// the environment, which is how a dispatched child is stopped from running the
+// PARENT's per-turn session path. This declaration is the SINGLE SOURCE for that
+// marker: scripts/doctor.sh reads the name off it and fails when the generated
+// extension no longer returns early on it, so a `trellis update` that renames the
+// variable or moves the guard below the registration calls cannot silently
+// restore the wrong breadcrumb in every dispatched child. The parent sets it
+// before spawning; the child inherits it.
+const CHILD_INERT_MARKER = "TRELLIS_SUBAGENT_CHILD";
+
 function isBridgeChild(): boolean {
   return (
     process.env.PI_SUBAGENT_CHILD === "1" &&
-    process.env.TRELLIS_SUBAGENT_CHILD !== "1"
+    process.env[CHILD_INERT_MARKER] !== "1"
   );
 }
 
 function isShippedToolChild(): boolean {
   return (
     process.env.PI_SUBAGENT_CHILD === "1" &&
-    process.env.TRELLIS_SUBAGENT_CHILD === "1"
+    process.env[CHILD_INERT_MARKER] === "1"
   );
 }
 
@@ -358,7 +368,11 @@ export default function trellisSubagentsBridge(pi: PiApi): void {
       if (!written) return;
       try {
         rmSync(written, { force: true });
-      } catch {}
+      } catch {
+        // Best-effort cleanup on shutdown: `force: true` already swallows a
+        // missing file, and anything else (permissions, a racing unlink) must
+        // not break the session_shutdown handler.
+      }
       written = null;
     });
 

@@ -275,6 +275,63 @@ else
       ok "shipped dispatch tool(s) covered by the bridge: $n_ext"
     fi
   fi
+
+  # Child-inert guard. A SIBLING of the SHIPPED_TOOLS comparison above, not a
+  # nested branch: the two checks read independent inputs, so a missing tool
+  # name must not suppress the guard result. The bridge sets CHILD_INERT_MARKER
+  # in the parent's environment before dispatching, so the child's copy of the
+  # generated Trellis extension returns at load instead of running the PARENT's
+  # per-turn session path. That guard lives in a generated file this repo cannot
+  # edit, so a `trellis update` that renames the variable or moves the guard
+  # below the registration calls would silently restore the wrong breadcrumb in
+  # every dispatched child. Presence alone is not enough: a guard after the
+  # registration calls registers everything and then returns.
+  #
+  # The `$ext_names` guard is load-bearing. With no dispatch tool registered, the
+  # generated extension has no registration call to compare a guard against, and
+  # SHIPPED_TOOLS deliberately `warn`s rather than fails for that shape — so a
+  # bare dedent would have the two sibling checks contradict each other. When the
+  # tree registers nothing, this check has no input and stays quiet.
+  #
+  # `pi.registerTool?.(` is the call form; the bare word `registerTool` is the
+  # type annotation above the guard, and `pi.registerTool(` matches nothing.
+  #
+  # The guard scan admits only statement-shaped lines: line comments and
+  # block-comment lines are dropped, the line must open with the `if` keyword and
+  # a `(`, and it must carry the word `return`. Without that, deleting the real
+  # guard and leaving a comment which merely mentions the marker and the word
+  # `return` above the registration makes this check report `ok` with exit 0 —
+  # measured with a `//` line naming the marker, with a `/* … */` line saying it
+  # "shifts the child; returns early", and with a bare `<marker>: if (set) handlers
+  # return early` line. The first needs the `//` filter, the second the
+  # block-comment filter, and the third is why each pattern is anchored on the
+  # `grep -n` prefix — a bare `: *if` also matches a colon INSIDE the text. A
+  # false `bad` is the acceptable direction (see shell-guidelines.md on filtering
+  # a scanner's own output): a reflowed comment costs a reworded line, while a
+  # filter loose enough to accept a comment as a guard is unrecoverable. R4's
+  # tolerance is unaffected — spacing, quote style, `== "1"`, `if(…)return;`,
+  # `{ return; }`, and a trailing block comment after a real guard all still pass.
+  if [ -n "$ext_names" ]; then
+    marker="$(grep 'CHILD_INERT_MARKER' "$bridge_src" 2>/dev/null | grep -v '//' | head -n 1 |
+      grep -oE '"[A-Z_]+"' | tr -d '"')"
+    if [ -z "$marker" ]; then
+      bad "read no marker name from the CHILD_INERT_MARKER declaration in $bridge_file (empty or reformatted?); the child-inert guard cannot be verified"
+    else
+      guard_line="$(grep -nF "$marker" "$trellis_ext" 2>/dev/null | grep -v '//' |
+        grep -vE '^[0-9]+:[[:space:]]*(/\*|\*)' | grep -E '^[0-9]+:[[:space:]]*if[[:space:]]*\(' | grep -E '\breturn\b' |
+        head -n 1 | cut -d: -f1)"
+      reg_line="$(grep -n 'pi\.registerTool' "$trellis_ext" 2>/dev/null | head -n 1 | cut -d: -f1)"
+      if [ -z "$guard_line" ]; then
+        bad "the child-inert guard is gone: the generated extension no longer returns early on $marker, so a dispatched child runs the parent's per-turn session path"
+      elif [ -z "$reg_line" ]; then
+        bad "the child-inert guard cannot be positioned: no registration call was found in .pi/extensions/trellis/index.ts to compare $marker against"
+      elif [ "$guard_line" -ge "$reg_line" ]; then
+        bad "the child-inert guard is no longer first: $marker at line $guard_line is not before the first registration at line $reg_line"
+      else
+        ok "child-inert guard precedes registration ($marker at line $guard_line, registration at $reg_line)"
+      fi
+    fi
+  fi
 fi
 
 # Footer ownership. Line 2 of the footer belongs to Pi core. An extension that

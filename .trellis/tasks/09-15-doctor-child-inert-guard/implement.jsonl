@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/scripts/index.md", "reason": "Scripts layer: which script owns a check (doctor.sh reports and owns its exit code), the QUALITY CHECK list, and the two-space/padded-verb output convention"}
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "doctor.sh's deliberate `set -uo pipefail` without -e, the ok/warn/bad counter helpers, the severity rule (bad when the fix is available), and the check-integrity anti-patterns this block must obey"}
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "The trellis-subagents-bridge section's must-not-break list that the CHILD_INERT_MARKER declaration and its check must be added to, in the same shape as the neighbours"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "`.pi/` is CLI-generated, gitignored and template-tracked, so it is read by the check and never written by this repo — and git status cannot see a failed restore of it"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "The multi-site fact to add (declaration in the bridge -> check in doctor.sh -> the generated extension it reads), with the SHIPPED_TOOLS row as the template"}

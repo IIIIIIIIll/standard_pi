@@ -500,6 +500,14 @@ Facts a contributor must not break:
   fails when it can extract **no** names from an extension that clearly calls
   `registerTool` — seeing nothing is drift too, and a reflowed template must not
   be allowed to turn the check into a silent pass.
+- **`CHILD_INERT_MARKER` is the single source for the child-inert marker.** The
+  bridge sets that name in the parent's environment before dispatching, so the
+  child's copy of the generated extension returns at load instead of running the
+  *parent's* per-turn session path. `doctor.sh` reads the name off the declaration
+  and fails when the generated extension stops returning on it, **or** returns on
+  it only after the first registration call — a guard below the registrations
+  registers everything and then returns. The predicate tests the constant, never
+  the literal, so the name appears exactly once in this file.
 - The child's pointer is removed on `session_shutdown`. A crashed child leaves it
   behind; that is accepted rather than pruned.
 
