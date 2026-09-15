@@ -152,33 +152,88 @@ which directory is yours, and this repo has exactly one tracked developer.
 
 ## Acceptance Criteria
 
-- [ ] `git clone` of this repo into an empty directory, then `./setup.sh`, leaves
+All verified on `f70066d`, 2026-09-15. V-numbers refer to
+[implement.md](./implement.md)'s validation commands.
+
+- [x] `git clone` of this repo into an empty directory, then `./setup.sh`, leaves
       `.pi/settings.json`, `.pi/extensions/trellis/index.ts`,
       `.pi/agents/trellis-{implement,check,research}.md`,
       `.pi/prompts/trellis-{start,continue,finish-work}.md` and
       `.agents/skills/trellis-*` all present.
-- [ ] `.pi/settings.json` produced by that run is byte-identical to the one on a
-      machine that already had it.
-- [ ] After that run, `git status --short` shows no new untracked paths under
+      — **V8**: all five files `PRESENT`, 3 prompts, 9 skill directories.
+- [x] `.pi/settings.json` produced by that run is byte-identical to the one on a
+      machine that already had it. — **V8**: `diff` clean against the live file.
+- [x] After that run, `git status --short` shows no new untracked paths under
       `.trellis/` and no modification to `.trellis/.template-hashes.json`.
-- [ ] `.trellis/spec/backend/` and `.trellis/spec/frontend/` do not exist.
-- [ ] `.trellis/tasks/` contains no `00-join-*` directory.
-- [ ] `.trellis/.developer` contains `name=tan` where `id -un` is `tan`, and a
-      pre-existing `workflow=` line in that file survives.
-- [ ] `.trellis/workspace/tan/` exists with `index.md` and `journal-1.md`,
+      — **V8**: `git status --short` empty immediately after `./setup.sh`.
+- [x] `.trellis/spec/backend/` and `.trellis/spec/frontend/` do not exist.
+      — **V8** + Gate 1: both `prune`d, both absent.
+- [x] `.trellis/tasks/` contains no `00-join-*` directory. — **V8**: absent.
+- [x] `.trellis/.developer` contains `name=tan` where `id -un` is `tan`, and a
+      pre-existing `workflow=` line in that file survives. — Gate 1: a seeded
+      `name=yuanhai.tan` + `workflow=tdd` file came back as `name=tan` with
+      `workflow=tdd` and the original `initialized_at` byte-identical. The live
+      run printed `sync .trellis/.developer (yuanhai.tan -> tan)` and preserved
+      `initialized_at=2026-09-13T19:33:09.178801`.
+- [x] `.trellis/workspace/tan/` exists with `index.md` and `journal-1.md`,
       `.trellis/workspace/yuanhai.tan/` does not, and `git status` records the move
-      as a rename (R).
-- [ ] The first line of both migrated files names `tan`, and no tracked file
-      outside dated archived prose still contains `yuanhai.tan`.
-- [ ] Every `.trellis/tasks/**/task.json` has `creator` and `assignee` = `tan`
+      as a rename (R). — `f70066d` records
+      `.trellis/workspace/{yuanhai.tan => tan}/`, and post-commit
+      `git log --follow` on the journal reaches 11 commits back to `b0ef2b0`.
+- [x] The first line of both migrated files names `tan`, and no tracked file
+      outside dated archived prose still contains `yuanhai.tan`. —
+      `git grep -n 'yuanhai\.tan'` returns exactly the two dated archive lines
+      named in R8, and nothing else.
+- [x] Every `.trellis/tasks/**/task.json` has `creator` and `assignee` = `tan`
       (14 files, 28 fields), and `git diff` on those files touches no other line.
-- [ ] Running `./setup.sh` twice on the same machine produces the same output and
+      — 13 tracked + this task's file; `git diff -U0 | grep -v 'creator|assignee'`
+      returns nothing, and `get_developer.py` returns `tan`.
+- [x] Running `./setup.sh` twice on the same machine produces the same output and
       no new files; the second run reports the step as already satisfied.
-- [ ] `./scripts/doctor.sh` ends `All good.` on a complete machine, exits `1` with
+      — **V5**: byte-identical (64 lines), exits `0`/`0`, second run prints
+      `ok  .pi/ adapters and .agents/skills/trellis-* (already present; name=tan)`.
+- [x] `./scripts/doctor.sh` ends `All good.` on a complete machine, exits `1` with
       a `bad` when `.pi/agents/` is emptied, and `warn`s (not `bad`) when `trellis`
-      is not on `PATH`.
-- [ ] `bash -n setup.sh scripts/*.sh` passes, `scripts/install-trellis.sh` is mode
+      is not on `PATH`. — **V4** exit `0`; **V9a** exit `1` naming
+      `.pi/agents/trellis-check.md`; **V9b** exit `0` with the CLI `warn`.
+- [x] `bash -n setup.sh scripts/*.sh` passes, `scripts/install-trellis.sh` is mode
       `100755`, and `git status --short` is clean after a full `./setup.sh`.
+      — **V1** pass; `100755` in `f70066d`; **V7** empty.
+
+## Completion Record
+
+**2026-09-15, tan — complete.** One commit, `f70066d`. The headline finding is the
+one that shaped every decision: `trellis update` cannot restore a gitignored
+Trellis surface, because the tracked hash manifest makes absence look like a
+deletion the user made. It reports `Already up to date!` while doing nothing, and
+`--force` does not change that.
+
+Three things the plan got wrong and the implementation corrected:
+
+1. The design put the `trellis` CLI preflight *before* the completeness gate. The
+gate now runs first and includes the developer identity, so "skipped" and "nothing
+left to do" mean the same thing, and a machine with correct surfaces is not warned
+about a CLI it does not need.
+2. The plan had a blocker: an identity rename orphaned the tracked
+`.trellis/workspace/yuanhai.tan/`, splitting one developer's history in two. That
+became R8 (a `git mv` plus the `creator`/`assignee` rename, which is functional —
+`task.py` filters "my tasks" by assignee).
+3. `setup.sh` step 7 and the new `doctor.sh` section both printed
+`==> Trellis adapters`, so one `setup.sh` run showed that header twice. Step 7 is
+now `==> Trellis surfaces`.
+
+One hazard found during verification, **pre-existing and not introduced by this
+change**, left unfixed and recorded here so it is not lost — see the follow-up
+question in the session summary rather than a spec edit, because fixing it is a
+different task: `PI_DST` is `~/.pi/agent` no matter which checkout runs `setup.sh`,
+so running `./setup.sh` inside a *second* clone silently re-points the machine's
+live `~/.pi/agent/{extensions,i-have-adhd.json}` symlinks at that clone (the
+`link()` branch that `rm`s a stale target does not ask). `doctor.sh` catches it as
+`points elsewhere`, but only after the fact.
+
+Evidence that would falsify this task's central claim: any `.pi/*` or
+`.agents/skills/trellis-*` file that `trellis update` restores on a fresh clone. It
+does not, which is why `scripts/install-trellis.sh` runs `trellis init` instead.
 
 ## Notes
 
