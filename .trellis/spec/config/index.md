@@ -57,6 +57,11 @@ generated and will be overwritten on the next render), and committing
       read-only → `PI_FILES`; rewritten at runtime → ignored, not symlinked.
 - [ ] `.env` handling is deny-by-default in the permission policy. Do not add a
       rule that allows reading `*.env` to make something work.
+- [ ] For a change that adds or renames a key, a bundle, or a path, state the
+      boundary before the first edit: the one tracked input that changes, the
+      generated or ignored surfaces that follow from it, and the sites that must
+      move with it. A change that edits the generated output has the boundary in
+      the wrong place.
 
 ---
 
@@ -78,3 +83,15 @@ generated and will be overwritten on the next render), and committing
       `settings.core.json` and every skill in `skills.json` still has an entry in
       `docs/`, and no entry documents something that is not shipped. The contract
       is in [pi-resources.md](./pi-resources.md#the-docs-coverage-check).
+- [ ] The render/sync pair stayed symmetric: `./setup.sh` then `./scripts/sync.sh`
+      reports `same  pi-agent/settings.core.json`. This is the layer's cross-layer
+      check — the config surface is one mapping read in two directions, and a key
+      handled in one direction only stays invisible until the next sync.
+- [ ] Prose that quotes config is still true. The `settings.core.json` block in
+      [pi-resources.md](./pi-resources.md) is a hand-maintained copy and nothing
+      checks it (`git grep -n 'pi-resources' -- scripts/ setup.sh` finds no
+      consumer), so compare it by hand — or correct the claim that it is checked.
+      Same for any key quoted in `README.md` or `docs/`.
+- [ ] Scope: no key, bundle, or manifest entry added for a machine or a case that
+      cannot occur, and no existing value rearranged because it merely looked
+      inconsistent.

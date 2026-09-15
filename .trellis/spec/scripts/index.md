@@ -40,6 +40,7 @@ desc="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[
 - [ ] If the script calls Node, use `node "$REPO_DIR/scripts/<helper>.mjs"` with an absolute path derived from `$REPO_DIR`; never a relative path, because scripts are invoked from arbitrary working directories.
 - [ ] Add the `command -v node >/dev/null 2>&1 || { ...; exit 1; }` preflight if the script needs Node (five of the six bash scripts do; `scripts/install-trellis.sh` is the exception, because it reads and writes no JSON).
 - [ ] New executable scripts need `chmod +x`; git tracks the mode, and only `setup.sh` plus `scripts/{optional,sync,doctor,install-mcp,install-trellis}.sh` are currently `100755`. `scripts/lib.sh` is sourced-only and stays `100644`.
+- [ ] For a change that touches more than one script or crosses the bash/Node split, state the boundary before the first edit: which script owns the change, what it reuses instead of re-declaring, and what is not being done. Giving a responsibility to a second script is a decision to state before continuing, not after.
 
 ---
 
@@ -60,3 +61,19 @@ desc="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[
       with the other scripts.
 - [ ] Errors go to stderr when they are diagnostics (`.mjs` uses `console.error`),
       and the exit code is meaningful (`2` usage, `1` failure).
+- [ ] Every claim is backed by a command someone else can run — a named
+      invocation, not "it works". Where nothing checks it, the item says so:
+      `shellcheck` is not installed, so `bash -n` plus `./setup.sh` twice are the
+      syntax and integration checks available here.
+- [ ] Error handling matches the script's own contract: `setup.sh` and
+      `scripts/sync.sh` run under `set -e`, `scripts/doctor.sh` deliberately does
+      not — it must report every problem and still exit `0`. Do not "fix" one into
+      the other's shape; see [shell-guidelines.md](./shell-guidelines.md).
+- [ ] Printed output keeps the established verb vocabulary
+      ([shell-guidelines.md](./shell-guidelines.md),
+      [node-guidelines.md](./node-guidelines.md)). A user-facing string is usually
+      a multi-site fact, because the same wording is quoted in the specs and in
+      `README.md`; the site list lives in
+      [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md).
+- [ ] Scope: no helper, flag, or fallback added for a case that cannot occur, and
+      nothing added to a script that already has an owner for it.

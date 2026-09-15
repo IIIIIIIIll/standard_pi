@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/index.md", "reason": "Repo overview, the four gates' content home (Pre-Development Checklist / Quality Check), and the verify chain this change must pass"}
+{"file": ".trellis/spec/config/index.md", "reason": "Config layer: the gates' layer-specific instance to add, and the surface rules the bridge's docs live under"}
+{"file": ".trellis/spec/scripts/index.md", "reason": "Scripts layer: the gates' layer-specific instance to add, and the bash/Node conventions surrounding the extension code"}
+{"file": ".trellis/spec/scripts/node-guidelines.md", "reason": "The extension's runtime conventions: zero dependencies, node: builtins only, no build step"}
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "The trellis-subagents-bridge section lists the facts a contributor must not break; the injection and the predicate restructure add to them, and this file must stay true"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "Where pi-agent/extensions sits among tracked / symlinked / generated / ignored surfaces"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "The multi-site facts the change must record (the context_injection readers), plus the verify chain and the Before You Trust \"Enforced By\" rule the acceptance criteria follow"}
+{"file": ".trellis/tasks/09-15-harden-pi-role-agents/research/swap-fidelity.md", "reason": "Measured: the two child shapes, ambient-extension loading, the child's actual injected manifest, the planning breadcrumb it receives, and the fact that no on-disk source records a child's system prompt"}

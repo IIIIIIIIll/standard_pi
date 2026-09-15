@@ -69,6 +69,7 @@ before editing a constant, a list, or a name.
 - [ ] If you are adding an executable script, decide now whether it is a user-facing entry point (repo root, e.g. `setup.sh`) or a helper (`scripts/`), and `chmod +x` it — git tracks the executable bit.
 - [ ] If you are adding a config key, decide whether it is core (every machine) or optional (per-machine). It goes in `settings.core.json` or `optional/<name>/manifest.json` respectively — never both.
 - [ ] Read the matching layer spec under `scripts/` or `config/`.
+- [ ] For a non-trivial change — more than one file, a crossed layer, a changed public interface, or code you did not just write — state the change boundary before the first edit: the smallest behaviour gap between what happens now and what should happen; where that behaviour actually lives, rather than where it is easiest to intercept; which files will change and why each one is necessary; and what is explicitly not being done. A small, well-scoped change needs none of this. If the real scope turns out to be clearly larger, say so before continuing instead of widening the change.
 
 ---
 
@@ -98,6 +99,28 @@ Additional checks that are not automated:
   changed a tracked surface.
 - Never leave a secret in a tracked file. `doctor.sh` scans for common key
   patterns and fails if `pi-agent/auth.json` is tracked.
+
+### Before You Report
+
+Three checks that no command performs. They are answered by hand, by whoever is
+reporting the change — the agent reading them is the check.
+
+- **Spec sync.** Does `.trellis/spec/`, `README.md`, or `docs/` now state
+  something this change made false? Correct it in this change, or say plainly
+  that it was left and why. Nothing checks prose, this paragraph included.
+- **Scope discipline.** No tidying the task did not require; no abstraction,
+  config key, or extension point added for a case that cannot occur; no
+  speculative fallback for a state that cannot happen; no file changed that the
+  acceptance criteria do not mention; no workaround added at the caller where the
+  behaviour actually lives.
+- **Cross-layer consistency.** This repo's layers are config
+  (`pi-agent/settings.core.json`, `optional/*/manifest.json`), scripts
+  (`setup.sh`, `scripts/*.sh`, `scripts/*.mjs`), spec (`.trellis/spec/**`), and
+  docs (`README.md`, `docs/`), plus the repo-owned extension surface
+  (`pi-agent/extensions/`). A value that crosses layers is traced through each
+  layer it touches, in that order. The site list for a given value is owned by
+  [guides/change-propagation-guide.md](./guides/change-propagation-guide.md) —
+  read it there; it is deliberately not copied here.
 
 ---
 

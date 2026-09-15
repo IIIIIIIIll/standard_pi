@@ -37,6 +37,31 @@ runtime session pointer under its own key. The generated extension then resolves
 the real task through its normal path — correct breadcrumb, correct injected
 context, and a bash key that resolves — with nothing stripped or rewritten.
 
+It also **supplies the child's task context**, because it makes the child's own
+copy of the generated extension inert (the parent sets a child marker the generated
+extension returns on at load, the same thing the shipped dispatch tool did for its
+children). An inert extension injects nothing, so the child would otherwise lose
+the context it receives today. In the child's first `before_agent_start` the bridge
+appends, after the constant dispatch note:
+
+- the curated spec/research files of the role that was dispatched — the manifest is
+  the task-dir file whose stem is a **suffix** of the agent name the dispatcher
+  already passed (a name whose last `-`-separated segment is `check` selects
+  `check.jsonl`), falling back to every `*.jsonl`
+  in the task directory when nothing was relayed or nothing matches. There is no
+  role table here on purpose: the name is relayed, never enumerated;
+- the task's `prd.md` → `design.md` → `implement.md`, with a per-artifact cap.
+
+The budget is **read** from `context_injection` in `.trellis/config.yaml`, never
+restated: `max_file_bytes` (32768) per curated file, `max_artifact_bytes` (65536)
+per artifact, `max_total_bytes` (131072) for the whole block — the same numbers the
+generated extension's own reader and `task.py validate` use. A body over its cap is
+truncated with a notice; once the total is reached the remaining entries degrade to
+a path line. A file whose body is already in the prompt verbatim is skipped, and
+the block is appended only when it is not already there, tested whole rather than
+by a tag. Nothing is appended outside a child session, and nothing at all when no
+task resolves.
+
 It also **deactivates the shipped `trellis_subagent` tool** with
 `pi.setActiveTools(...)`, so pi-subagents is the only dispatch path and the
 shipped tool's competing prompt guidance is not injected (Pi includes a tool's
@@ -46,6 +71,12 @@ machine-local, unreproducible, and reverted by `trellis update`.
 
 Because it is global, it is careful about scope: outside a `.trellis/` project,
 or with no active task, it publishes nothing, injects nothing, and writes no file.
+
+The child marker is **persistent for the session**, not a window around the
+dispatch call: a scheduled run reaches its spawn from a timer with nothing in
+flight, and a window would miss it silently. The cost is visible instead — a `pi`
+process started from a bash tool in the session inherits the marker, loads with the
+generated extension inert, and reports no task.
 
 ## Run timer
 

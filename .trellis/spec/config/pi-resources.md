@@ -473,19 +473,44 @@ Facts a contributor must not break:
 - **It is global.** Pi loads `~/.pi/agent/extensions/` in every project, so the
   bridge returns immediately unless the resolved cwd contains `.trellis/`, and it
   publishes, injects, and writes nothing when no task resolves.
-- **It corrects a value, not an output.** Nothing in the generated extension is
-  stripped or rewritten. The parent publishes `TRELLIS_CONTEXT_ID` and the child
-  writes its own runtime session pointer, so the generated extension resolves the
-  real task through its normal path. Adding a strip or a bash rewrite here means
-  the design has been abandoned, not extended.
+- **It injects the child's task context, and that injection is the child's whole
+  context.** A marked child runs a generated extension that returns at load, so
+  nothing else builds it a `## Trellis Task Context`: the bridge appends the curated
+  files of the role that was dispatched, then `prd.md` → `design.md` →
+  `implement.md`. Four facts travel with it. The manifest is chosen by **relaying**
+  the agent name the dispatcher already passed and matching the task-dir manifest
+  whose stem is a **suffix** of it — so a dispatched name whose last `-`-separated
+  segment is `check` selects `check.jsonl` — falling back to every `*.jsonl` in the
+  task directory — there is deliberately no role table here, and one would couple
+  this repo to role names it does not own. The budget is **read** from
+  `context_injection` in `.trellis/config.yaml`, never restated, so this third
+  consumer cannot drift from the generated extension's reader and `task.py
+  validate`. A body already present in the prompt verbatim is skipped, which is what
+  keeps the injection from duplicating a file the shipped tool already supplied. And
+  the block is assembled once per session and tested for presence **whole** — the
+  tag rule below applies to it too, and there is no tag to match.
+- **It corrects a value, and adds to the prompt — it never rewrites either.**
+  Nothing in the generated extension is stripped or rewritten. The parent publishes
+  `TRELLIS_CONTEXT_ID` and the child writes its own runtime session pointer, so the
+  generated extension resolves the real task through its normal path. What the
+  injection adds is appended at the end of the child's system prompt; a strip or a
+  bash rewrite of anything already there means the design has been abandoned, not
+  extended.
 - **`contextKey()` is replicated on purpose.** The pointer filename must equal the
   key the generated extension computes, and that derivation lives in a generated
   file (see `.trellis/.template-hashes.json`). If upstream changes it, the bridge
   must change with it — otherwise children silently resolve nothing.
-- **The child gate excludes the generated tool's children:**
-  `PI_SUBAGENT_CHILD === "1" && TRELLIS_SUBAGENT_CHILD !== "1"`. The generated
-  `trellis_subagent` tool sets *both* markers for its own children, which already
-  carry a correct key and must be left alone.
+- **The child gate is marker-based, and the roles are exhaustive:** the bridge's
+  own marker plus `PI_SUBAGENT_CHILD === "1"` selects the child branch, and a child
+  *without* that marker — the generated `trellis_subagent` tool's own children,
+  which already carry a correct key — is an early no-op. Both child tests share
+  `PI_SUBAGENT_CHILD`, which is what keeps either shape out of the **parent**
+  branch: `publish()` there would delete the key that tool set for its child. The
+  shipped tool's children also inherit the bridge marker (its `buildChildEnv`
+  spreads the parent's environment), so they are handled as bridge children; that
+  overlap is absorbed by the whole-body dedup above rather than by a second test,
+  and treating a marker-bearing child as untouchable would leave it with no context
+  at all.
 - **It deactivates the shipped `trellis_subagent` tool** with
   `pi.setActiveTools(...)`, on session start and on every turn, so that tool is
   not callable and its competing `promptGuidelines` are not injected (Pi includes
@@ -501,18 +526,26 @@ Facts a contributor must not break:
   `registerTool` — seeing nothing is drift too, and a reflowed template must not
   be allowed to turn the check into a silent pass.
 - **`CHILD_INERT_MARKER` is the single source for the child-inert marker.** The
-  bridge sets that name in the parent's environment before dispatching, so the
-  child's copy of the generated extension returns at load instead of running the
-  *parent's* per-turn session path. `doctor.sh` reads the name off the declaration
-  and fails when the generated extension stops returning on it, **or** returns on
-  it only after the first registration call — a guard below the registrations
-  registers everything and then returns. The predicate tests the constant, never
-  the literal, so the name appears exactly once in this file.
+  bridge sets that name in the parent's environment — **persistently, for the
+  session**, not windowed around the dispatch call — so every child the process
+  spawns inherits it, including one a scheduled run spawns from a timer with nothing
+  in flight, and the child's copy of the generated extension returns at load instead
+  of running the *parent's* per-turn session path. The persistent shape's cost is
+  measured and accepted: a `pi` process started from a bash tool in the session
+  inherits the marker too, loads with the generated extension inert, and reports no
+  task — visible, where a missed window would have been silent. The name has exactly
+  two readers in live code, both repo-owned (that guard and the bridge's own
+  predicate); the package that spawns the children reads only its own
+  `PI_SUBAGENT_CHILD`, so setting this cannot reach it. `doctor.sh` reads the name
+  off the declaration and fails when the generated extension stops returning on it,
+  **or** returns on it only after the first registration call — a guard below the
+  registrations registers everything and then returns. The predicate tests the
+  constant, never the literal, so the name appears exactly once in this file.
 - The child's pointer is removed on `session_shutdown`. A crashed child leaves it
   behind; that is accepted rather than pruned.
 
-**Two conventions this file learned the hard way.** Both were found by the check
-phase and both generalize to any extension in this layer:
+**Three conventions this file learned the hard way.** All were found by a check or
+probe phase, and all generalize to any extension in this layer:
 
 - **Role predicates must be exhaustive, not selective.** A bridge that tests only
   for its own child marker falls through into the *parent* branch for every other
@@ -527,6 +560,25 @@ phase and both generalize to any extension in this layer:
   test suppresses the injection for exactly the sessions whose documents quote it.
   The failure is silent and self-inflicted: writing the tag down is what triggers
   it.
+- **A marker that is read but never set makes its role unreachable, and nothing
+  fails loudly when it happens.** The child branch is selected by
+  `BRIDGE_CHILD_MARKER`, which the parent sets for the child to inherit. The first
+  implementation set only `CHILD_INERT_MARKER` — the one that stops the generated
+  extension — so `isOtherChild()` was true in **every** child, the child returned at
+  extension load, and it received nothing at all: no curated manifest, no task
+  artifacts, and no breadcrumb either. That is *worse* than before the bridge
+  existed. `doctor.sh` was green, the extension loaded, and the child quietly
+  reported `no_task`. A **delivery probe** found it; reading the diff did not, and
+  the two markers sat three lines apart. When one process sets a marker another
+  reads, confirm some line actually assigns it, and treat "the constant is only ever
+  read" as the defect it is — `grep -c 'process.env\[BRIDGE_CHILD_MARKER\] = '`
+  returning zero was the whole bug. Prefer a check to care: the failure shape is a
+  silent absence, like the `SHIPPED_TOOLS` case above.
+
+  The same function is gated on a resolved task, deliberately: the marker is a
+  session-wide side effect on every process the session spawns, so a session with
+  no active task must not set it. That is R6 and AC7's "does nothing when no task
+  resolves".
 
 ### `run-timer.ts`
 

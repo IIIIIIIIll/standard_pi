@@ -1,0 +1,10 @@
+{"file": ".trellis/spec/index.md", "reason": "Quality Check: the gates the check agent must apply, and the whole verify chain it must run before reporting"}
+{"file": ".trellis/spec/config/index.md", "reason": "Config layer instance of the gates, including the tracked-input vs generated-output form this repo's failures come from"}
+{"file": ".trellis/spec/scripts/index.md", "reason": "Scripts layer instance: bash -n / node --check scope, idempotency, and the extension's own conventions"}
+{"file": ".trellis/spec/scripts/node-guidelines.md", "reason": "How to judge the bridge change: zero dependencies, node: builtins only, argv and JSON discipline"}
+{"file": ".trellis/spec/config/pi-resources.md", "reason": "The bridge's existing must-not-break facts, including the role-predicate and idempotency lessons the restructure must respect"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "Surface classification, needed to confirm nothing generated was edited (AC4)"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "Contains the Before You Trust \"Enforced By\" rule: every claim in this task's artifacts must name a command or say by hand"}
+{"file": ".trellis/tasks/09-15-harden-pi-role-agents/research/skill-delivery-probe.md", "reason": "The probe evidence for why the gates need a carrier at all"}
+{"file": ".trellis/tasks/09-15-harden-pi-role-agents/research/manifest-selection-finding.md", "reason": "Which manifest a dispatched child is actually fed, and the routes that were measured closed; check-only on purpose, it is the AC6 discriminating file"}
+{"file": ".trellis/tasks/09-15-harden-pi-role-agents/research/swap-fidelity.md", "reason": "The measured swap contract: host-dependent extension loading, the injected manifest, the planning breadcrumb, and the absence of any on-disk prompt record"}
