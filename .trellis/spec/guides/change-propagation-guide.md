@@ -219,6 +219,27 @@ cd /tmp/verify-<sha> && ./scripts/doctor.sh    # must not die mid-section
 git worktree remove --force /tmp/verify-<sha>
 ```
 
+The same rule covers any probe that runs **`./setup.sh` from a second checkout** —
+and it is not merely a reading problem there. `PI_DST` is `~/.pi/agent` whichever
+checkout runs, so a `setup.sh` probe used to re-point the machine's live
+`~/.pi/agent/{extensions,i-have-adhd.json}` symlinks at the probe checkout,
+silently and with the same `link` output a stale-link repair prints.
+`setup.sh::link()` now refuses that (`error`, exit `1`), so point the probe at a
+scratch destination instead:
+
+```bash
+S="$(mktemp -d /tmp/pi-probe.XXXXXX)"
+PI_CODING_AGENT_DIR="$S" ./setup.sh --skip-skills --skip-plugins --skip-mcp --skip-trellis --skip-verify
+```
+
+That works because `link()` distinguishes three shapes, not two: a link that
+resolves to `$src` is `ok`; a link into another *existing* checkout is fatal; and
+anything else — a dangling link, or an unrelated target — is replaced silently, so
+the ordinary `mv my_pi_setup elsewhere` case still repairs itself. See
+[../scripts/shell-guidelines.md](../scripts/shell-guidelines.md) for the branches
+and for the `readlink -f` emptiness trap that decides whether the middle one can
+be tested at all.
+
 Three failures there are expected, and none belongs to the commit: a worktree has a
 `.git` **file** rather than a directory, so `doctor.sh` reports `not a git
 repository`; and the live symlinks in `~/.pi/agent/` still point at the main

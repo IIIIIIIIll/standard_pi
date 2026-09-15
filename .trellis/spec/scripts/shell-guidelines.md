@@ -157,23 +157,46 @@ echo "==> Pi config  ($PI_DST)"
 ## Symlink Discipline
 
 `setup.sh::link()` is the reference implementation for idempotent linking, and
-its three branches are the contract:
+its branches are the contract. Below is that file's code verbatim — only the long
+explanatory comments are trimmed, since they are repeated in the rules after it:
 
 ```bash
+# `<store>` for `<store>/pi-agent/<name>`, confirmed by `scripts/lib.sh` sitting
+# next to `pi-agent/`, so an unrelated path ending in `pi-agent/…` is not
+# mistaken for another checkout of this store.
+store_root_of() {
+  local store
+  store="$(dirname "$(dirname "$1")")"
+  if [ -f "$store/scripts/lib.sh" ] && [ -d "$store/pi-agent" ]; then
+    printf '%s\n' "$store"
+  fi
+}
+
 link() {
   local src="$1" dst="$2"
-  [ -e "$src" ] || return 0                       # nothing in the repo, nothing to do
+  [ -e "$src" ] || return 0
   mkdir -p "$(dirname "$dst")"
 
   if [ -L "$dst" ]; then
     if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
       say ok "$dst"
-      return 0                                    # already correct
+      return 0
     fi
-    rm "$dst"                                     # stale link: replace, never back up
+
+    local resolved other
+    resolved="$(readlink -f "$dst" 2>/dev/null || true)"
+    if [ -n "$resolved" ]; then
+      other="$(store_root_of "$resolved")"
+      if [ -n "$other" ] && [ "$other" != "$REPO_DIR" ]; then
+        say error "$dst points into another checkout: $other"
+        printf '           run ./setup.sh from %s, or set PI_CODING_AGENT_DIR to link elsewhere\n' "$other"
+        exit 1
+      fi
+    fi
+    rm "$dst"
   elif [ -e "$dst" ]; then
     local backup="$dst.bak-$(date +%Y%m%d-%H%M%S)"
-    mv "$dst" "$backup"                           # real file: back up before taking over
+    mv "$dst" "$backup"
     say backup "$dst -> $backup"
   fi
 
@@ -182,16 +205,44 @@ link() {
 }
 ```
 
+Verify it still matches, the way the [change propagation
+guide](../guides/change-propagation-guide.md) says to — the snippet is a copy, so
+it needs the command that proves the copy is current:
+
+```bash
+spec=".trellis/spec/scripts/shell-guidelines.md"
+awk '/^```bash$/{i=1;b="";next} /^```$/{if(i&&b~/store_root_of/){printf "%s",b;exit}i=0;next} i{b=b$0"\n"}' "$spec" \
+  | grep -vE '^[[:space:]]*(#|$)' > /tmp/pi-spec-link.$$
+sed -n '/^store_root_of() {/,/^}$/p;/^link() {/,/^}$/p' setup.sh \
+  | grep -vE '^[[:space:]]*(#|$)' > /tmp/pi-real-link.$$
+diff /tmp/pi-spec-link.$$ /tmp/pi-real-link.$$ && echo "identical"
+rm -f /tmp/pi-spec-link.$$ /tmp/pi-real-link.$$
+```
+
 Rules that follow:
 
 - Compare with `readlink -f` on **both** sides. A raw `readlink` comparison would
   treat a symlink-to-a-symlink as different and rewrite it every run.
-- A wrong symlink is removed silently; a real file is backed up. Never overwrite
+- **A symlink into another *existing* checkout is fatal, not stale.** `PI_DST` is
+  `~/.pi/agent` whichever checkout runs, so treating it as stale silently moves
+  the machine's live harness onto whichever checkout ran last — and prints the
+  same `link` verb a stale-link repair prints. Measured on `f70066d`: a clone run
+  re-pointed `~/.pi/agent/extensions` with no warning. `doctor.sh` catches the
+  result (`✗ … points elsewhere`) but only afterwards.
+- **Test the resolved path for emptiness first.** `readlink -f` prints nothing
+  (exit `1`) when the whole target path is absent, and `dirname "$(dirname "")"`
+  is `.` — which resolves to the repo itself when `setup.sh` runs from its root,
+  so a store check fed that empty string would refuse every moved clone.
+- A stale symlink is removed silently; a real file is backed up. Never overwrite
   a user's real file without a `.bak-<timestamp>` next to it.
 - The destination directory is created before `ln -s`.
 - `~/.pi/agent/settings.json` is the **one path that must never be a symlink** —
   `setup.sh` unlinks it explicitly, and `doctor.sh` reports it as a problem if it
   is one. It is generated per machine.
+- The escape hatch for a legitimate second checkout is `PI_CODING_AGENT_DIR`, not
+  a `--force` flag: point it at a scratch directory and `setup.sh` links there
+  instead of into the live harness. `setup.sh` already has eight flags, and the
+  prose above is the only place this decision is written down.
 
 `sync.sh` is the mirror image and must detect symlinks rather than copy them:
 

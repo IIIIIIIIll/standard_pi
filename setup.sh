@@ -119,6 +119,23 @@ optional_description() {
     "$REPO_DIR/optional/$1/manifest.json"
 }
 
+# The store root a live symlink resolves into — `<store>` for
+# `<store>/pi-agent/<name>`. Confirmed by `scripts/lib.sh` sitting next to
+# `pi-agent/`, so an unrelated symlink that merely ends in `pi-agent/<something>`
+# is not mistaken for another checkout of this store.
+#
+# The caller must pass a non-empty path: `dirname "$(dirname "")"` is `.`, which
+# silently means "the current directory" — the repo itself when setup.sh is run
+# from its own root. `readlink -f` returns exactly that empty string, with exit 1,
+# for a symlink whose whole target path is gone (a moved clone).
+store_root_of() {
+  local store
+  store="$(dirname "$(dirname "$1")")"
+  if [ -f "$store/scripts/lib.sh" ] && [ -d "$store/pi-agent" ]; then
+    printf '%s\n' "$store"
+  fi
+}
+
 link() {
   local src="$1" dst="$2"
   [ -e "$src" ] || return 0
@@ -128,6 +145,24 @@ link() {
     if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
       say ok "$dst"
       return 0
+    fi
+
+    # A link into a *different, existing* checkout is not a stale link. PI_DST is
+    # ~/.pi/agent whichever checkout runs, so re-pointing it here would move this
+    # machine's live harness onto whichever checkout ran last — silently, and
+    # with the same `link` output a stale-link repair prints.
+    #
+    # An empty resolution means the target path is gone entirely, which is the
+    # moved-clone case: that is a genuinely stale link, and falls through to rm.
+    local resolved other
+    resolved="$(readlink -f "$dst" 2>/dev/null || true)"
+    if [ -n "$resolved" ]; then
+      other="$(store_root_of "$resolved")"
+      if [ -n "$other" ] && [ "$other" != "$REPO_DIR" ]; then
+        say error "$dst points into another checkout: $other"
+        printf '           run ./setup.sh from %s, or set PI_CODING_AGENT_DIR to link elsewhere\n' "$other"
+        exit 1
+      fi
     fi
     rm "$dst"
   elif [ -e "$dst" ]; then
