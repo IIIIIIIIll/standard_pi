@@ -10,7 +10,7 @@ git clone git@github.com:IIIIIIIIll/my_pi_setup.git ~/my_pi_setup
 That is the whole thing. `setup.sh` is idempotent — **re-running it is how you
 update**, including pulling the latest skills from upstream.
 
-It does seven things:
+It does eight things:
 
 1. renders `~/.pi/agent/settings.json` from core settings + this machine's optional bundles
 2. symlinks the resource files and dirs that exist in the repo — `AGENTS.md`,
@@ -22,7 +22,9 @@ It does seven things:
 5. refreshes Pi plugin packages (`pi update --extensions`)
 6. installs the `codebase-memory-mcp` binary and registers it in the machine-global
    MCP config (see [MCP server](#the-mcp-server--installed-not-a-package))
-7. verifies everything with `scripts/doctor.sh`
+7. restores the Trellis-generated Pi surfaces — `.pi/` adapters and
+   `.agents/skills/trellis-*` (see [Trellis surfaces](#trellis-surfaces))
+8. verifies everything with `scripts/doctor.sh`
 
 Then add credentials and start Pi:
 
@@ -32,7 +34,7 @@ pi
 ```
 
 Run `./setup.sh --help` for flags (`--with`, `--none`, `--yes`, `--skip-skills`,
-`--skip-plugins`, `--skip-mcp`, `--skip-verify`).
+`--skip-plugins`, `--skip-mcp`, `--skip-trellis`, `--skip-verify`).
 
 ---
 
@@ -78,6 +80,8 @@ is triggered: [`docs/skills.md`](docs/skills.md).
 | `pi-agent/auth.json.example` | `~/.pi/agent/auth.json` | Copied once as a template; the real file stays local |
 | `pi-agent/AGENTS.md`, `pi-agent/i-have-adhd.json`, `pi-agent/{themes,prompts,tools,skills,agents,extensions}/` | `~/.pi/agent/…` | **Symlinked** (if present) |
 | `skills.json` | `~/.agents/skills/` | **Fetched from upstream** by `setup.sh` |
+| `.trellis/` (tracked) | — | Source of truth for the Trellis workflow |
+| `.pi/`, `.agents/` (gitignored) | — | **Generated** by `scripts/install-trellis.sh` — see [Trellis surfaces](#trellis-surfaces) |
 | `setup.sh` | — | The entry point |
 | `scripts/` | — | Helpers, sync, optional toggles, doctor |
 | `docs/` | — | Tracked prose: how to use what is installed — [plugins](docs/plugins.md), [skills](docs/skills.md), [agents](docs/agents.md). Never linked into `~/.pi/agent`. |
@@ -88,6 +92,43 @@ a per-machine artefact:
 ```
 settings.core.json  +  enabled optional manifests  ->  ~/.pi/agent/settings.json
 ```
+
+---
+
+## Trellis surfaces
+
+`.pi/` (the Trellis Pi extension, the three role agents `pi-subagents` discovers,
+and the `/trellis-*` prompt commands) and `.agents/skills/trellis-*` are **ignored
+by git** — `trellis` generates them, and a committed copy would conflict with every
+`trellis update`. So a fresh clone has none of them, and step 7 of `setup.sh` puts
+them back:
+
+```bash
+./setup.sh                    # includes it
+scripts/install-trellis.sh    # or run just this step
+```
+
+**`trellis update` cannot do this.** It compares the tracked
+`.trellis/.template-hashes.json` against the working tree, reads each absent file
+as a deletion *you* made, lists it under "Deleted by you (preserved)", and exits
+`✓ Already up to date!`. `--force` does not override that. `scripts/install-trellis.sh`
+runs `trellis init --pi -y -s` instead, and then removes what that call also
+creates: the `spec/backend/` and `spec/frontend/` template layers (this repo has no
+such layers), a `00-join-*` onboarding task, and a duplicate developer workspace
+directory. It restores `.trellis/.template-hashes.json` from a byte snapshot,
+because `trellis init` drops the `AGENTS.md` hash entry that keeps `trellis update`
+managing that file.
+
+It is safe to re-run: when the surfaces and the `.trellis/.developer` name are
+already correct it prints `ok` and changes nothing. It **is** safe to run on a
+machine without the Trellis CLI too — it notes the missing CLI and exits `0`, so
+the Pi harness still installs. Install the CLI with
+`npm install -g @mindfoldhq/trellis`.
+
+The developer name it writes is your **system username** (`id -un`), not
+`git config user.name` — it only rewrites the `name=` line of
+`.trellis/.developer`, so a per-developer `workflow=<id>` line in that file
+survives. `./setup.sh --skip-trellis` opts out.
 
 ---
 
@@ -270,6 +311,7 @@ Settings need one explicit step, because `settings.json` is generated:
 | Want a plugin only on this machine | `scripts/optional.sh scaffold` + enable |
 | Want newer skills | `./setup.sh` (re-fetch) |
 | Want the MCP server installed or updated | `./setup.sh` (install if absent), or `scripts/install-mcp.sh --force` to reinstall the binary |
+| Missing `/trellis-*` commands, or `pi-subagents` cannot find `trellis-implement` | `./setup.sh` (restores `.pi/` and `.agents/`); `scripts/install-trellis.sh` alone repairs just this |
 
 ```bash
 scripts/sync.sh
@@ -316,10 +358,11 @@ git add -A && git commit -m "…" && git push
 | `scripts/optional.sh list \| enable \| disable \| scaffold` | Per-machine optional plugin bundles. |
 | `scripts/install-skills.mjs` | Fetches skills from `skills.json` sources (`--check` verifies without network). |
 | `scripts/install-mcp.sh` | Installs `codebase-memory-mcp` if absent (upstream installer, `--skip-config`) and registers it in `~/.config/mcp/mcp.json`; `--force` reinstalls the binary. |
+| `scripts/install-trellis.sh` | Restores the gitignored Trellis surfaces `trellis update` cannot (`.pi/` adapters, `.agents/skills/trellis-*`) by running `trellis init` and pruning that call's by-products; a no-op when they are present, and a `note` plus exit `0` when the Trellis CLI is absent. |
 | `scripts/register-mcp-server.mjs` | The JSON helper that helper uses: merges one server entry, backs up before overwrite, `--check` for drift without writing. |
 | `scripts/check-docs.mjs` | Compares the entry ids in `docs/plugins.md` and `docs/skills.md` against `settings.core.json` and `skills.json`; run by `doctor.sh`, and it fails loudly rather than skipping when an input is unreadable. |
 | `scripts/sync.sh` | Folds live settings into `settings.core.json`, stripping optional contributions. |
-| `scripts/doctor.sh` | Checks symlinks, render drift, skills, docs coverage, `auth.json` permissions, git cleanliness, and scans tracked files for secrets. |
+| `scripts/doctor.sh` | Checks symlinks, render drift, the Trellis surfaces and adapter tool coverage, skills, docs coverage, `auth.json` permissions, git cleanliness, and scans tracked files for secrets. |
 | `scripts/render-settings.mjs`, `scripts/sync-settings.mjs` | Node helpers used by the shell scripts. |
 
 Override the Pi config directory with `PI_CODING_AGENT_DIR` — Pi reads that one

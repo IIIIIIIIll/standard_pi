@@ -29,7 +29,9 @@
 | `~/.pi/agent/{auto-compact.json,pi-vcc-config.json,web-search.json,mcp-cache.json}` | — | **Ignored** | the owning extension |
 | `~/.pi/agent/settings.json.pre-render-<stamp>` | — | **Ignored backup** | `render-settings.mjs` |
 | `<path>.bak-<stamp>` | — | **Ignored backup** | `setup.sh::link()`, `render-settings.mjs` |
-| `.pi/`, `.agents/` | — | **Ignored** (Trellis-generated adapters) | `trellis` CLI |
+| `.pi/`, `.agents/` | — | **Ignored** (Trellis-generated adapters) | `trellis` CLI, restored by `scripts/install-trellis.sh` |
+| `.trellis/.developer` | — | **Ignored** by `.trellis/.gitignore`; the `name=` line is **written** by `scripts/install-trellis.sh` | `trellis` CLI |
+| `.trellis/.template-hashes.json` | — | **Tracked**, but rewritten by `trellis init`; restored to its pre-run bytes by `scripts/install-trellis.sh` | `trellis` CLI |
 | `docs/` | — | **Tracked prose** | — (read directly; never symlinked) |
 
 Note that `PI_DIRS` lists six resource directories but only `extensions/` exists
@@ -68,6 +70,58 @@ section explains why.
 
 ---
 
+### The Trellis surfaces are generated, and `trellis update` will not restore them
+
+`.pi/` and `.agents/` hold what the `trellis` CLI generates for the Pi platform: the
+Trellis extension, the three role agents `pi-subagents` discovers, the `/trellis-*`
+prompt commands, and the bundled `trellis-*` skills. Both paths are gitignored, and
+`.gitignore` says why — Trellis tracks its own output in
+`.trellis/.template-hashes.json`, so a committed copy would conflict on every
+`trellis update`.
+
+The consequence is easy to miss, and is the reason `scripts/install-trellis.sh`
+exists:
+
+> **A fresh clone has none of those files, and `trellis update` cannot put them
+> back.**
+
+Measured on `73cb810` with `@mindfoldhq/trellis@0.7.0-beta.4`,
+`trellis update --dry-run` lists every one of them under
+
+```text
+  Deleted by you (preserved):
+```
+
+— it reads each absent file as a deletion *you* made — and then exits
+`✓ Already up to date!`. `--force` does not override the classification. `trellis
+init` is the only command that writes them back, so the script runs
+`trellis init --pi -y -s` and then removes exactly what that call also creates:
+`.trellis/spec/{backend,frontend}/`, a `.trellis/tasks/00-join-*` task, and a
+duplicate `.trellis/workspace/<git-user-name>/`. It also restores
+`.trellis/.template-hashes.json`, because `trellis init` drops the `AGENTS.md`
+hash entry that keeps `trellis update` managing that file.
+
+Its prune rule is a before/after comparison, not a name blocklist: a directory
+under `.trellis/{spec,tasks,workspace}/` is removed only if it did not exist before
+that script's own `trellis init` call. **Tracked content therefore cannot be a
+prune candidate** — it always appears in the "before" list.
+
+Three rules follow for this surface:
+
+- **Do not commit `.pi/` or `.agents/`.** Un-ignoring them trades one repair step
+  for a permanent conflict on every `trellis update`.
+- **Do not call `trellis update` to repair a clone.** It reports success and
+  changes nothing.
+- **Do not hand-write** `.pi/settings.json` or the role agents. They are CLI
+  output; a hand-written copy starts drifting from whatever the installed CLI
+  emits, and the version it came from is not recorded anywhere.
+
+`doctor.sh`'s `==> Trellis adapters` section is what fails when neither
+`./setup.sh` nor the script ran — and it only fails as a `bad` when the `trellis`
+CLI is on `PATH`, because a machine without it cannot apply the fix at all.
+
+---
+
 ## Decision Tree For A New File
 
 1. **Is it a secret?** → `~/.pi/agent/auth.json`. Never in the repo. If a bundle
@@ -80,6 +134,13 @@ section explains why.
    config that is only ever read is tracked and symlinked instead; compare
    [`i-have-adhd.json`](#the-exception-a-read-only-extension-config-is-symlinked)
    against `auto-compact.json`.
+
+   A fourth shape sits outside the Pi config dir entirely:
+   `.trellis/.developer` is **derived state written by a script** —
+   `scripts/install-trellis.sh` reconciles its `name=` line to `id -un` — and is
+   ignored by `.trellis/.gitignore` rather than this repo's. It is neither
+   symlinked nor rendered, so it belongs in neither `PI_FILES` nor
+   `PI_NOT_SYNCED`: those lists are about `$PI_DST`, which is `~/.pi/agent`.
 
 3. **Is it per-machine state derived from tracked inputs?** → generated. Do not
    commit it and do not symlink it. Add a render step rather than a file.

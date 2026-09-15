@@ -1,4 +1,4 @@
-# Workspace Index - yuanhai.tan
+# Workspace Index - tan
 
 > Journal tracking for AI development sessions.
 
@@ -28,7 +28,7 @@
 
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
-|---|------|-------|---------|--------|
+| --- | ------ | ------- | --------- | -------- |
 | 9 | 2026-09-15 | Restore Pi's footer by re-homing the run timer on the status line | `707f017` | `main` |
 | 8 | 2026-09-14 | Install and register the codebase-memory MCP server | `cbcf93d` | `main` |
 | 7 | 2026-09-14 | Daily-use docs layer + a docs coverage check | `0f46c9f`, `d042603` | `main` |

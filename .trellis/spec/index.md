@@ -11,13 +11,13 @@ It is not an application: there is no server, no UI, no database, no test suite.
 
 The whole product is:
 
-- five bash scripts that render, symlink, sync, install, and verify harness state
+- six bash scripts that render, symlink, sync, install, and verify harness state
 - five dependency-free Node ESM helpers that do the JSON work
 - JSON config files that Pi reads (`settings.core.json`, `optional/*/manifest.json`, `skills.json`)
 - Markdown that explains the above
 
-Roughly 1,250 lines of authored code total (`wc -l setup.sh scripts/*.sh
-scripts/*.mjs`). `git clone && ./setup.sh` is the
+Roughly 1,850 lines of authored code total (`wc -l setup.sh scripts/*.sh
+scripts/*.mjs` — 1,846 at the time of writing). `git clone && ./setup.sh` is the
 install path, and **re-running `./setup.sh` is the update path** — idempotency
 is the central design constraint, not a nice-to-have.
 
@@ -33,7 +33,9 @@ is the central design constraint, not a nice-to-have.
 
 There is no `backend/` or `frontend/` layer. An earlier `trellis init` generated
 those template directories; they were deleted during bootstrap because no such
-layers exist here. Do not recreate them.
+layers exist here. Do not recreate them. `scripts/install-trellis.sh` prunes them
+again whenever a `trellis init` call recreates them, which is the one reason that
+script removes anything at all.
 
 ---
 

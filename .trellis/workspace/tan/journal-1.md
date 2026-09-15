@@ -1,11 +1,9 @@
-# Journal - yuanhai.tan (Part 1)
+# Journal - tan (Part 1)
 
 > AI development session journal
 > Started: 2026-09-13
 
 ---
-
-
 
 ## Session 1: Spec bootstrap, then repair the drift it exposed
 <!-- trellis-session: v=2 fp=e4b581867a6bed60 -->
@@ -25,7 +23,7 @@ Two phases in one session. First, the `trellis init` spec bootstrap: the repo ha
 ### Git Commits
 
 | Hash | Message |
-|------|---------|
+| ------ | --------- |
 | `cf49aa7` | Write project specs that match the repo instead of the template |
 | `a72e47d` | Plan the harness drift repair as a parent task with three children |
 | `d44289e` | Fix user-facing references to a script that no longer exists |
@@ -44,7 +42,6 @@ Two phases in one session. First, the `trellis init` spec bootstrap: the repo ha
 ### Next Steps
 
 - 00-bootstrap-guidelines is complete (checkboxes ticked, Completion Record written) but still in_progress -- archive it once you have skimmed the specs. Optionally: shellcheck is not installed, so the # shellcheck directives in scripts/*.sh remain documentation rather than tooling.
-
 
 ## Session 2: Compact at 30% instead of 98%, and track the compaction extensions
 <!-- trellis-session: v=2 fp=60a7d0e1e76318de -->
@@ -79,7 +76,6 @@ Session summary was not supplied.
 
 - One shared spec file took hunk-level staging to avoid committing another agent's in-flight work; their permission_request hunk is still uncommitted. Optional follow-ups: auto-compact's additionalCompactionInstruction is dropped under pi-vcc (blanked in the live config to silence a per-compaction extension_error, worth reporting upstream), and 00-bootstrap-guidelines is complete but still unarchived.
 
-
 ## Session 3: Close out the bootstrap task; no work commits this round
 <!-- trellis-session: v=2 fp=0c2211eaeb0aeb31 -->
 
@@ -111,7 +107,6 @@ Session summary was not supplied.
 
 - No work of mine is outstanding: all commits are local and origin/main is still at 873d85c, so a push is the only remaining action if wanted. Two things belong to other workstreams and were deliberately left alone: the other window's uncommitted permission_request.session_approved hunk in .trellis/spec/config/pi-resources.md, and its in-progress task 09-13-pi-subagents-dispatch. Earlier loose end worth considering: auto-compact's additionalCompactionInstruction is silently dropped under pi-vcc's overrideDefaultCompaction and emits an extension_error per compaction -- blanked in the live config, but it is an interaction bug between two now-tracked packages and would be worth reporting upstream.
 
-
 ## Session 4: Route Pi Trellis role dispatch through pi-subagents
 <!-- trellis-session: v=2 fp=e6d9a09f87b06ef8 -->
 
@@ -132,7 +127,7 @@ Made pi-subagents the Pi dispatch path for Trellis role agents at the harness la
 ### Git Commits
 
 | Hash | Message |
-|------|---------|
+| ------ | --------- |
 | `d7f0f3e` | Make pi-subagents children resolve the active Trellis task |
 | `a8f6603` | Record verification evidence and correct two acceptance criteria |
 | `343b8d7` | Disable the shipped trellis_subagent tool so only pi-subagents can dispatch |
@@ -152,7 +147,6 @@ Made pi-subagents the Pi dispatch path for Trellis role agents at the harness la
 
 - Upstream prelude relaxation so the generated preludes' 'first line is Active task:' rule survives pi-subagents' 'Task: ' prefix, instead of the in-repo adapter note.
 - The shipped trellis_subagent code paths in the generated extension are now dead weight; worth raising upstream now that the harness deactivates the tool.
-
 
 ## Session 5: Fail loudly when generated Pi tools drift from the bridge
 <!-- trellis-session: v=2 fp=12a8fe6bc949fa11 -->
@@ -190,7 +184,6 @@ Closed the residual coupling left by the subagent bridge: it deactivated the shi
 
 - Extraction is all-or-nothing: partial reformatting of the generated registrations is invisible, and a tool registered from a sibling file is never scanned. Recorded as a boundary rather than fixed.
 
-
 ## Session 6: Make the render drift check insensitive to package order
 <!-- trellis-session: v=2 fp=5c5d0b9c42f91d87 -->
 
@@ -212,7 +205,6 @@ Option 1 from design.md: --check in render-settings.mjs now compares packages as
 ### Status
 
 [OK] **Completed**
-
 
 ## Session 7: Daily-use docs layer + a docs coverage check
 <!-- trellis-session: v=2 fp=583d1813f07a325b -->
@@ -256,7 +248,6 @@ Added a tracked docs/ layer (plugins, skills, agents) with one entry per shipped
 - Observation for the MCP task: doctor.sh references $MCP_CFG while scripts/lib.sh defining it is still uncommitted, so the two must land together; a commit with only one of them dies under set -u
 - Observation: doctor.sh guards its git sections with [ -d "$REPO_DIR/.git" ], which is false in a linked worktree (.git is a file there), so git worktree verification silently skips Repo, secret-scan and ignore-coverage; git -C ... rev-parse --git-dir is the portable test
 
-
 ## Session 8: Install and register the codebase-memory MCP server
 <!-- trellis-session: v=2 fp=0963db3acf1bdec7 -->
 
@@ -277,7 +268,6 @@ Added scripts/install-mcp.sh and scripts/register-mcp-server.mjs, wired setup.sh
 ### Status
 
 [OK] **Completed**
-
 
 ## Session 9: Restore Pi's footer by re-homing the run timer on the status line
 <!-- trellis-session: v=2 fp=d05fe7587ca3253f -->

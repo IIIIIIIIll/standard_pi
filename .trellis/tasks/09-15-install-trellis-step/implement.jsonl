@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/scripts/shell-guidelines.md", "reason": "Bash structure, say/note verb vocabulary (add 'prune'), set -u array idioms, /tmp/pi-<purpose>.$$ temp-file pattern, rm -rf guard via ${var:?}, failure policy, and the 'a check must not report ok after it stopped reading' anti-pattern"}
+{"file": ".trellis/spec/scripts/index.md", "reason": "Which script owns which responsibility, the 100755 list, and the Node-preflight rule that decides whether install-trellis.sh needs a node preflight"}
+{"file": ".trellis/spec/config/layout-and-surfaces.md", "reason": "The tracked/symlinked/generated/ignored surface map; the .pi/ and .agents/ rows this task must update; the .developer write-behaviour classification"}
+{"file": ".trellis/spec/guides/change-propagation-guide.md", "reason": "The mandatory multi-site edit list; the 'Before You Trust Enforced By' rule that forbids claiming a check nothing runs"}
+{"file": ".trellis/tasks/09-15-install-trellis-step/research/trellis-init-behaviour.md", "reason": "Primary evidence for every design claim: the four side effects, the hash-manifest delta, the seeding fix, and the -u non-overwrite finding"}

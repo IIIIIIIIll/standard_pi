@@ -10,7 +10,7 @@ This layer owns everything that touches the filesystem. There are two runtimes:
 
 | Runtime | Files | Role |
 |---------|-------|------|
-| bash | `setup.sh`, `scripts/{optional,sync,doctor,install-mcp}.sh` | Entry points and orchestration |
+| bash | `setup.sh`, `scripts/{optional,sync,doctor,install-mcp,install-trellis}.sh` | Entry points and orchestration |
 | Node ESM | `scripts/{render-settings,sync-settings,install-skills,register-mcp-server,check-docs}.mjs` | JSON composition, network/git fetch, docs coverage check |
 
 The split is deliberate and consistent: **bash decides and reports, Node reads and
@@ -35,11 +35,11 @@ desc="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[
 
 ## Pre-Development Checklist
 
-- [ ] Decide which script owns the change. `setup.sh` renders + links + installs + verifies; `sync.sh` pulls live state back into the repo; `doctor.sh` only reports; `optional.sh` owns per-machine bundle state. Do not duplicate a responsibility into a second script.
+- [ ] Decide which script owns the change. `setup.sh` renders + links + installs + verifies; `sync.sh` pulls live state back into the repo; `doctor.sh` only reports; `optional.sh` owns per-machine bundle state; `install-trellis.sh` owns the gitignored Trellis surfaces and nothing else. Do not duplicate a responsibility into a second script.
 - [ ] If the script walks resource or not-synced paths, or needs the MCP config destination, source `scripts/lib.sh` and never re-declare `PI_DIRS` / `PI_FILES` / `PI_NOT_SYNCED` / `MCP_CFG` (`readonly` makes a re-declaration fail). All four live only there — see [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md).
 - [ ] If the script calls Node, use `node "$REPO_DIR/scripts/<helper>.mjs"` with an absolute path derived from `$REPO_DIR`; never a relative path, because scripts are invoked from arbitrary working directories.
-- [ ] Add the `command -v node >/dev/null 2>&1 || { ...; exit 1; }` preflight if the script needs Node (all five currently do).
-- [ ] New executable scripts need `chmod +x`; git tracks the mode, and only `setup.sh` plus `scripts/{optional,sync,doctor,install-mcp}.sh` are currently `100755`. `scripts/lib.sh` is sourced-only and stays `100644`.
+- [ ] Add the `command -v node >/dev/null 2>&1 || { ...; exit 1; }` preflight if the script needs Node (five of the six bash scripts do; `scripts/install-trellis.sh` is the exception, because it reads and writes no JSON).
+- [ ] New executable scripts need `chmod +x`; git tracks the mode, and only `setup.sh` plus `scripts/{optional,sync,doctor,install-mcp,install-trellis}.sh` are currently `100755`. `scripts/lib.sh` is sourced-only and stays `100644`.
 
 ---
 

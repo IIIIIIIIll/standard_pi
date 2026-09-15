@@ -10,7 +10,8 @@
 #   4. install/refresh skills from their upstream sources (skills.json)
 #   5. refresh Pi plugin packages
 #   6. install the codebase-memory MCP binary and register it machine-globally
-#   7. verify with scripts/doctor.sh
+#   7. restore the Trellis-generated surfaces (.pi/ adapters, .agents/skills/trellis-*)
+#   8. verify with scripts/doctor.sh
 #
 # Usage:
 #   ./setup.sh                         keep saved optional choices (prompt if new)
@@ -20,6 +21,7 @@
 #   ./setup.sh --skip-skills           leave skills alone (offline, etc.)
 #   ./setup.sh --skip-plugins          leave plugins alone
 #   ./setup.sh --skip-mcp              leave the MCP server alone
+#   ./setup.sh --skip-trellis          leave the Trellis surfaces alone
 #   ./setup.sh --skip-verify           skip doctor
 #
 set -euo pipefail
@@ -43,6 +45,7 @@ ASSUME_YES=0
 SKIP_SKILLS=0
 SKIP_PLUGINS=0
 SKIP_MCP=0
+SKIP_TRELLIS=0
 SKIP_VERIFY=0
 
 usage() {
@@ -75,6 +78,10 @@ while [ $# -gt 0 ]; do
     ;;
   --skip-mcp)
     SKIP_MCP=1
+    shift
+    ;;
+  --skip-trellis)
+    SKIP_TRELLIS=1
     shift
     ;;
   --skip-verify)
@@ -222,7 +229,24 @@ else
   "$REPO_DIR/scripts/install-mcp.sh" || note "MCP install had problems; see above"
 fi
 
-# --- 7. verify -----------------------------------------------------------------
+# --- 7. Trellis surfaces ---------------------------------------------------------
+
+# `.pi/` and `.agents/` are gitignored, so a fresh clone has neither. `trellis
+# update` reads their absence as an intentional deletion and cannot restore them;
+# scripts/install-trellis.sh runs `trellis init` and prunes that call's by-products.
+# It is a no-op when the surfaces are already present and when the Trellis CLI is
+# absent, so a machine without Trellis still gets a working Pi harness.
+# `surfaces` rather than `adapters` on purpose: doctor.sh owns the
+# `==> Trellis adapters` section header, and two identical headers in one
+# `setup.sh` run (this step, then doctor) read as a duplicated section.
+echo "==> Trellis surfaces"
+if [ "$SKIP_TRELLIS" = 1 ]; then
+  say skip "install-trellis.sh (--skip-trellis)"
+else
+  "$REPO_DIR/scripts/install-trellis.sh" || note "Trellis setup had problems; see above"
+fi
+
+# --- 8. verify -------------------------------------------------------------------
 
 echo
 if [ "$SKIP_VERIFY" = 0 ]; then
