@@ -25,10 +25,14 @@
 | `~/.pi/agent/extensions/*/logs/` | — | **Ignored** | the extension |
 | `~/.agents/skills/<name>/` | — | **Fetched from upstream** | `install-skills.mjs` |
 | `~/.agents/.pi-setup-skills.json` | — | **Generated, outside repo** | `install-skills.mjs` |
+| `~/.agents/skills/.skill-lock.json` | — | **Ignored, outside repo** (Pi's skill-selection lock, written in the fetched-skills dir) | Pi — no repo script reads it and no path list names it |
 | `~/.config/mcp/mcp.json` | — | **Generated, outside repo** | `scripts/install-mcp.sh` |
+| `~/.local/bin/{codebase-memory-mcp,install.sh}` | — | **Ignored, outside repo** | upstream `install.sh` |
+| PATH line appended to a shell startup file — `~/.bashrc` here, `~/.profile` on a fresh 2026-09-16 install | — | **Ignored, outside repo** | upstream `install.sh`; the target file varies by installer version |
+| `~/.cache/codebase-memory-mcp/` | — | **Ignored, outside repo** | the binary (its own log dir) |
 | `~/.pi/agent/{auto-compact.json,pi-vcc-config.json,web-search.json,mcp-cache.json}` | — | **Ignored** | the owning extension |
 | `~/.pi/agent/settings.json.pre-render-<stamp>` | — | **Ignored backup** | `render-settings.mjs` |
-| `<path>.bak-<stamp>` | — | **Ignored backup** | `setup.sh::link()`, `render-settings.mjs` |
+| `<file>.bak-<stamp>` — nothing prunes backups, so `sol-pi.json.bak-*` outlives the `SoL-Pi` resource dropped in `741fff4` | — | **Ignored backup** | `setup.sh::link()`, `register-mcp-server.mjs` |
 | `.pi/`, `.agents/` | — | **Ignored** (Trellis-generated adapters) | `trellis` CLI, restored by `scripts/install-trellis.sh` |
 | `.trellis/.developer` | — | **Ignored** by `.trellis/.gitignore`; the `name=` line is **written** by `scripts/install-trellis.sh` | `trellis` CLI |
 | `.trellis/.template-hashes.json` | — | **Tracked**, but rewritten by `trellis init`; restored to its pre-run bytes by `scripts/install-trellis.sh` | `trellis` CLI |
@@ -433,7 +437,7 @@ actively checks the important one. Do not add them:
 | `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json`, `mcp-cache.json` | Extension-owned per-machine config, rewritten at runtime. `web-search.json` is `pi-web-access`'s provider/proxy/credential store — committing it leaks keys. `mcp-cache.json` is `pi-mcp-adapter`'s cache of each registered server's tool schemas and instructions: remote content, not a credential. Ignored and reported; see the invariant section above. |
 | `~/.pi/agent/sessions/` | Per-machine conversation history. |
 | `~/.pi/agent/npm/`, `git/`, `bin/` | Installed `node_modules`, cloned repos, platform binaries. |
-| `settings.json.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts. |
+| `<file>.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts; never pruned. |
 
 Package *catalogs* are deliberately not stored — only the package **specs**
 (`npm:pi-subagents`, …) are. The catalog is re-fetchable, per-machine, and large.

@@ -143,13 +143,15 @@ console.error(`           run ./setup.sh or scripts/sync.sh`);
 ```
 
 Canonical verbs: `ok`, `warn`, `error`, `drift`, `backup`, `render`, `state`,
-`infer`, `skip`, `update`, `same`, `source`, `install`, `none`, `done`, `missing`.
+`infer`, `skip`, `update`, `same`, `source`, `install`, `none`, `done`, `missing`,
+`unrecorded`.
 
 Diagnostics use `console.error`; progress uses `console.log`. Nothing is written
 to stdout in a machine-parseable format — these helpers are read by humans and by
 exit codes, never by a parser. One deviation exists: the `--check` listing in
-`install-skills.mjs` builds an 8-wide field (`` `ok      ` `` / `` `missing ` ``).
-Match the surrounding file rather than reformatting it.
+`install-skills.mjs` builds an 8-wide field (`` `ok      ` `` / `` `missing ` `` /
+`` `drift    ` `` / `` `unrecorded` ``) and appends the reason in parentheses for
+`drift` and `unrecorded`. Match the surrounding file rather than reformatting it.
 
 ---
 

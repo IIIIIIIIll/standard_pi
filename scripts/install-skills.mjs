@@ -5,14 +5,22 @@
 //
 // Nothing is vendored in this repo: each run clones the source at the
 // configured ref (default: the source's default branch) and copies the skill
-// directory into the agent skills directory. Re-running is how you update.
+// directory into the agent skills directory, recording the resolved commit and
+// a content digest of the tree it just installed in the provenance marker.
+// Re-running is how you update.
 //
 //   node install-skills.mjs <repo> [--check]
 //
 //   --check   report what is installed vs. what the manifest asks for and
-//             change nothing (no network). Exit 1 if something is missing.
+//             change nothing (no network). Each skill's tree is hashed and
+//             compared against the digest the marker records for it, so a
+//             stale or edited copy reads as drift rather than ok. missing and
+//             drift exit 1; unrecorded means the marker carries no digest for
+//             the skill — a note, since the next fetch records one — and is an
+//             error only when the marker itself is gone.
 //
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
@@ -30,17 +38,75 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const destRoot = process.env.AGENTS_SKILLS_DIR ?? path.join(os.homedir(), ".agents", "skills");
 const statePath = path.join(path.dirname(destRoot), ".pi-setup-skills.json");
 
+// Content digest of a skill tree: entries sorted by relative path, each file
+// contributing "<rel>\0<byteLength>\0" + bytes and each directory "<rel>/".
+// No mtimes, no absolute paths, "/" only — the same bytes hash the same on any
+// machine. Hashes what is installed, not what was cloned.
+function treeDigest(root) {
+  const hash = crypto.createHash("sha256");
+  const walk = (dir, prefix) => {
+    const entries = fs
+      .readdirSync(dir, { withFileTypes: true })
+      .map((entry) => ({
+        name: entry.name,
+        isDir: entry.isDirectory(),
+        rel: prefix ? `${prefix}/${entry.name}` : entry.name,
+      }))
+      .sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
+    for (const entry of entries) {
+      const at = path.join(dir, entry.name);
+      if (entry.isDir) {
+        hash.update(`${entry.rel}/\0`);
+        walk(at, entry.rel);
+      } else {
+        const bytes = fs.readFileSync(at);
+        hash.update(`${entry.rel}\0${bytes.length}\0`);
+        hash.update(bytes);
+      }
+    }
+  };
+  walk(root, "");
+  return hash.digest("hex");
+}
+
 const problems = [];
 let installed = 0;
 
 if (checkOnly) {
+  let marker = null;
+  try {
+    marker = JSON.parse(fs.readFileSync(statePath, "utf8"));
+  } catch {
+    marker = null; // absent or unreadable: nothing to compare against
+  }
+
   for (const skill of manifest.skills) {
-    const ok = fs.existsSync(path.join(destRoot, skill.name, "SKILL.md"));
-    console.log(`  ${ok ? "ok      " : "missing "} ${skill.name}`);
-    if (!ok) problems.push(skill.name);
+    const dir = path.join(destRoot, skill.name);
+    const record = marker?.skills?.[skill.name];
+    if (!fs.existsSync(path.join(dir, "SKILL.md"))) {
+      console.log(`  ${"missing".padEnd(8)} ${skill.name}`);
+      problems.push(skill.name);
+    } else if (!record?.digest) {
+      const why = marker
+        ? `${statePath} has no digest — setup.sh records one on the next fetch`
+        : `${statePath} is missing — run setup.sh`;
+      console.log(`  ${"unrecorded".padEnd(8)} ${skill.name} (${why})`);
+      if (!marker) problems.push(skill.name);
+    } else if (record.source !== skill.source || record.path !== skill.path) {
+      console.log(`  ${"drift".padEnd(8)} ${skill.name} (marker says ${record.source}/${record.path}, skills.json says ${skill.source}/${skill.path})`);
+      problems.push(skill.name);
+    } else {
+      const digest = treeDigest(dir);
+      if (digest === record.digest) {
+        console.log(`  ${"ok".padEnd(8)} ${skill.name}`);
+      } else {
+        console.log(`  ${"drift".padEnd(8)} ${skill.name} (digest ${digest.slice(0, 12)} ≠ recorded ${record.digest.slice(0, 12)})`);
+        problems.push(skill.name);
+      }
+    }
   }
   if (problems.length) {
-    console.error(`\n${problems.length} skill(s) missing — run setup.sh`);
+    console.error(`\n${problems.length} skill(s) not ok — run setup.sh`);
     process.exit(1);
   }
   process.exit(0);
@@ -99,8 +165,9 @@ for (const [sourceId, skills] of bySource) {
     fs.rmSync(to, { recursive: true, force: true });
     fs.mkdirSync(to, { recursive: true });
     fs.cpSync(from, to, { recursive: true });
+    const digest = treeDigest(to);
     console.log(`  install  ${skill.name}`);
-    provenance.skills[skill.name] = { source: sourceId, path: skill.path, commit };
+    provenance.skills[skill.name] = { source: sourceId, path: skill.path, commit, digest };
     installed++;
   }
 

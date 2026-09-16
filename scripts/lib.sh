@@ -42,11 +42,12 @@ readonly PI_NOT_SYNCED=(
 #
 # The path deliberately follows the READER's resolution, not the XDG standard:
 # pi-mcp-adapter hardcodes join(homedir(), ".config", "mcp", "mcp.json")
-# (dist/config.js:12) and ignores XDG_CONFIG_HOME, so honouring the variable here
-# would register the server where the adapter never looks — and doctor.sh would
-# read this same constant back and report green. No `$HOME` default either:
-# scripts are invoked from arbitrary working directories, and the reader is what
-# decides. doctor.sh warns when XDG_CONFIG_HOME is set to something else.
+# (dist/config.js:14 in pi-mcp-adapter 2.34.0) and ignores XDG_CONFIG_HOME, so
+# honouring the variable here would register the server where the adapter never
+# looks — and doctor.sh would read this same constant back and report green.
+# No `$HOME` default either: scripts are invoked from arbitrary working
+# directories, and the reader is what decides. doctor.sh warns when
+# XDG_CONFIG_HOME is set to something else.
 #
 # Written by scripts/install-mcp.sh and checked by scripts/doctor.sh.
 readonly MCP_CFG="$HOME/.config/mcp/mcp.json"

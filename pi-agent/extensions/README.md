@@ -52,15 +52,20 @@ appends, after the constant dispatch note:
   role table here on purpose: the name is relayed, never enumerated;
 - the task's `prd.md` → `design.md` → `implement.md`, with a per-artifact cap.
 
-The budget is **read** from `context_injection` in `.trellis/config.yaml`, never
-restated: `max_file_bytes` (32768) per curated file, `max_artifact_bytes` (65536)
-per artifact, `max_total_bytes` (131072) for the whole block — the same numbers the
-generated extension's own reader and `task.py validate` use. A body over its cap is
-truncated with a notice; once the total is reached the remaining entries degrade to
-a path line. A file whose body is already in the prompt verbatim is skipped, and
-the block is appended only when it is not already there, tested whole rather than
-by a tag. Nothing is appended outside a child session, and nothing at all when no
-task resolves.
+The budget is **read** from `context_injection` in `.trellis/config.yaml` when
+that block is uncommented — never restated — so this third consumer cannot drift
+from the generated extension's reader and `task.py validate`. That block ships
+**commented out** in this repo (`.trellis/config.yaml:158-161`), so today the
+bridge's built-ins apply: `DEFAULT_CONTEXT_INJECTION_LIMITS` at
+`pi-agent/extensions/trellis-subagents-bridge/index.ts:319-323`, read by
+`readContextInjectionLimits()` at `:354-393` — `max_file_bytes` **32768** per
+curated file, `max_artifact_bytes` **65536** per artifact, `max_total_bytes`
+**131072** for the whole block. A body over its cap is truncated with a notice;
+once the total is reached the remaining entries degrade to a path line. A file
+whose body is already in the prompt verbatim is skipped, and the block is
+appended only when it is not already there, tested whole rather than by a tag.
+Nothing is appended outside a child session, and nothing at all when no task
+resolves.
 
 It also **deactivates the shipped `trellis_subagent` tool** with
 `pi.setActiveTools(...)`, so pi-subagents is the only dispatch path and the

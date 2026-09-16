@@ -13,7 +13,7 @@
 
 ### `npm:pi-subagents`
 
-**What it is.** Delegation — one `subagent` tool that runs focused child Pi sessions and brings their results back, plus packaged agents (`scout`, `researcher`, `evidence-auditor`, `worker`, `reviewer`, `oracle`, `delegate`).
+**What it is.** Delegation — one `subagent` tool that runs focused child Pi sessions and brings their results back, plus packaged agents (`scout`, `researcher`, `evidence-auditor`, `worker`, `reviewer`, `oracle`, `delegate`) and six external-runner shims — `claude-code`, `codex-exec`, `cursor-agent`, each with a `-writer` variant — that hand the task to an installed external CLI agent rather than a child Pi session.
 
 **Reach for it when.** A second or third set of model eyes is worth it: code review, codebase recon, parallel audits, a decision you want challenged, or a saved scripted workflow you want run end to end.
 
@@ -93,7 +93,7 @@
 
 **Reach for it when.** You want the MCP ecosystem without paying for every server's full tool list in context, or you need to add or authenticate a server without restarting Pi.
 
-**Invoke.** `mcp({ })` for status, `mcp({ search: "..." })` and `mcp({ describe: "..." })` to discover, `mcp({ tool: "...", args: { ... } })` to call, `mcpScript({ code: "..." })` to chain several calls. Commands: `/mcp` for the panel, `/mcp setup`, `/mcp tools`, `/mcp prompts`, `/mcp reconnect [server]`, `/mcp enable|disable <server>`, `/mcp logout <server>`, `/mcp-auth [server]`.
+**Invoke.** `mcp({ })` for status, `mcp({ search: "..." })` and `mcp({ describe: "..." })` to discover, `mcp({ tool: "...", args: { ... } })` to call, `mcpScript({ code: "..." })` to chain several calls. Commands: `/mcp` for the panel, `/mcp setup`, `/mcp tools`, `/mcp prompts`, `/mcp reconnect [server]`, `/mcp enable|disable <server>`, `/mcp logout <server>`, `/mcp token set|remove|status <server>`, `/mcp-auth [server]`.
 
 **Config.** `~/.config/mcp/mcp.json` — generated outside the repo; it is the shared, machine-global layer `setup.sh` registers into, with Pi-only overrides in `~/.pi/agent/mcp.json` and `.pi/mcp.json`. Surface rationale: [`.trellis/spec/config/pi-resources.md`](../.trellis/spec/config/pi-resources.md).
 
@@ -145,9 +145,12 @@ Each bundle documents itself:
 
 ## Hand-placed extensions
 
-The two extensions under `pi-agent/extensions/` are placed by hand rather than
+Three items under `pi-agent/extensions/` are placed by hand rather than
 installed from a package, and are documented where they live:
 
 - [`pi-agent/extensions/README.md`](../pi-agent/extensions/README.md) — the
   permission policy, and the `trellis-subagents-bridge` that lets a dispatched
   child resolve its parent's Trellis task.
+- [`pi-agent/extensions/run-timer.ts`](../pi-agent/extensions/run-timer.ts) —
+  the footer status-line timer that publishes through `ctx.ui.setStatus()`
+  ([notes](../pi-agent/extensions/README.md#run-timer)).

@@ -79,8 +79,9 @@ compares.
 | `npm:pi-tps-status` | live tokens-per-second meter in the status bar: TTFT and token-count modes, three counting strategies, provider-usage reconciliation, `/tps` settings | streaming throughput is otherwise invisible; it keeps its config outside `~/.pi/agent/`, at `$XDG_CONFIG_HOME/pi-tps-status/config.json` (like `pi-lens`), so it adds nothing to the path lists |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped replies -- answer or next action first, numbered steps, progress restated each turn, concrete time estimates, no preamble; `/i-have-adhd` (or `stop adhd mode`) toggles it per session, `/skill:i-have-adhd` is the aliased skill | output *shape* is a standing preference rather than a per-task prompt, so it belongs to every machine; it is the one package here with a tracked, symlinked config file (`pi-agent/i-have-adhd.json`) -- see below |
 
-Both are self-contained: neither needs a tracked config file in this repo, and
-neither writes into `~/.pi/agent/`. `pi-mcp-adapter` ships no MCP servers of its own, so the harness supplies one:
+`pi-lens` and `pi-tps-status` are self-contained: neither needs a tracked
+config file in this repo, and neither writes into `~/.pi/agent/`.
+`pi-mcp-adapter` ships no MCP servers of its own, so the harness supplies one:
 `setup.sh` installs `codebase-memory-mcp` and registers it in
 `~/.config/mcp/mcp.json` — the **global** layer, shared with every MCP-aware tool
 on the machine. That is an always-on core cost, so it is worth stating plainly:
@@ -158,10 +159,12 @@ too late to be useful. Two packages split the job:
 
 | Concern | Owner | Setting |
 | --------- | ------- | --------- |
-| **When** to compact | `auto-compact` | `thresholdPercent` (per-machine; 30 here) |
+| **When** to compact | `auto-compact` | `thresholdPercent` (per-machine; 45 here) |
 | **How** to summarize | `pi-vcc` | `overrideDefaultCompaction: true` — algorithmic, **no LLM call** |
 | Final backstop | Pi core | `reserveTokens: 16384`, untouched (~98%) |
 | Resuming the run | `auto-compact` | `autoResume: true` |
+| Follow-up prompt | `auto-compact` | `resumptionInstruction` — sent once after a compaction; the live value is the extension's default text |
+| Turn boundary | `auto-compact` | `waitForTurnEnd: true` — forced by the extension (`extensions/auto-compact/index.ts:110` in `@thunstack/auto-compact`, excluded from patchable keys at `:726`), not a user lever |
 
 Facts that must not be re-litigated:
 
@@ -241,8 +244,8 @@ what that buys. Say it plainly rather than leaving it to be discovered.
 
 **What it costs in context is a different number, and it is small.** The adapter
 keeps the server's metadata outside the context: the 15 tool definitions are
-21,585 bytes of JSON — ~5,400 tokens at 4 bytes/token, ~6,700 at the 3.2
-bytes/token JSON schemas actually run at — and they live in
+about 21 KB of JSON (~5,400 tokens at 4 bytes/token, ~6,800 at the 3.2
+bytes/token JSON schemas actually run at), and they live in
 `~/.pi/agent/mcp-cache.json` (23 KB on disk), reached on demand through
 `mcp({ search })` / `mcp({ describe })`. What sits in the model's tool list
 instead is the `mcp` proxy (~200 tokens, already paid by `pi-mcp-adapter` on
@@ -274,12 +277,12 @@ Facts a contributor must not break:
   `PI_DST`.
 - **`MCP_CFG` follows the reader, not the XDG standard.** It is
   `$HOME/.config/mcp/mcp.json`, because `pi-mcp-adapter` hardcodes
-  `join(homedir(), ".config", "mcp", "mcp.json")` (`dist/config.js:12`) and
-  ignores `XDG_CONFIG_HOME`. Honouring the variable here would register the server
-  where the adapter never looks — and `doctor.sh`, reading the same constant back,
-  would still report green. `doctor.sh` emits a `warn` when `XDG_CONFIG_HOME`
-  points somewhere else, so the mismatch is visible rather than silent. Do not
-  "fix" the constant to the XDG-resolved path.
+  `join(homedir(), ".config", "mcp", "mcp.json")` (`dist/config.js:14` in
+  `pi-mcp-adapter` 2.34.0) and ignores `XDG_CONFIG_HOME`. Honouring the variable
+  here would register the server where the adapter never looks — and `doctor.sh`,
+  reading the same constant back, would still report green. `doctor.sh` emits a
+  `warn` when `XDG_CONFIG_HOME` points somewhere else, so the mismatch is
+  visible rather than silent. Do not "fix" the constant to the XDG-resolved path.
 - **`sync.sh` and `sync-settings.mjs` never see it**: they enumerate `PI_DST`.
   Adding it to any of those lists means the surface decision has been misread.
 - **Its owner writes it with an atomic rename** (`config.ts:1029`), so it can
@@ -315,21 +318,28 @@ Facts a contributor must not break:
   this repo, so `cbmem.ts` would land in the git working tree. Pi reaches the
   graph through the MCP client here, not through the generated extension.
 - **`--skip-config` does not stop every upstream side effect.** The binary's
-  install step also appends a PATH line to `~/.bashrc` under a
+  install step also appends a PATH line to the shell profile under a
   `# Added by codebase-memory-mcp install` comment, and leaves a 12.9 KB copy of
-  `install.sh` at `~/.local/bin/install.sh`. The appended line is the install
+  `install.sh` at `~/.local/bin/install.sh`. **Which profile file varies by
+  installer version** — `~/.bashrc` for the 2026-09-14 install here, `~/.profile`
+  on a 2026-09-16 sandbox run — so the claim is the comment and the expanded
+  absolute path, not the file it lands in. The appended line is the install
   directory **already expanded to an absolute path** — the writer's template is
   `export PATH="%s:$PATH"`, measured here as
   `export PATH="/home/tan/.local/bin:$PATH"` — so it is not the portable `$HOME`
   form and must not be quoted as one. `--skip-config` prevents neither, both are
   invisible to `git status` and to `doctor.sh`, and this repo does not edit files
-  it does not own — so they are documented, not removed. The `~/.local/bin` PATH
-  entry is also what makes `install-mcp.sh`'s post-install `command -v` re-check
-  succeed.
+  it does not own — so they are documented, not removed. The entry does not, and
+  must not, gate the first run: `install-mcp.sh`'s post-install re-check falls
+  back to `~/.local/bin/codebase-memory-mcp` when `command -v` misses, because a
+  shell started before the install has not re-read that profile — and the
+  registration stores the bare name, which the Pi session resolves itself.
 - **`doctor.sh` treats "no binary and no config" as a single `warn`**, because
   `--skip-mcp` is a legitimate machine choice and that machine must still reach
   `All good.`. A binary that is present with a missing or drifted config is a
-  `bad`.
+  `bad`. Present-at-`~/.local/bin`-but-not-on-`PATH` counts as present (a `warn`
+  about the new shell), so the pair it forms with the registration still gets
+  judged together.
 
 ---
 
@@ -367,11 +377,16 @@ Rules:
   exits `1` at the end. A partial install is reported, never rolled back —
   re-running `./setup.sh` is the recovery path.
 - `node scripts/install-skills.mjs . --check` verifies installation **without
-  network** and is what `doctor.sh` uses. Keep it offline.
+  network** and is what `doctor.sh` uses: it re-hashes each installed tree and
+  compares it against the digest its provenance entry records, so a stale or
+  edited copy reads as `drift` instead of `ok`. `missing` and `drift` exit `1`;
+  `unrecorded` is a note — a skill the marker has no digest for — and only fails
+  when the marker file itself is gone. Keep it offline.
 - Provenance is recorded outside the repo at `~/.agents/.pi-setup-skills.json`
   (a sibling of the skills dir, so `AGENTS_SKILLS_DIR` moves it too). It contains
-  `installedAt`, and per-source/per-skill resolved commit SHAs. `doctor.sh`
-  prints the source commits from it.
+  `installedAt`, per-source/per-skill resolved commit SHAs, and a content
+  `digest` of each installed tree — the value `--check` compares against.
+  `doctor.sh` prints the source commits from it.
 - `_comment` is a real key, not JSONC. Keys starting with `_` are a convention
   here for "not data".
 
@@ -483,9 +498,15 @@ Facts a contributor must not break:
   segment is `check` selects `check.jsonl` — falling back to every `*.jsonl` in the
   task directory — there is deliberately no role table here, and one would couple
   this repo to role names it does not own. The budget is **read** from
-  `context_injection` in `.trellis/config.yaml`, never restated, so this third
-  consumer cannot drift from the generated extension's reader and `task.py
-  validate`. A body already present in the prompt verbatim is skipped, which is what
+  `context_injection` in `.trellis/config.yaml` when that block is uncommented —
+  never restated — so this third consumer cannot drift from the generated
+  extension's reader and `task.py validate`. That block ships **commented out**
+  here (`.trellis/config.yaml:158-161`), so today the bridge's built-ins apply:
+  `DEFAULT_CONTEXT_INJECTION_LIMITS` at
+  `pi-agent/extensions/trellis-subagents-bridge/index.ts:319-323`, read by
+  `readContextInjectionLimits()` at `:354-393` — `max_file_bytes` **32768**,
+  `max_artifact_bytes` **65536**, `max_total_bytes` **131072**. A body already
+  present in the prompt verbatim is skipped, which is what
   keeps the injection from duplicating a file the shipped tool already supplied. And
   the block is assembled once per session and tested for presence **whole** — the
   tag rule below applies to it too, and there is no tag to match.

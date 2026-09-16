@@ -101,6 +101,12 @@ fi
 if command -v codebase-memory-mcp >/dev/null 2>&1; then
   ok "codebase-memory-mcp: $(command -v codebase-memory-mcp)"
   has_cbm=1
+elif [ -x "$HOME/.local/bin/codebase-memory-mcp" ]; then
+  # Installed where the upstream installer puts it, just not visible to this
+  # shell yet. Not a problem: the registration stores the bare command name,
+  # which the Pi session resolves in its own environment.
+  warn "codebase-memory-mcp is at ~/.local/bin but not on this shell's PATH (open a new shell)"
+  has_cbm=1
 else
   warn "codebase-memory-mcp not on PATH (run ./setup.sh, or --skip-mcp to opt out)"
   has_cbm=0
@@ -465,7 +471,7 @@ if [ -f "$REPO_DIR/skills.json" ]; then
   if node "$REPO_DIR/scripts/install-skills.mjs" "$REPO_DIR" --check >/tmp/pi-doctor-skills.$$ 2>&1; then
     ok "$total skill(s) installed from upstream"
   else
-    bad "missing skills (run ./setup.sh):"
+    bad "skills not ok (run ./setup.sh):"
     sed 's/^/      /' /tmp/pi-doctor-skills.$$
   fi
   rm -f /tmp/pi-doctor-skills.$$

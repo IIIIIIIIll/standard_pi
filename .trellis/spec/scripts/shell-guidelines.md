@@ -339,12 +339,13 @@ Rules that follow:
   `$HOME/.config/mcp/mcp.json` rather than
   `${XDG_CONFIG_HOME:-$HOME/.config}/mcp/mcp.json`, because `pi-mcp-adapter`
   hardcodes `join(homedir(), ".config", "mcp", "mcp.json")`
-  (`dist/config.js:12`) and never reads `XDG_CONFIG_HOME`. A script that honoured
-  the variable would write where the adapter does not look, and `doctor.sh` —
-  reading the same constant back — would still report green. `doctor.sh` warns
-  when `XDG_CONFIG_HOME` points elsewhere so the mismatch is visible. This is the
-  one path list here whose value tracks another program's resolver rather than
-  the environment; a bare `$HOME` is deliberate, not an oversight.
+  (`dist/config.js:14` in `pi-mcp-adapter` 2.34.0) and never reads
+  `XDG_CONFIG_HOME`. A script that honoured the variable would write where the
+  adapter does not look, and `doctor.sh` — reading the same constant back —
+  would still report green. `doctor.sh` warns when `XDG_CONFIG_HOME` points
+  elsewhere so the mismatch is visible. This is the one path list here whose
+  value tracks another program's resolver rather than the environment; a bare
+  `$HOME` is deliberate, not an oversight.
 
 See [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md)
 for the sites that still have to be edited by hand when the list changes.

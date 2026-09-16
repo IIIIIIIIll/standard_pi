@@ -13,15 +13,18 @@
 # registration is rewritten only when it differs.
 #
 # `--skip-config` does not stop every upstream side effect. The install step
-# also appends a PATH line to ~/.bashrc and leaves a copy of itself at
+# also appends a PATH line to the shell profile and leaves a copy of itself at
 # ~/.local/bin/install.sh. Both are outside this repo and invisible to
 # `git status` and to doctor.sh; this repo does not edit files it does not own,
-# so remove them by hand if you do not want them.
+# so remove them by hand if you do not want them. Which profile file gets the
+# PATH line is upstream's choice and has varied between installer versions
+# (~/.bashrc for the 2026-09-14 install here, ~/.profile on 2026-09-16).
 #
-# The binary lands in ~/.local/bin, so the post-install `command -v` re-check
-# below depends on ~/.local/bin being on PATH. A shell that was started before
-# the install re-read ~/.bashrc will fail that re-check; re-run it from a fresh
-# shell if that happens.
+# The binary lands in ~/.local/bin. The re-check below also looks there when
+# `command -v` misses it, because a shell started before the install has not
+# re-read that profile yet — and registration stays correct either way: the
+# config stores the bare command name, which the Pi session resolves in its own
+# environment.
 #
 # Usage:
 #   scripts/install-mcp.sh             install if absent, then register
@@ -79,8 +82,25 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if command -v codebase-memory-mcp >/dev/null 2>&1 && [ "$FORCE" = 0 ]; then
-  say keep "$(command -v codebase-memory-mcp)"
+# Resolve the binary the same way in both checks below: PATH first, then the
+# installer's own directory, which counts even when this shell cannot see it yet
+# — a shell started before the profile line was written. Registration stores the
+# bare command name, so a Pi session resolves it in its own environment; and the
+# `keep` branch must not reinstall a binary that is already there just because
+# this shell's PATH predates it. Sets MCP_BIN, and MCP_BIN_OFF_PATH when only the
+# fallback found it (the case that deserves a note, not a failure).
+resolve_mcp_bin() {
+  MCP_BIN="$(command -v codebase-memory-mcp || true)"
+  MCP_BIN_OFF_PATH=0
+  if [ -z "$MCP_BIN" ] && [ -x "$HOME/.local/bin/codebase-memory-mcp" ]; then
+    MCP_BIN="$HOME/.local/bin/codebase-memory-mcp"
+    MCP_BIN_OFF_PATH=1
+  fi
+}
+
+resolve_mcp_bin
+if [ -n "$MCP_BIN" ] && [ "$FORCE" = 0 ]; then
+  say keep "$MCP_BIN"
 else
   say install "codebase-memory-mcp  (upstream installer, --skip-config)"
   if curl -fsSL "$INSTALL_URL" | bash -s -- --skip-config >/tmp/pi-mcp-install.$$ 2>&1; then
@@ -98,16 +118,22 @@ else
     say error "codebase-memory-mcp install failed (see above)"
     exit 1
   fi
-  note "upstream's install step also appends a PATH line to ~/.bashrc and leaves ~/.local/bin/install.sh"
+  note "upstream's install step also appends a PATH line to your shell profile and leaves ~/.local/bin/install.sh"
 fi
 
 # Re-check: a download that failed while still exiting 0 would otherwise be
 # recorded as success, and doctor.sh would report a confusing
-# binary-present/config-absent pair much later. This also depends on
-# ~/.local/bin being on PATH, which is where the installer puts the binary.
-if ! command -v codebase-memory-mcp >/dev/null 2>&1; then
-  say error "codebase-memory-mcp is still not on PATH after the install"
+# binary-present/config-absent pair much later. The installer's own target
+# directory counts as success even when this shell's PATH cannot see it yet:
+# failing here would skip the registration and leave a fresh machine with the
+# binary installed and no server — the exact state doctor.sh then fails on.
+resolve_mcp_bin
+if [ -z "$MCP_BIN" ]; then
+  say error "codebase-memory-mcp is missing after the install (looked on PATH and in ~/.local/bin)"
   exit 1
+fi
+if [ "$MCP_BIN_OFF_PATH" = 1 ]; then
+  note "$MCP_BIN is not on this shell's PATH yet — open a new shell (or source your profile) before starting Pi"
 fi
 
 node "$REPO_DIR/scripts/register-mcp-server.mjs" "$MCP_CFG" codebase-memory-mcp codebase-memory-mcp
