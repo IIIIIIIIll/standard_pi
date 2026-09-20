@@ -370,11 +370,17 @@ Two tasks. First, a doctor.sh check that the generated Trellis extension still r
 
 ### Summary
 
-Session summary was not supplied.
+The harness was re-verified end to end after an upgrade day: `pi 0.86.1` and all ten
+npm extensions match the registry's `latest`, `i-have-adhd` sits at upstream HEAD,
+`main` equals `origin/main`, and `doctor.sh` reports no problems. The one genuine
+drift was the live permission policy, which had been loosened by a dialog-approved
+edit and was not recorded in the repo. It is now committed, its two doc surfaces
+were resynced, and the child-dispatch table those docs relied on is marked
+superseded rather than deleted.
 
 ### Main Changes
 
-- Confirmed pi 0.86.1 and all 10 npm extensions are at latest, i-add-adhd at upstream HEAD, main == origin/main, doctor 0 problems
+- Confirmed pi 0.86.1 and all 10 npm extensions are at latest, i-have-adhd at upstream HEAD, main == origin/main, doctor 0 problems
 - Committed the live permission policy (yoloMode on, external_directory '*' raised from ask to allow) so a fresh clone reproduces this machine
 - Ignored extension-written .bak files at any depth
 - Resynced .trellis/spec/config/pi-resources.md and pi-agent/extensions/README.md to the new policy and marked the 2026-09-14 child-dispatch table superseded
@@ -383,7 +389,9 @@ Session summary was not supplied.
 
 | Hash | Message |
 |------|---------|
+| `671a20c` | chore(config): record the live permission policy |
 | `3868e8d` | chore(gitignore): ignore extension backups at any depth |
+| `49edee3` | docs(perms): resync the policy docs with the committed yolo config |
 
 ### Testing
 
