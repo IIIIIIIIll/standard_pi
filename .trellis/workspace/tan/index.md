@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 11
-- **Last Active**: 2026-09-16
+- **Total Sessions**: 12
+- **Last Active**: 2026-09-20
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~361 | Active |
+| `journal-1.md` | ~398 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 12 | 2026-09-20 | Verify the upgraded harness and resync the permission policy | `3868e8d` | `main` |
 | 11 | 2026-09-16 | Carry the role gates to dispatched children, and guard three invariants | `afb4237`, `2f58e45`, `b7cce25`, `8550e4a`, `d76e427` | `main` |
 | 10 | 2026-09-15 | Refuse cross-checkout symlink re-pointing | `4e44e22`, `b2d1970` | `main` |
 | 9 | 2026-09-15 | Restore Pi's footer by re-homing the run timer on the status line | `707f017` | `main` |

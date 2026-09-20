@@ -359,3 +359,40 @@ Two tasks. First, a doctor.sh check that the generated Trellis extension still r
 - Recorded, not outstanding: when the bridge loses the word SHIPPED_TOOLS entirely the outer chain reports a bad and both marker checks are skipped - never silently green, and the fix is a restructure of that chain
 - prd/design/implement arrive as index lines rather than bodies for a task whose curated set exhausts max_total_bytes; that is upstream's own order (curated first), not a regression
 - The marker-assignment check proves an assignment exists, not that it sits in the right place or is gated on a resolved task; those need reading
+
+
+## Session 12: Verify the upgraded harness and resync the permission policy
+<!-- trellis-session: v=2 fp=21141d0f3f3c619c -->
+
+**Date**: 2026-09-20
+**Task**: Verify the upgraded harness and resync the permission policy
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- Confirmed pi 0.86.1 and all 10 npm extensions are at latest, i-add-adhd at upstream HEAD, main == origin/main, doctor 0 problems
+- Committed the live permission policy (yoloMode on, external_directory '*' raised from ask to allow) so a fresh clone reproduces this machine
+- Ignored extension-written .bak files at any depth
+- Resynced .trellis/spec/config/pi-resources.md and pi-agent/extensions/README.md to the new policy and marked the 2026-09-14 child-dispatch table superseded
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3868e8d` | chore(gitignore): ignore extension backups at any depth |
+
+### Testing
+
+- [OK] ./scripts/doctor.sh; node scripts/check-docs.mjs .; bash -n on all shell, node --check on all mjs, jiti parse on both extensions
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Decide what to do with the untracked docs/usage.zh.md
