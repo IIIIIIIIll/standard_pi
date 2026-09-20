@@ -664,11 +664,12 @@ Facts a contributor must not break:
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/gotgenes/pi-packages/main/packages/pi-permission-system/schemas/permissions.schema.json",
+  "yoloMode": true,
   "permission": {
     "*": "allow",
     "path": { "*.env": "deny", "*.env.*": "deny", "*.env.example": "allow" },
     "bash": { "rm -rf *": "deny" },
-    "external_directory": { "*": "ask", "/tmp/*": "allow" },
+    "external_directory": { "*": "allow" },
     "external_directory_read": { "*": "allow" }
   }
 }
@@ -681,35 +682,47 @@ right default here: it means "stop gating everything, keep only the rules below"
 Facts that must not be forgotten when editing this file:
 
 - **A missing config is not "no policy"; it is "interrupt the user on every tool
-  call."** Omitting `"*"` defaults every category to `ask`. That is the failure
-  mode the committed file exists to prevent.
+  call."** Omitting `"*"` defaults every category to `ask`, and a missing file
+  takes `yoloMode` with it, so nothing is left to auto-approve those asks. That is
+  the failure mode the committed file exists to prevent.
 - **Any parse failure falls back to `ask` for all categories**, and a config that
   fails schema validation clamps every `allow` up to `ask` (deny-preserving).
   Therefore: **strict JSON, no comments, no trailing commas.** Do not "tidy" this
   into JSONC, and do not add a `$comment`-style key that the schema rejects.
+- **`yoloMode: true` turns the remaining gate into a no-op.** It is a
+  composition-stage `ask` → `allow` rewrite (`src/policy/rule.ts`, rewrite origin
+  `"yolo"`), applied to *every* `ask` including the synthetic ones the parse
+  sentinels and the wrapper floors raise. Nothing reaches a dialog; the review log
+  records `decidedBy.kind: "yolo"` where a human decision would otherwise appear.
+  This is why the committed file can be described as gating nothing but the two
+  deny rules.
 - **`deny` survives `yoloMode`.** The `path` deny and the `rm -rf` deny are
-  enforced unconditionally, including when the extension's own YOLO mode is on.
+  enforced unconditionally — that is what makes the two rules above the *entire*
+  committed policy.
 - Precedence is **most-restrictive-wins** across four layers:
   `path` (cross-cutting) → `external_directory` (CWD boundary) → per-tool
   patterns → `bash` patterns. A `path` deny cannot be loosened by a per-tool
   `allow`.
 - Patterns match both the referenced path and its symlink-resolved form, so a
   deny cannot be evaded through a symlink alias.
-- **The outside-CWD boundary is split by direction.** Reads are open
-  (`external_directory_read` → `{ "*": "allow" }`); writes still `ask`, with
-  `/tmp` allowed so scratch files need not be parked inside the repo to dodge
-  the gate. This is why `external_directory` is a map, not the string `"ask"`.
+- **The outside-CWD boundary is open in both directions** since 2026-09-20
+  (`external_directory` → `{ "*": "allow" }`). Reads were opened first, per
+  direction, because the agent reads other checkouts and caches constantly and a
+  CWD-boundary prompt on a read is almost never the wanted decision; writes
+  followed when `external_directory` was raised from `ask` to `allow`. The
+  `/tmp/*` entry that used to be required is gone, because a `"*"` allow already
+  covers `/tmp`.
 - **Bare `external_directory` is sugar**, expanding into `external_directory_read`
   and `external_directory_write` with its entries placed first. The explicit
   `external_directory_read` therefore has the final say on reads, and the sugar
   map alone decides writes. Do not collapse that directional key back into a
   string, and do not add a parallel `path_read` allow — reads are already
   handled at this layer.
-- **`/tmp/*`, never a bare `/tmp`.** A trailing `*` is greedy and crosses
-  directory boundaries; a bare directory pattern matches only the directory
-  entry itself, which is not the path a tool call carries. One entry covers
-  macOS too, where `/tmp` resolves to `/private/tmp`: patterns match both the
-  path and its symlink-resolved form.
+- **`/tmp/*`, never a bare `/tmp`**, if you re-tighten writes to `ask`. A
+  trailing `*` is greedy and crosses directory boundaries; a bare directory
+  pattern matches only the directory entry itself, which is not the path a tool
+  call carries. One entry covers macOS too, where `/tmp` resolves to
+  `/private/tmp`: patterns match both the path and its symlink-resolved form.
 - **Open reads do not touch the `deny` floor.** `path` is the cross-cutting
   layer and wins over any `external_directory` allow, so `*.env` stays blocked
   and `rm -rf *` stays blocked under `/tmp` exactly as elsewhere.
@@ -738,7 +751,7 @@ config:
 | Command string | Gate record | Child outcome |
 | --- | --- | --- |
 | `./scripts/doctor.sh` | `session_approved`, `pattern: null` | runs — no external path is in the string |
-| `cd /tmp && /abs/path/scripts/doctor.sh` | `session_approved` | runs — `/tmp/*` is allowed |
+| `cd /tmp && /abs/path/scripts/doctor.sh` | `session_approved` | runs — `/tmp` is inside an allowed pattern |
 | `… render-settings.mjs "$HOME/.pi/agent/settings.json" --check` | `waiting` → `forwarded_permission.request_created` | **blocks on a dialog the child cannot see** |
 | `timeout 25 pi remove --help` | `waiting` → forwarded | blocks the same way |
 | `rm -rf <dir>` | `Denied by policy: 'bash' (rule 'rm -rf *')` | refused before it runs; a compound command loses the whole call |
@@ -746,22 +759,41 @@ config:
 The `pi remove` row is worth separating from the rest: the committed policy has
 no `bash` pattern for it, so it is the external-directory **write** path
 (`pi remove` mutates `~/.pi/agent/npm`) rather than a text match. The behaviour is
-stable either way, and it holds for `--help`, which reads nothing and still asks.
+stable either way, and it held for `--help` too, which reads nothing and still
+asked.
 
-Two rules follow, and a dispatch prompt must state both:
+**Superseded 2026-09-20.** These rows were measured 2026-09-14 under the
+`ask`-gated policy. The machine has since moved to `yoloMode: true` with
+`external_directory` open in both directions, so the two `waiting` rows are not
+expected to reproduce: an `ask` is auto-approved at composition instead of being
+forwarded to a parent. The review log agrees — **0 `permission_request.waiting`
+events after the 2026-09-20T13:29:13Z config write, against 763 before it** —
+though only three decisions were recorded after the change, so treat that as
+corroboration rather than an isolated measurement. The `rm -rf` row is
+unaffected: `deny` survives yolo. Re-measure before relying on either direction,
+and note that the 2026-09-20T13:29:13Z record itself is a `write` tool call to
+this very config file that a **human approved through a dialog** — a config edit
+is not something an unattended child can perform under any policy.
+
+Two rules follow. Both were written against the `ask`-gated policy, so read them
+as *restore* instructions: they matter again the moment `yoloMode` is turned off
+or a write `ask` is put back.
 
 - **Keep `$HOME`, `~`, and `~/.pi` out of the command string.** A check that
   needs a live-settings path as an argument cannot avoid naming it, so it is the
-  parent's to run: `render-settings.mjs --check` was never runnable by a child.
-  `doctor.sh` and `check-docs.mjs` are unaffected — their external paths are
-  inside the scripts, invisible to the gate. `/tmp` is explicitly safe.
+  parent's to run: `render-settings.mjs --check` was never runnable by a child
+  under the old policy, and neither was `pi remove`. `doctor.sh` and
+  `check-docs.mjs` are unaffected either way — their external paths are inside
+  the scripts, invisible to the gate.
 - **Read `waiting` as "blocked", never as "slow".** `permission_request.waiting`
   with `decidedBy: null`, followed by
   `forwarded_permission.request_created`, means the dialog was routed to the
   **parent session**. A headless child has no way to answer it: it sits there
   until it is interrupted, or resolves as `confirmation_unavailable`. A 240-second
   stall in a child's transcript is this, and re-prompting the child does not fix
-  it — the prompt has to stop asking for the command.
+  it — the prompt has to stop asking for the command. Under the committed policy
+  no `waiting` event should appear at all, so one is evidence that the policy was
+  re-tightened or that this config failed to load.
 
 Separate from the gate, one shape waits on a **TTY** rather than a dialog:
 `pi remove <pkg>` with no `</dev/null` blocks on an interactive confirmation
