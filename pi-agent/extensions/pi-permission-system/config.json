@@ -9,6 +9,7 @@
       "*.env.example": "allow"
     },
     "bash": {
+      "*": "allow",
       "rm -rf *": "deny"
     },
     "external_directory": {

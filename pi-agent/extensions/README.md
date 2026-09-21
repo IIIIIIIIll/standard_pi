@@ -140,7 +140,7 @@ gates nothing at all except the two deny rules:
   "permission": {
     "*": "allow",
     "path": { "*.env": "deny", "*.env.*": "deny", "*.env.example": "allow" },
-    "bash": { "rm -rf *": "deny" },
+    "bash": { "*": "allow", "rm -rf *": "deny" },
     "external_directory": { "*": "allow" },
     "external_directory_read": { "*": "allow" }
   }
@@ -152,6 +152,26 @@ permissions. This extension is the only gate, so `"*": "allow"` means "stop
 gating everything, keep only the few rules below". What survives is the part
 that matters: the `path` deny and the `rm -rf` deny are enforced *unconditionally*,
 including under `yoloMode`, which this file now turns on.
+
+### The permissive-bash startup warning
+
+`"bash": { "*": "allow" }` is **required**, not decoration. With a top-level
+`"*": "allow"` and no explicit `bash` `"*"` key, the extension emits a startup
+warning that bash commands "silently inherit 'allow'".
+`detectPermissiveBashFallback` (`src/config/config-loader.ts`) returns a message
+when `permission["*"] === "allow"` and the `bash` surface is neither a bare
+string nor an object map owning a `"*"` key — so the explicit key is the only
+thing that suppresses it.
+
+The warning is about *unstated* intent, not about behavior: under `yoloMode: true`
+no bash prompt fires either way. `"allow"` is written out because it is what the
+policy actually does. Writing `"ask"` here to look stricter would be a lie —
+`yoloMode` rewrites that `ask` back to `allow` at composition time. Real gating
+means turning `yoloMode` off first.
+
+This cannot shadow the `rm -rf` deny: rule verdicts fold through
+`mostRestrictiveOf` (`src/policy/restrictiveness.ts`), so a `deny` outranks a
+sibling `allow` regardless of pattern order.
 
 ### The least-privilege trap
 

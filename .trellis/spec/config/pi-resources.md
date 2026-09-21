@@ -670,7 +670,7 @@ Facts a contributor must not break:
   "permission": {
     "*": "allow",
     "path": { "*.env": "deny", "*.env.*": "deny", "*.env.example": "allow" },
-    "bash": { "rm -rf *": "deny" },
+    "bash": { "*": "allow", "rm -rf *": "deny" },
     "external_directory": { "*": "allow" },
     "external_directory_read": { "*": "allow" }
   }
@@ -698,6 +698,16 @@ Facts that must not be forgotten when editing this file:
   records `decidedBy.kind: "yolo"` where a human decision would otherwise appear.
   This is why the committed file can be described as gating nothing but the two
   deny rules.
+- **The `bash` surface must keep an explicit `"*"` key.** `detectPermissiveBashFallback`
+  (`src/config/config-loader.ts`) emits a startup warning whenever the top-level
+  `"*"` is `allow` and `bash` is neither a bare string nor an object owning a
+  `"*"` key. Dropping that key makes the extension warn on every launch; the
+  warning is about unstated intent, since `yoloMode` already turns either
+  `"allow"` or `"ask"` into the same silent allow. `"ask"` here would be
+  misleading, not safer — real gating requires turning `yoloMode` off.
+  It cannot shadow the `rm -rf` deny: verdicts fold through `mostRestrictiveOf`
+  (`src/policy/restrictiveness.ts`), so `deny` outranks a sibling `allow`
+  whatever the pattern order.
 - **`deny` survives `yoloMode`.** The `path` deny and the `rm -rf` deny are
   enforced unconditionally — that is what makes the two rules above the *entire*
   committed policy.
