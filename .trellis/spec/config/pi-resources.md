@@ -277,16 +277,18 @@ Facts a contributor must not break:
   `PI_DST`.
 - **`MCP_CFG` follows the reader, not the XDG standard.** It is
   `$HOME/.config/mcp/mcp.json`, because `pi-mcp-adapter` hardcodes
-  `join(homedir(), ".config", "mcp", "mcp.json")` (`dist/config.js:14` in
-  `pi-mcp-adapter` 2.34.0) and ignores `XDG_CONFIG_HOME`. Honouring the variable
+  `join(homedir(), ".config", "mcp", "mcp.json")` as
+  `GENERIC_GLOBAL_CONFIG_PATH` (`config.ts:16`, verified against
+  `pi-mcp-adapter` 2.35.0) and ignores `XDG_CONFIG_HOME`. Honouring the variable
   here would register the server where the adapter never looks — and `doctor.sh`,
   reading the same constant back, would still report green. `doctor.sh` emits a
   `warn` when `XDG_CONFIG_HOME` points somewhere else, so the mismatch is
   visible rather than silent. Do not "fix" the constant to the XDG-resolved path.
 - **`sync.sh` and `sync-settings.mjs` never see it**: they enumerate `PI_DST`.
   Adding it to any of those lists means the surface decision has been misread.
-- **Its owner writes it with an atomic rename** (`config.ts:1029`), so it can
-  never be a symlink or a repo-rendered file — the trap
+- **Its owner writes it with an atomic rename** (`writeConfigText` in
+  `pi-mcp-adapter` 2.35.0: writes `<path>.<pid>.tmp`, then `renameSync`), so it
+  can never be a symlink or a repo-rendered file — the trap
   [layout-and-surfaces.md](./layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked)
   documents for `auto-compact.json`. The repo stores the *instruction* to
   register the server, not the file.

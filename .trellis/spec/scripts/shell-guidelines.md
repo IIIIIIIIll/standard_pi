@@ -338,10 +338,11 @@ Rules that follow:
 - **`MCP_CFG` follows the reader, not the XDG standard.** It is
   `$HOME/.config/mcp/mcp.json` rather than
   `${XDG_CONFIG_HOME:-$HOME/.config}/mcp/mcp.json`, because `pi-mcp-adapter`
-  hardcodes `join(homedir(), ".config", "mcp", "mcp.json")`
-  (`dist/config.js:14` in `pi-mcp-adapter` 2.34.0) and never reads
-  `XDG_CONFIG_HOME`. A script that honoured the variable would write where the
-  adapter does not look, and `doctor.sh` — reading the same constant back —
+  hardcodes `join(homedir(), ".config", "mcp", "mcp.json")` as
+  `GENERIC_GLOBAL_CONFIG_PATH` (`config.ts:16`, verified against
+  `pi-mcp-adapter` 2.35.0) and never reads `XDG_CONFIG_HOME`. A script that
+  honoured the variable would write where the adapter does not look, and
+  `doctor.sh` — reading the same constant back —
   would still report green. `doctor.sh` warns when `XDG_CONFIG_HOME` points
   elsewhere so the mismatch is visible. This is the one path list here whose
   value tracks another program's resolver rather than the environment; a bare
