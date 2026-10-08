@@ -404,3 +404,45 @@ superseded rather than deleted.
 ### Next Steps
 
 - Decide what to do with the untracked docs/usage.zh.md
+
+
+## Session 13: Swap MCP to Pi's built-in extension and verify it live
+<!-- trellis-session: v=2 fp=603d23c70225ecc3 -->
+
+**Date**: 2026-10-08
+**Task**: Swap MCP to Pi's built-in extension and verify it live
+**Branch**: `main`
+
+### Summary
+
+MCP now runs on Pi's built-in mcp extension instead of pi-mcp-adapter: the adapter left packages[], the adapter-only -builtin:mcp disable was removed, and codebase-memory-mcp is registered in ~/.pi/agent/mcp.json with codemode exposure. The registration destination, its .gitignore pairing, and four spec files moved with it. Verified after a Pi restart: 15 native mcp__codebase_memory_mcp__* tools are reachable from codemode.
+
+### Main Changes
+
+- settings.core.json: dropped npm:pi-mcp-adapter and the -builtin:mcp entry, so builtin:mcp loads (the adapter and the built-in extension both claimed /mcp)
+- lib.sh: MCP_CFG moved to $HOME/.pi/agent/mcp.json; PI_NOT_SYNCED trades the adapter's mcp-cache.json for mcp.json and mcp.log, which .gitignore covers including the rotated mcp.log.1
+- register-mcp-server.mjs writes {command, args, exposure: "codemode"} and states Pi as the reader; install-mcp.sh and doctor.sh follow the new path and the obsolete XDG_CONFIG_HOME warning retires
+- docs/spec: docs/plugins.md drops the adapter section (11 -> 10 plugins), README and four spec files record the built-in MCP contract and the inverted invariant - ~/.pi/agent/mcp.json is now the registration target while the shared ~/.config/mcp/mcp.json is another tool's surface
+- A checker-reported LOW was fixed: mcp.log* in PI_NOT_SYNCED was a glob sync.sh could not expand, so sync.sh never reported it; the entry is now the concrete mcp.log
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `349bb4d` | feat(mcp): switch to Pi's built-in MCP extension |
+
+### Testing
+
+- [OK] DefaultResourceLoader probe over builtInExtensions: builtin:mcp loaded, warnings: []
+- [OK] pi mcp list -> codebase-memory-mcp connected, 15 tools, exposure codemode, source ~/.pi/agent/mcp.json
+- [OK] Post-restart codemode probe: 15 mcp__codebase_memory_mcp__* tools in ALL_TOOLS and findable via searchTools(), with the adapter's single mcp gateway tool gone
+- [OK] render-settings --check, doctor.sh (All good.), check-docs.mjs (10 plugins), install-mcp.sh twice (idempotent), ./setup.sh --yes, sync.sh round-trip -> same
+- [OK] ~/.config/mcp/mcp.json sha256 unchanged (79cc7282...) - the shared file was never written
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Nothing blocking. Leftover inert state from the adapter (npm package dir, mcp-cache.json) can be deleted any time; no extension reads it
