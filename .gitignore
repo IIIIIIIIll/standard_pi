@@ -30,10 +30,13 @@ pi-agent/agent-memory/
 pi-agent/auto-compact.json
 pi-agent/pi-vcc-config.json
 pi-agent/web-search.json
-# pi-mcp-adapter's per-server tool-metadata cache, rewritten at runtime. Not
-# credential-bearing — it hashes the bearer token into configHash rather than
-# storing it — but it is remote content and never repo material.
-pi-agent/mcp-cache.json
+# Pi's own MCP server list plus the log its MCP extension appends to and
+# rotates (mcp.log, then mcp.log.1). Pi rewrites both at runtime: `/mcp` saves
+# exposure and enabled-state changes and `pi mcp add` appends servers, so
+# mcp.json must never be symlinked into the repo -- see
+# .trellis/spec/config/layout-and-surfaces.md. Reported by scripts/sync.sh.
+pi-agent/mcp.json
+pi-agent/mcp.log*
 
 pi-agent/sessions/
 pi-agent/npm/

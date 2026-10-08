@@ -290,7 +290,7 @@ paths (`PI_NOT_SYNCED`) are the other data list: `sync.sh` reports them and
 readonly PI_DIRS=(themes prompts tools skills agents extensions)
 readonly PI_FILES=(AGENTS.md i-have-adhd.json)
 readonly PI_NOT_SYNCED=(auth.json … sessions/ npm/ …)
-readonly MCP_CFG="$HOME/.config/mcp/mcp.json"
+readonly MCP_CFG="$HOME/.pi/agent/mcp.json"
 ```
 
 ```bash
@@ -329,24 +329,23 @@ Rules that follow:
   preflight, `link()`) belongs here. `PI_NOT_SYNCED` is stored in canonical
   slash-form for directories (`sessions/`, `npm/`, …), because `git check-ignore`
   distinguishes `pi-agent/sessions` from `pi-agent/sessions/`.
-- **`MCP_CFG` is not `PI_`-prefixed on purpose.** The prefix marks a harness path
-  under `PI_DST`, and `sync.sh` enumerates and reports that tree. The global MCP
-  config is a different root with a different owner (every MCP-aware tool on the
-  machine writes it), so naming it `PI_*` would imply it belongs to the sync
-  report. `install-mcp.sh` writes it, `doctor.sh` checks it, and neither
-  `sync.sh` nor `PI_NOT_SYNCED` knows it exists.
-- **`MCP_CFG` follows the reader, not the XDG standard.** It is
-  `$HOME/.config/mcp/mcp.json` rather than
-  `${XDG_CONFIG_HOME:-$HOME/.config}/mcp/mcp.json`, because `pi-mcp-adapter`
-  hardcodes `join(homedir(), ".config", "mcp", "mcp.json")` as
-  `GENERIC_GLOBAL_CONFIG_PATH` (`config.ts:16`, verified against
-  `pi-mcp-adapter` 2.35.0) and never reads `XDG_CONFIG_HOME`. A script that
-  honoured the variable would write where the adapter does not look, and
-  `doctor.sh` — reading the same constant back —
-  would still report green. `doctor.sh` warns when `XDG_CONFIG_HOME` points
-  elsewhere so the mismatch is visible. This is the one path list here whose
-  value tracks another program's resolver rather than the environment; a bare
-  `$HOME` is deliberate, not an oversight.
+- **`MCP_CFG` is not `PI_`-prefixed, though it now lives under `PI_DST`.** The
+  prefix marks an entry of the several path lists (`PI_DIRS` / `PI_FILES` /
+  `PI_NOT_SYNCED`); `MCP_CFG` is a single destination that one script writes and
+  `doctor.sh` checks, with no counterpart in `PI_DIRS` / `PI_FILES`. Its path is
+  named in `PI_NOT_SYNCED` as a plain `mcp.json` entry (with `mcp.log` beside
+  it; the ignore rule is the glob `mcp.log*`), which is what puts it in `sync.sh`'s report and in `doctor.sh`'s
+  ignore-coverage check.
+- **`MCP_CFG` is the config dir of the reader, and the reader is Pi.** It is
+  `$HOME/.pi/agent/mcp.json` — Pi's own MCP server file (`docs/mcp.md`,
+  "Configure servers") — not
+  `${XDG_CONFIG_HOME:-$HOME/.config}/mcp/mcp.json` and not the shared
+  `~/.config/mcp/mcp.json` that every other MCP-aware tool on the machine reads.
+  A script pointed at the global file would write where Pi never looks, and a
+  script resolving `XDG_CONFIG_HOME` would do the same. `$HOME` rather than
+  `$PI_DST` matches Pi's own default even when `PI_CODING_AGENT_DIR` is
+  overridden; `install-mcp.sh` writes it and `doctor.sh` reads the same constant
+  back, so writer and verifier cannot drift apart.
 
 See [../guides/change-propagation-guide.md](../guides/change-propagation-guide.md)
 for the sites that still have to be edited by hand when the list changes.

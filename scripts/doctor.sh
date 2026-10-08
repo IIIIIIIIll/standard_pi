@@ -92,12 +92,6 @@ else
 fi
 
 echo "==> MCP server  ($MCP_CFG)"
-# MCP_CFG follows pi-mcp-adapter's hardcoded homedir path rather than the XDG
-# standard (see scripts/lib.sh). Say so out loud when the two disagree, otherwise
-# the path printed above looks like a bug on an XDG machine.
-if [ -n "${XDG_CONFIG_HOME:-}" ] && [ "${XDG_CONFIG_HOME%/}" != "${HOME%/}/.config" ]; then
-  warn "XDG_CONFIG_HOME=$XDG_CONFIG_HOME is set, but pi-mcp-adapter ignores it; the registration is at $MCP_CFG"
-fi
 if command -v codebase-memory-mcp >/dev/null 2>&1; then
   ok "codebase-memory-mcp: $(command -v codebase-memory-mcp)"
   has_cbm=1

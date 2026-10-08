@@ -20,7 +20,6 @@ Always-on settings, identical on every machine. It is the base that
     "npm:@gotgenes/pi-permission-system",
     "npm:@sting8k/pi-vcc",
     "npm:@thunstack/auto-compact",
-    "npm:pi-mcp-adapter",
     "npm:pi-lens",
     "npm:pi-tps-status",
     "https://github.com/ayghri/i-have-adhd"
@@ -30,10 +29,7 @@ Always-on settings, identical on every machine. It is the base that
   "compaction": {
     "enabled": true
   },
-  "autocompleteMaxVisible": 7,
-  "extensions": [
-    "-builtin:mcp"
-  ]
+  "autocompleteMaxVisible": 7
 }
 ```
 
@@ -43,16 +39,14 @@ Rules:
   specs, and `setup.sh` runs `pi update --extensions` on every invocation.
 - **Anything under `packages` is installed on every machine.** If it is not wanted
   everywhere, it belongs in an optional bundle instead.
-- **The built-in MCP extension stays disabled.** Pi 1.1.0 ships MCP as a
-  built-in, replaceable extension (`builtin:mcp`) that claims `/mcp`, exactly
-  like `pi-mcp-adapter` does. With both loading, Pi drops the built-in one and
-  prints `Extension package "builtin:mcp": ... registers command \`/mcp\`, so
-  built-in extension \`mcp\` was not loaded`. `"-builtin:mcp"` in `extensions`
-  removes the collision: only the adapter loads, reads the host configs and the
-  global `~/.config/mcp/mcp.json`, and owns `/mcp`. Dropping
-  `pi-mcp-adapter` from `packages` means dropping this entry too, otherwise MCP
-  is off entirely. `pi config` lists the same toggle under Built-in (or use
-  `--no-mcp` for one run).
+- **MCP is Pi's own built-in extension.** Pi 1.1.0 ships MCP as a built-in,
+  replaceable extension (`builtin:mcp`) that owns `/mcp` and reads
+  `~/.pi/agent/mcp.json` (`docs/mcp.md`, "Configure servers"). Core settings
+  therefore carry no MCP package and no `extensions` entry — `builtin:mcp`
+  loads. A package that also claimed `/mcp` would make Pi drop the built-in one
+  and print `built-in extension \`mcp\` was not loaded`; the harness used to
+  disable `builtin:mcp` for exactly that reason, and the package is gone. Do not
+  re-add an `extensions` entry unless a package again owns `/mcp`.
 - `lastChangelogVersion` must never appear here — it is runtime-owned, carried
   over on render and deleted on sync.
 - Add a setting by editing this file, then `./setup.sh` (or `scripts/sync.sh` if
@@ -87,21 +81,19 @@ compares.
 | `npm:@gotgenes/pi-permission-system` | the permission gate | see below — the **only** thing gating tool calls |
 | `npm:@sting8k/pi-vcc` | algorithmic, transcript-preserving compaction summaries with **no LLM call** | owns "how to summarize" — see [Compaction](#compaction) |
 | `npm:@thunstack/auto-compact` | early percentage-triggered compaction, session toggle, TUI panel | owns "when to compact" — see [Compaction](#compaction) |
-| `npm:pi-mcp-adapter` | MCP servers behind one proxy tool (~200 tokens) instead of every server's full tool list; reads `.mcp.json`, `~/.config/mcp/mcp.json`, and host configs; adds `/mcp`, `/mcp setup`, `mcp-auth`; the built-in `builtin:mcp` extension is disabled in `settings.core.json` so only the adapter registers `/mcp` | the on-demand path into the MCP ecosystem without paying for it in context |
 | `npm:pi-lens` | language-aware feedback on every write/edit: LSP diagnostics and navigation, linters/type-checkers, format/autofix, ast-grep and tree-sitter rules, ranked `symbol_search`, `/lens-map` | edits get checked by the real toolchain instead of by the model's own reading |
 | `npm:pi-tps-status` | live tokens-per-second meter in the status bar: TTFT and token-count modes, three counting strategies, provider-usage reconciliation, `/tps` settings | streaming throughput is otherwise invisible; it keeps its config outside `~/.pi/agent/`, at `$XDG_CONFIG_HOME/pi-tps-status/config.json` (like `pi-lens`), so it adds nothing to the path lists |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped replies -- answer or next action first, numbered steps, progress restated each turn, concrete time estimates, no preamble; `/i-have-adhd` (or `stop adhd mode`) toggles it per session, `/skill:i-have-adhd` is the aliased skill | output *shape* is a standing preference rather than a per-task prompt, so it belongs to every machine; it is the one package here with a tracked, symlinked config file (`pi-agent/i-have-adhd.json`) -- see below |
 
 `pi-lens` and `pi-tps-status` are self-contained: neither needs a tracked
 config file in this repo, and neither writes into `~/.pi/agent/`.
-`pi-mcp-adapter` ships no MCP servers of its own, so the harness supplies one:
-`setup.sh` installs `codebase-memory-mcp` and registers it in
-`~/.config/mcp/mcp.json` — the **global** layer, shared with every MCP-aware tool
-on the machine. That is an always-on core cost, so it is worth stating plainly:
-**37.3 MB downloaded and 293 MB on disk** per machine. `/mcp setup` previews every
-file it would change; see
-[The global MCP config](#the-global-mcp-config) for the surface and why no path
-list holds it. `pi-lens` keeps **everything** under its own machine-global
+MCP is Pi's built-in extension rather than a package this repo ships, but the
+harness still supplies a server: `setup.sh` installs `codebase-memory-mcp` and
+registers it in Pi's own `~/.pi/agent/mcp.json`. That is an always-on core cost,
+so it is worth stating plainly: **37.3 MB downloaded and 293 MB on disk** per
+machine. See [The MCP config](#the-mcp-config) for the surface and why no
+`PI_DIRS` / `PI_FILES` entry holds it. `pi-lens` keeps **everything** under its
+own machine-global
 root: config at `~/.pi-lens/config.json`, managed tool binaries at
 `~/.pi-lens/bin/`, per-project state at `~/.pi-lens/projects/<slug>/`, plus its
 global logs. That is deliberately outside `~/.pi/agent/`, so it appears in
@@ -229,12 +221,14 @@ Both settings files (`~/.pi/agent/auto-compact.json`,
 symlinked** — see
 [layout-and-surfaces.md](./layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked).
 
-### The global MCP config
+### The MCP config
 
-The harness registers the MCP servers it installs in `~/.config/mcp/mcp.json`.
-`setup.sh` calls `scripts/install-mcp.sh`, which installs `codebase-memory-mcp`
-with upstream's `--skip-config`, then `scripts/register-mcp-server.mjs` merges one
-entry into that file:
+Pi's built-in MCP extension reads `~/.pi/agent/mcp.json` and, in a trusted
+project, `.pi/mcp.json` (`docs/mcp.md`, "Configure servers"). The harness
+registers the server it installs there: `setup.sh` calls
+`scripts/install-mcp.sh`, which installs `codebase-memory-mcp` with upstream's
+`--skip-config`, then `scripts/register-mcp-server.mjs` merges one entry into the
+file:
 
 ```json
 {
@@ -242,7 +236,7 @@ entry into that file:
     "codebase-memory-mcp": {
       "command": "codebase-memory-mcp",
       "args": [],
-      "lifecycle": "lazy"
+      "exposure": "codemode"
     }
   }
 }
@@ -255,78 +249,75 @@ to make the server always-on core rather than an optional bundle: the server is
 core because every machine should have code intelligence, and a 293 MB binary is
 what that buys. Say it plainly rather than leaving it to be discovered.
 
-**What it costs in context is a different number, and it is small.** The adapter
-keeps the server's metadata outside the context: the 15 tool definitions are
-about 21 KB of JSON (~5,400 tokens at 4 bytes/token, ~6,800 at the 3.2
-bytes/token JSON schemas actually run at), and they live in
-`~/.pi/agent/mcp-cache.json` (23 KB on disk), reached on demand through
-`mcp({ search })` / `mcp({ describe })`. What sits in the model's tool list
-instead is the `mcp` proxy (~200 tokens, already paid by `pi-mcp-adapter` on
-every machine) plus one `mcp__<server>` namespace tool per registered server,
-measured at ~100 tokens for this one. That namespace tool appears only once the
-cache has been populated, so a machine that has never contacted the server pays
-nothing for it. The variable cost is per call — a `search_graph` result runs from
-a few hundred to a few thousand tokens — and nothing here reduces that. So the
+**What it means for context.** `exposure: "codemode"` is Pi's own default,
+written explicitly so the file states the intent. Under `codemode` the server's
+tools are callable from `codemode` scripts but never declared to the model, and
+`codemode` activates automatically when a `codemode` server connects — so
+`settings.core.json` needs no `defaultTools` entry (`docs/mcp.md`, "Control tool
+exposure"). A script reaches the tools with `searchTools()`, `describeTool()` or
+`ALL_TOOLS`. The variable cost is per call — a `search_graph` result runs from a
+few hundred to a few thousand tokens — and nothing here reduces that. So the
 293 MB is a **disk** decision, not a context one: do not re-open the always-on
 choice on token grounds.
 
-The cache itself is a runtime file `pi-mcp-adapter` owns, so it is named in both
-`.gitignore` and `PI_NOT_SYNCED` alongside the other agent-dir files a package
-rewrites. It is not credential-bearing — the adapter hashes a bearer token into
-`configHash` rather than storing it (`dist/metadata-cache.js:78`) — but it holds
-remote content and must never become repo material.
+The machine-global `~/.config/mcp/mcp.json` is a **different file with a
+different owner**. It still holds a `codebase-memory-mcp` entry from before this
+change, and that entry is deliberately left untouched: every other MCP-aware tool
+on the machine reads that file, and it is not this repo's to rewrite or delete
+now that Pi reads its own. This repo no longer writes it at all (see
+[layout-and-surfaces.md](./layout-and-surfaces.md)'s map).
 
 Facts a contributor must not break:
 
-- **It is Generated, outside the repo** — the category
-  `~/.agents/.pi-setup-skills.json` already occupies, not a fifth surface. It is
-  outside on the same terms, which is why
-  [layout-and-surfaces.md](./layout-and-surfaces.md)'s map carries it: it does not
-  live under `PI_DST`, so it takes no `PI_DIRS` / `PI_FILES` entry; the
-  `PI_NOT_SYNCED` entries are checked as `pi-agent/<name>`, so a path outside the
-  repo cannot be expressed there at all; and there is no repo path for
-  `.gitignore` to cover. The path is defined once in `scripts/lib.sh` as
-  `MCP_CFG`, not `PI_`-prefixed because that prefix means a harness path under
-  `PI_DST`.
-- **`MCP_CFG` follows the reader, not the XDG standard.** It is
-  `$HOME/.config/mcp/mcp.json`, because `pi-mcp-adapter` hardcodes
-  `join(homedir(), ".config", "mcp", "mcp.json")` as
-  `GENERIC_GLOBAL_CONFIG_PATH` (`config.ts:16`, verified against
-  `pi-mcp-adapter` 2.35.0) and ignores `XDG_CONFIG_HOME`. Honouring the variable
-  here would register the server where the adapter never looks — and `doctor.sh`,
-  reading the same constant back, would still report green. `doctor.sh` emits a
-  `warn` when `XDG_CONFIG_HOME` points somewhere else, so the mismatch is
-  visible rather than silent. Do not "fix" the constant to the XDG-resolved path.
-- **`sync.sh` and `sync-settings.mjs` never see it**: they enumerate `PI_DST`.
-  Adding it to any of those lists means the surface decision has been misread.
-- **Its owner writes it with an atomic rename** (`writeConfigText` in
-  `pi-mcp-adapter` 2.35.0: writes `<path>.<pid>.tmp`, then `renameSync`), so it
-  can never be a symlink or a repo-rendered file — the trap
+- **It is Generated and ignored, not a fifth surface.** `~/.pi/agent/mcp.json`
+  lives under `PI_DST`, so it is named in `PI_NOT_SYNCED` (checked as
+  `pi-agent/mcp.json`) and carries an explicit `.gitignore` entry; `mcp.log` is
+  named the same way, and the ignore rule's `mcp.log*` glob covers the rotated
+  `mcp.log.1`. `PI_DIRS` / `PI_FILES` take no entry, because Pi rewrites
+  the file rather than only reading it — a symlink would route Pi's own writes
+  into the git working tree. The destination is defined once in `scripts/lib.sh`
+  as `MCP_CFG` and nowhere else.
+- **`MCP_CFG` is `$HOME/.pi/agent/mcp.json`.** It is a Pi path now, so it follows
+  Pi's config dir, not the XDG standard: Pi reads only its own `mcp.json` and
+  never `~/.config/mcp/mcp.json`. `$HOME` rather than `PI_DST` matches Pi's own
+  default even when `PI_CODING_AGENT_DIR` is overridden. Do not point the
+  constant at the XDG-resolved path or at the global file.
+- **`sync.sh` and `sync-settings.mjs` never write it.** `sync.sh` reports it under
+  "Managed elsewhere" (via `PI_NOT_SYNCED`) and never copies it into the repo;
+  adding it to `PI_DIRS` / `PI_FILES` would mean the surface was misread.
+  `doctor.sh` reads the same `MCP_CFG` back, so writer and verifier cannot drift
+  apart.
+- **Pi rewrites the file itself**, so it can never be a symlink or a
+  repo-rendered file — the trap
   [layout-and-surfaces.md](./layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked)
-  documents for `auto-compact.json`. The repo stores the *instruction* to
+  documents for `auto-compact.json`. `/mcp` saves exposure and enabled-state
+  changes and `pi mcp add` appends servers; `mcp.log` and its rotated
+  `mcp.log.1` are written beside it. The repo stores the *instruction* to
   register the server, not the file.
-- **This repo is not the only writer.** `/mcp setup`, `/mcp enable`/`disable` and
-  hand edits all reach it, so the merge only ever adds its own key and preserves
-  every other server. Four shapes are **refused** (exit `1`, no write, no backup)
+- **The repo owns the canonical content; Pi owns the runtime edits.** A `/mcp`
+  change creates drift from the repo copy, which `doctor.sh` reports; re-running
+  `./setup.sh` (or `scripts/install-mcp.sh`) restores the entry.
+- **This repo is not the only writer.** `/mcp`, `pi mcp add` and hand edits all
+  reach the file, so the merge only ever adds its own key and preserves every
+  other server. Four shapes are **refused** (exit `1`, no write, no backup)
   rather than repaired: an unparseable file; a root that is not an object; a
   non-object `mcpServers` value; and a file that spells the key `mcp-servers`
   instead of `mcpServers`. The first prevents deleting every other server with a
   parse-failure reset, the middle two prevent a rekeying spread (a string
   `mcpServers` would become `{"0":"o",…}`) or a merge that reports success and
-  registers nothing, and the last prevents shadowing — the adapter reads
-  `raw.mcpServers ?? raw["mcp-servers"] ?? {}` and prefers camelCase.
-- **The helper is deliberately stricter than the reader on three inputs.**
-  `pi-mcp-adapter` parses the file with `parseJsonWithComments` (comments and
-  trailing commas tolerated) and treats `mcpServers: null` as absent —
-  `isRecord(null)` is false, so it reads `{}`. `register-mcp-server.mjs` uses
-  strict `JSON.parse` and refuses `null` outright, so a file the adapter happily
-  reads can exit `1` here and `doctor.sh` turns that into a `bad`. Keep the
-  asymmetry: the helper is not the file's owner and cannot tell intent from
-  damage, and a `null` in that key means a truncated or corrupt write rather than
-  a request to clear it. Relaxing any of the three buys nothing and hides damage.
+  registers nothing, and the last avoids leaving two spellings of the server
+  list in one file — Pi reads `mcpServers`.
+- **The helper is deliberately stricter than the reader.** `register-mcp-server.mjs`
+  uses strict `JSON.parse` and refuses a non-object root or `mcpServers` value,
+  and a `null` outright. Pi reports an invalid entry and skips it rather than
+  repairing the file (`docs/mcp.md`, "Configuration rules"), and a `null` in that
+  key means a truncated or corrupt write rather than a request to clear it. The
+  helper is not the file's owner and cannot tell intent from damage, so keep the
+  strictness: relaxing it buys nothing and hides damage.
 - **`command` is PATH-resolved, never absolute.** Upstream's own generated entry
   carries an absolute `$HOME`-rooted path; that would make a machine-specific
-  value the thing this repo reproduces, and the file is shared across tools.
+  value the thing this repo reproduces, and the file must stay portable across
+  the machines this repo is cloned onto.
 - **`--skip-config` is mandatory when running upstream's installer.** Without it
   the installer writes `~/.pi/agent/AGENTS.md`, `~/.pi/agent/skills/` and
   `~/.pi/agent/extensions/cbmem.ts` — and that last directory is a symlink into

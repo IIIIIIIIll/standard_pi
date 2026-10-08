@@ -22,8 +22,8 @@ It does eight things:
 3. seeds `~/.pi/agent/auth.json` from the template if absent
 4. installs/refreshes skills **from their upstream sources** (see below)
 5. refreshes Pi plugin packages (`pi update --extensions`)
-6. installs the `codebase-memory-mcp` binary and registers it in the machine-global
-   MCP config (see [MCP server](#the-mcp-server--installed-not-a-package))
+6. installs the `codebase-memory-mcp` binary and registers it in Pi's own MCP
+   config (see [MCP server](#the-mcp-server--installed-not-a-package))
 7. restores the Trellis-generated Pi surfaces — `.pi/` adapters and
    `.agents/skills/trellis-*` (see [Trellis surfaces](#trellis-surfaces))
 8. verifies everything with `scripts/doctor.sh`
@@ -167,7 +167,6 @@ The table below is the inventory; that page is the manual.
 | `npm:@juicesharp/rpiv-todo` | Model-facing todo list as a live overlay surviving `/reload` and compaction |
 | `npm:@sting8k/pi-vcc` | Algorithmic, LLM-free compaction summaries; keeps the raw transcript searchable |
 | `npm:@thunstack/auto-compact` | Compacts early at a configurable **percentage** of context, plus `/auto-compact` and `/auto-compact-config` |
-| `npm:pi-mcp-adapter` | MCP servers behind a single proxy tool instead of their full tool lists; reads `.mcp.json` and host configs, adds `/mcp` and `/mcp setup`; Pi's own built-in MCP extension is disabled (`"-builtin:mcp"` in core settings), so the adapter is the only owner of `/mcp` |
 | `npm:pi-lens` | Language-aware feedback on every write/edit — LSP diagnostics, linters/type-checkers, formatters, ast-grep/tree-sitter rules, `/lens-map` |
 | `npm:pi-tps-status` | Live tokens-per-second meter in the status bar, with TTFT/token modes and provider-usage reconciliation; `/tps` configures it |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped output — answer or next action first, numbered steps, no preamble. `/i-have-adhd` (or `stop adhd mode`) toggles it for the session; `/skill:i-have-adhd` is the aliased skill entry point |
@@ -189,11 +188,10 @@ the plugins above day to day: [`docs/`](docs/README.md) —
 
 ### The MCP server — installed, not a package
 
-`pi-mcp-adapter` ships no servers of its own, so `setup.sh` installs
+Pi ships MCP as a built-in, replaceable extension (`builtin:mcp`), so this repo
+installs no MCP package. It does install the server: `setup.sh` installs
 [`codebase-memory-mcp`](https://github.com/DeusData/codebase-memory-mcp) and
-registers it in the machine-global MCP config at `~/.config/mcp/mcp.json`. That
-path is `$HOME/.config/mcp/mcp.json` even when `XDG_CONFIG_HOME` is set, because
-the adapter ignores that variable; `doctor.sh` notes the mismatch when it applies.
+registers it in Pi's own MCP config at `~/.pi/agent/mcp.json`.
 
 ```json
 {
@@ -201,20 +199,32 @@ the adapter ignores that variable; `doctor.sh` notes the mismatch when it applie
     "codebase-memory-mcp": {
       "command": "codebase-memory-mcp",
       "args": [],
-      "lifecycle": "lazy"
+      "exposure": "codemode"
     }
   }
 }
 ```
 
-- The `command` is the PATH-resolved name, never an absolute path, because this
-  file is shared and must not carry a machine-specific value.
-- That file is **shared by every MCP-aware tool on the machine**, and it lives
-  outside `~/.pi/agent/`, so it is not synced into this repo. Merge, never
-  replace: `scripts/register-mcp-server.mjs` owns exactly one key and leaves any
-  other server alone. It refuses — writes nothing — on an unparseable file, on a
-  root that is not an object, on a non-object `mcpServers` value, and on a file
-  that spells the key `mcp-servers` instead of `mcpServers`.
+- Pi reads `~/.pi/agent/mcp.json` and, in a trusted project, `.pi/mcp.json`
+  (`docs/mcp.md`, "Configure servers"). It does **not** read the machine-global
+  `~/.config/mcp/mcp.json` that every other MCP client on the machine shares;
+  that file is not this repo's to write.
+- The `command` is the PATH-resolved name, never an absolute path, so the file
+  stays portable across the machines this repo is cloned onto.
+- `exposure: "codemode"` is Pi's own default, written explicitly: the server's
+  tools are callable from `codemode` scripts without being declared to the
+  model, so the model's tool list does not grow with the server's tool count.
+- `~/.pi/agent/mcp.json` is **generated and ignored**, never symlinked: Pi
+  rewrites it itself when `/mcp` saves an exposure or enabled-state change, and
+  `pi mcp add` appends servers. `mcp.log` beside it is the log Pi's MCP
+  extension appends to and rotates to `mcp.log.1`. Both are named in
+  `PI_NOT_SYNCED` and `.gitignore`; `doctor.sh` reports drift and re-running
+  `scripts/install-mcp.sh` restores the entry.
+- Merge, never replace: `scripts/register-mcp-server.mjs` owns exactly one key
+  and leaves any other server alone. It refuses — writes nothing — on an
+  unparseable file, on a root that is not an object, on a non-object
+  `mcpServers` value, and on a file that spells the key `mcp-servers` instead of
+  `mcpServers`.
 - The upstream installer runs with `--skip-config` on purpose: without it, it
   would write a `cbmem.ts` Pi extension, `AGENTS.md` and `skills/` into
   `~/.pi/agent/` — which `setup.sh` owns. Pi reaches the graph over MCP instead.
@@ -235,13 +245,9 @@ the adapter ignores that variable; `doctor.sh` notes the mismatch when it applie
   either way and a new shell only decides when `command -v` starts resolving it.
 - `scripts/install-mcp.sh --force` reinstalls the binary (that is the update
   path); `./setup.sh --skip-mcp` opts out on a machine that does not want it.
-  Inside Pi, `/mcp` lists what the adapter can see.
-- Pi 1.1.0 ships MCP as a **built-in** extension too (`builtin:mcp`), and it also
-  claims `/mcp`. Both loading means Pi silently drops the built-in one and prints
-  `built-in extension \`mcp\` was not loaded`. Core settings carry
-  `"extensions": ["-builtin:mcp"]` so only the adapter loads; remove that entry
-  together with the adapter, or MCP is off entirely. `pi config` toggles the
-  same thing under Built-in, and `--no-mcp` does it for one run.
+  Inside Pi, `/mcp` lists the servers Pi has connected; `pi mcp list` prints
+  their state and tools from a shell, and `mcp.log` records what each server
+  logged.
 
 Compaction is split between the last two: `auto-compact` decides **when**
 (percentage of context) and `pi-vcc` decides **how** (algorithmic extraction, no
@@ -375,9 +381,10 @@ git add -A && git commit -m "…" && git push
 | `~/.pi/agent/run-history.jsonl` | Per-machine run history log |
 | `~/.pi/agent/web-search-cache/` | Cached web-search results, re-fetchable |
 | `~/.pi/agent/cache/` | Pi's scratch cache |
-| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json`, `mcp-cache.json` | Extension-owned per-machine config; rewritten at runtime, so never symlinked — see [spec/config/layout-and-surfaces.md](.trellis/spec/config/layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked). `web-search.json` also holds provider credentials, and `mcp-cache.json` caches remote tool metadata |
+| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json` | Extension-owned per-machine config; rewritten at runtime, so never symlinked — see [spec/config/layout-and-surfaces.md](.trellis/spec/config/layout-and-surfaces.md#per-machine-extension-config-is-not-symlinked). `web-search.json` also holds provider credentials |
+| `~/.pi/agent/mcp.json`, `~/.pi/agent/mcp.log*` | Pi's own MCP server list and its MCP log. Pi rewrites both at runtime (`/mcp`, `pi mcp add`), so the list is generated-and-ignored, never symlinked — see [MCP server](#the-mcp-server--installed-not-a-package) |
 | `~/.pi-lens/` | pi-lens's own machine-global root — config, managed LSP/tool binaries, per-project caches, logs. Outside `~/.pi/agent/`, so it is not one of `scripts/lib.sh`'s paths |
-| `~/.config/mcp/mcp.json` | MCP servers for every MCP-aware tool on the machine, written by `scripts/install-mcp.sh`. Outside `~/.pi/agent/`, so it is not one of `scripts/lib.sh`'s paths |
+| `~/.config/mcp/mcp.json` | The shared MCP server list for every MCP-aware tool on the machine. It still holds a `codebase-memory-mcp` entry, but this repo no longer writes it — `setup.sh` registers into Pi's own `~/.pi/agent/mcp.json`. Outside `~/.pi/agent/`, so it is not one of `scripts/lib.sh`'s paths |
 | `~/.cache/codebase-memory-mcp/` | The MCP server's own state — `_config.db` and `logs/`, written by the binary. Outside `~/.pi/agent/` |
 | `<file>.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts, including `sol-pi.json.bak-*`, left from a resource this repo no longer carries |
 
@@ -395,7 +402,7 @@ git add -A && git commit -m "…" && git push
 | `scripts/lib.sh` | Sourced, never run: the single definition of the harness path lists (`PI_DIRS`/`PI_FILES`/`PI_NOT_SYNCED`) and the MCP config destination, read by `setup.sh`, `sync.sh`, `doctor.sh` and `install-mcp.sh`; `doctor.sh` checks that `.gitignore` covers every not-synced path. |
 | `scripts/optional.sh list \| enable \| disable \| scaffold` | Per-machine optional plugin bundles. |
 | `scripts/install-skills.mjs` | Fetches skills from `skills.json` sources and records the resolved commit plus a content digest of each installed tree in the provenance marker (`--check` re-hashes each tree offline and reports `missing`, `drift`, or `unrecorded` instead of trusting that the directory exists). |
-| `scripts/install-mcp.sh` | Installs `codebase-memory-mcp` if absent (upstream installer, `--skip-config`) and registers it in `~/.config/mcp/mcp.json`; `--force` reinstalls the binary. |
+| `scripts/install-mcp.sh` | Installs `codebase-memory-mcp` if absent (upstream installer, `--skip-config`) and registers it in `~/.pi/agent/mcp.json`; `--force` reinstalls the binary. |
 | `scripts/install-trellis.sh` | Restores the gitignored Trellis surfaces `trellis update` cannot (`.pi/` adapters, `.agents/skills/trellis-*`) by running `trellis init` and pruning that call's by-products; a no-op when they are present, and a `note` plus exit `0` when the Trellis CLI is absent. |
 | `scripts/register-mcp-server.mjs` | The JSON helper that helper uses: merges one server entry, backs up before overwrite, `--check` for drift without writing. |
 | `scripts/check-docs.mjs` | Compares the entry ids in `docs/plugins.md` and `docs/skills.md` against `settings.core.json` and `skills.json`; run by `doctor.sh`, and it fails loudly rather than skipping when an input is unreadable. |

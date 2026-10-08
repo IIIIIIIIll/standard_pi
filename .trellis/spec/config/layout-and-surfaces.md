@@ -26,11 +26,13 @@
 | `~/.agents/skills/<name>/` | — | **Fetched from upstream** | `install-skills.mjs` |
 | `~/.agents/.pi-setup-skills.json` | — | **Generated, outside repo** | `install-skills.mjs` |
 | `~/.agents/skills/.skill-lock.json` | — | **Ignored, outside repo** (Pi's skill-selection lock, written in the fetched-skills dir) | Pi — no repo script reads it and no path list names it |
-| `~/.config/mcp/mcp.json` | — | **Generated, outside repo** | `scripts/install-mcp.sh` |
+| `~/.pi/agent/mcp.json` | — | **Generated, ignored** (repo writes the canonical entry; Pi rewrites it at runtime) | `scripts/install-mcp.sh`; Pi's `/mcp` and `pi mcp add` |
+| `~/.pi/agent/mcp.log*` | — | **Ignored** | Pi's MCP extension |
+| `~/.config/mcp/mcp.json` | — | **Ignored, outside repo** (shared with every MCP-aware tool; this repo no longer writes it) | not this repo — foreign to the harness |
 | `~/.local/bin/{codebase-memory-mcp,install.sh}` | — | **Ignored, outside repo** | upstream `install.sh` |
 | PATH line appended to a shell startup file — `~/.bashrc` here, `~/.profile` on a fresh 2026-09-16 install | — | **Ignored, outside repo** | upstream `install.sh`; the target file varies by installer version |
 | `~/.cache/codebase-memory-mcp/` | — | **Ignored, outside repo** | the binary (its own log dir) |
-| `~/.pi/agent/{auto-compact.json,pi-vcc-config.json,web-search.json,mcp-cache.json}` | — | **Ignored** | the owning extension |
+| `~/.pi/agent/{auto-compact.json,pi-vcc-config.json,web-search.json}` | — | **Ignored** | the owning extension |
 | `~/.pi/agent/settings.json.pre-render-<stamp>` | — | **Ignored backup** | `render-settings.mjs` |
 | `<file>.bak-<stamp>` — nothing prunes backups, so `sol-pi.json.bak-*` outlives the `SoL-Pi` resource dropped in `741fff4` | — | **Ignored backup** | `setup.sh::link()`, `register-mcp-server.mjs` |
 | `.pi/`, `.agents/` | — | **Ignored** (Trellis-generated adapters) | `trellis` CLI, restored by `scripts/install-trellis.sh` |
@@ -61,16 +63,21 @@ points are `.gitignore` and `PI_NOT_SYNCED` in `scripts/lib.sh`; see
 how they relate — they are deliberately **not** identical, and `doctor.sh`
 enforces the direction that matters.
 
-`~/.config/mcp/mcp.json` is the second **Generated, outside repo** row, and it is
-outside on the same terms as `~/.agents/.pi-setup-skills.json`: the file does not
-live under `PI_DST`, so it takes no `PI_DIRS` / `PI_FILES` entry; the
-`PI_NOT_SYNCED` entries are checked as `pi-agent/<name>`, so a path outside the
-repo cannot be expressed there at all; and there is no repo path for `.gitignore`
-to cover. The repo stores the *instruction* to register the server (one line in
-`scripts/install-mcp.sh`) rather than the file — see
-[pi-resources.md](./pi-resources.md#the-global-mcp-config). Its path in
-`scripts/lib.sh` follows the reader's resolution, not the XDG standard; that
-section explains why.
+`~/.pi/agent/mcp.json` is the first **Generated, ignored** row: a repo script
+writes its canonical entry, and Pi then owns and rewrites the file at runtime. It
+lives under `PI_DST`, so — unlike `~/.agents/.pi-setup-skills.json` — it takes
+both a `PI_NOT_SYNCED` entry (checked as `pi-agent/mcp.json`, with `mcp.log`
+beside it; the `.gitignore` rule widens that to the rotated `mcp.log.1`) and an explicit `.gitignore` entry. It is deliberately **not
+symlinked**, because `/mcp` and `pi mcp add` write it and a symlink would route
+those writes into the git working tree; see
+[pi-resources.md](./pi-resources.md#the-mcp-config).
+
+`~/.config/mcp/mcp.json` is **Ignored, outside repo**, and no longer this repo's
+surface: it is the shared MCP server list every MCP-aware tool on the machine
+reads, it still holds a `codebase-memory-mcp` entry, and the harness leaves it
+untouched. It takes no `PI_DIRS` / `PI_FILES` entry (it is not under `PI_DST`),
+and the `PI_NOT_SYNCED` entries are checked as `pi-agent/<name>`, so a path
+outside the repo cannot be expressed there at all.
 
 ---
 
@@ -434,7 +441,8 @@ actively checks the important one. Do not add them:
 | `~/.pi/agent/{missions,profiles,web-search-cache}/`, `~/.pi/agent/run-history.jsonl` | Per-machine runtime state Pi writes: mission state, profiles, search cache, and the run log. Added to the two enforcement lists on 2026-09-13. |
 | `~/.pi/agent/cache/` | Pi's scratch cache. Ignored and reported; see the invariant section above. |
 | `~/.pi/agent/trust.json`, `agent-memory/` | Per-machine trust decisions and accumulated memory. Ignored and reported; see the invariant section above. |
-| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json`, `mcp-cache.json` | Extension-owned per-machine config, rewritten at runtime. `web-search.json` is `pi-web-access`'s provider/proxy/credential store — committing it leaks keys. `mcp-cache.json` is `pi-mcp-adapter`'s cache of each registered server's tool schemas and instructions: remote content, not a credential. Ignored and reported; see the invariant section above. |
+| `~/.pi/agent/auto-compact.json`, `pi-vcc-config.json`, `web-search.json` | Extension-owned per-machine config, rewritten at runtime. `web-search.json` is `pi-web-access`'s provider/proxy/credential store — committing it leaks keys. Ignored and reported; see the invariant section above. |
+| `~/.pi/agent/mcp.json`, `~/.pi/agent/mcp.log*` | Pi's own MCP server list and its MCP log. Pi rewrites the list at runtime (`/mcp`, `pi mcp add`), so it is generated-and-ignored, never symlinked; the log is appended and rotated to `mcp.log.1`. Both ignored and reported; see [pi-resources.md](./pi-resources.md#the-mcp-config). |
 | `~/.pi/agent/sessions/` | Per-machine conversation history. |
 | `~/.pi/agent/npm/`, `git/`, `bin/` | Installed `node_modules`, cloned repos, platform binaries. |
 | `<file>.bak-*`, `settings.json.pre-render-*` | Backups written by the scripts; never pruned. |

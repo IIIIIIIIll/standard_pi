@@ -87,18 +87,6 @@
 
 **Config.** `~/.pi/agent/auto-compact.json` — ignored. Threshold and resume rationale: [`.trellis/spec/config/pi-resources.md`](../.trellis/spec/config/pi-resources.md).
 
-### `npm:pi-mcp-adapter`
-
-**What it is.** One `mcp` proxy tool (~200 tokens) in front of every configured MCP server, with lazy connections and cached metadata, plus an optional `mcpScript` tool for batching several MCP calls in one request.
-
-**Reach for it when.** You want the MCP ecosystem without paying for every server's full tool list in context, or you need to add or authenticate a server without restarting Pi.
-
-**Invoke.** `mcp({ })` for status, `mcp({ search: "..." })` and `mcp({ describe: "..." })` to discover, `mcp({ tool: "...", args: { ... } })` to call, `mcpScript({ code: "..." })` to chain several calls. Commands: `/mcp` for the panel, `/mcp setup`, `/mcp tools`, `/mcp prompts`, `/mcp reconnect [server]`, `/mcp enable|disable <server>`, `/mcp logout <server>`, `/mcp token set|remove|status <server>`, `/mcp-auth [server]`.
-
-**Config.** `~/.config/mcp/mcp.json` — generated outside the repo; it is the shared, machine-global layer `setup.sh` registers into, with Pi-only overrides in `~/.pi/agent/mcp.json` and `.pi/mcp.json`. Surface rationale: [`.trellis/spec/config/pi-resources.md`](../.trellis/spec/config/pi-resources.md).
-
-**Gotcha.** Pi 1.1.0 ships MCP as a built-in extension that also claims `/mcp`. Core settings carry `"extensions": ["-builtin:mcp"]`, so only this adapter loads and Pi does not warn that it dropped `builtin:mcp`. If you ever remove the adapter, remove that entry too, or MCP support is simply off; `--no-mcp` disables it for one run instead.
-
 ### `npm:pi-lens`
 
 **What it is.** Language-aware feedback on every write and edit: LSP diagnostics and navigation, language-specific linters and type-checkers, safe format/autofix, ast-grep and tree-sitter rules, and a ranked identifier index.

@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 #
 # install-mcp.sh — install the codebase-memory-mcp binary and register it in
-# the machine-global MCP config.
+# Pi's own MCP config (`~/.pi/agent/mcp.json`, from `MCP_CFG`).
+#
+# The destination is the file Pi's built-in MCP extension reads (`docs/mcp.md`,
+# "Configure servers"), not the machine-global `~/.config/mcp/mcp.json` that
+# every other MCP-aware tool on this machine uses. The global file still holds a
+# `codebase-memory-mcp` entry from before this change; it is deliberately left
+# alone and is no longer written here.
 #
 # The binary is installed with upstream's `--skip-config` flag, which is
 # mandatory rather than tidy: without it the installer writes

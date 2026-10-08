@@ -4,7 +4,7 @@
 #
 # Sourced, never executed. Holds the harness path lists (data only) that
 # setup.sh symlinks, sync.sh pulls back and reports, and doctor.sh verifies,
-# plus the global MCP config destination. Do not add helpers here.
+# plus the MCP config destination. Do not add helpers here.
 #
 # Consumers: setup.sh, scripts/sync.sh, scripts/doctor.sh, scripts/install-mcp.sh
 #
@@ -30,25 +30,30 @@ readonly PI_NOT_SYNCED=(
   # Extension-owned per-machine config. Files, so no trailing slash. Each one
   # also has an explicit .gitignore entry; `doctor.sh` enforces that pairing.
   # `web-search.json` is pi-web-access's provider/proxy/credential store.
-  # `mcp-cache.json` is pi-mcp-adapter's per-server tool-metadata cache: not
-  # config, but the same rule — rewritten at runtime, never repo material.
-  auto-compact.json pi-vcc-config.json web-search.json mcp-cache.json
+  auto-compact.json pi-vcc-config.json web-search.json
+  # Built-in MCP's per-machine state. `mcp.json` is the server list Pi rewrites
+  # from `/mcp` and `pi mcp add`; `mcp.log` is the log the MCP extension appends
+  # to and rotates to `mcp.log.1`. Neither is repo material. The log is listed
+  # concretely because this array is probed with `[ -e ]`, not as a glob;
+  # `.gitignore` carries `mcp.log*`, so the rotated file is ignored too.
+  mcp.json mcp.log
 )
 
-# Global MCP server config, shared by every MCP-aware tool on this machine.
-# Outside PI_DST on purpose: it is not a Pi surface, so it appears in neither
-# PI_DIRS/PI_FILES nor PI_NOT_SYNCED. Deliberately not `PI_`-prefixed — that
-# prefix marks a harness path, and sync.sh must not consider this one.
+# A Pi harness path, so it carries the `PI_`-style destination rather than a
+# global one: this is the file Pi's built-in MCP extension reads and rewrites,
+# not the shared `~/.config/mcp/mcp.json` that every other MCP-aware tool on
+# this machine uses. That global file is no longer this repo's to write; the
+# entry it holds stays there for the other tools and is untouched (see
+# .trellis/spec/config/pi-resources.md, "The MCP config").
 #
-# The path deliberately follows the READER's resolution, not the XDG standard:
-# pi-mcp-adapter hardcodes join(homedir(), ".config", "mcp", "mcp.json") as
-# GENERIC_GLOBAL_CONFIG_PATH (config.ts:16, verified against pi-mcp-adapter
-# 2.35.0) and ignores XDG_CONFIG_HOME, so honouring the variable here would
-# register the server where the adapter never looks — and doctor.sh would read
-# this same constant back and report green.
-# No `$HOME` default either: scripts are invoked from arbitrary working
-# directories, and the reader is what decides. doctor.sh warns when
-# XDG_CONFIG_HOME is set to something else.
+# It is deliberately not symlinked: `/mcp` saves exposure and enabled-state
+# changes and `pi mcp add` appends servers, so a symlink would route Pi's own
+# writes into the git working tree — the same trap recorded for
+# `auto-compact.json`. It is named in PI_NOT_SYNCED so sync.sh reports it and
+# doctor.sh checks that .gitignore covers it.
+#
+# `$HOME` is deliberate, matching Pi's own default even when
+# `PI_CODING_AGENT_DIR` is overridden.
 #
 # Written by scripts/install-mcp.sh and checked by scripts/doctor.sh.
-readonly MCP_CFG="$HOME/.config/mcp/mcp.json"
+readonly MCP_CFG="$HOME/.pi/agent/mcp.json"

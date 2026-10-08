@@ -9,7 +9,7 @@
 #   3. seed ~/.pi/agent/auth.json from the template if absent
 #   4. install/refresh skills from their upstream sources (skills.json)
 #   5. refresh Pi plugin packages
-#   6. install the codebase-memory MCP binary and register it machine-globally
+#   6. install the codebase-memory MCP binary and register it in Pi's mcp.json
 #   7. restore the Trellis-generated surfaces (.pi/ adapters, .agents/skills/trellis-*)
 #   8. verify with scripts/doctor.sh
 #

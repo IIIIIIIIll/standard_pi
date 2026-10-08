@@ -7,7 +7,6 @@
     "npm:@gotgenes/pi-permission-system",
     "npm:@sting8k/pi-vcc",
     "npm:@thunstack/auto-compact",
-    "npm:pi-mcp-adapter",
     "npm:pi-lens",
     "npm:pi-tps-status",
     "https://github.com/ayghri/i-have-adhd"
@@ -17,8 +16,5 @@
   "compaction": {
     "enabled": true
   },
-  "autocompleteMaxVisible": 7,
-  "extensions": [
-    "-builtin:mcp"
-  ]
+  "autocompleteMaxVisible": 7
 }

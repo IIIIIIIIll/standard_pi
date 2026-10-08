@@ -1,17 +1,19 @@
 #!/usr/bin/env node
 //
-// register-mcp-server.mjs — register one MCP server in a machine-global MCP
-// config, preserving every other server already in the file.
+// register-mcp-server.mjs — register one MCP server in Pi's own MCP config,
+// preserving every other server already in the file.
 //
 //   node register-mcp-server.mjs <config-path> <server-name> <command> [--check]
 //
 // --check   report drift and change nothing (exit 1 if the entry is absent or
 //           differs); never writes, not even a backup
 //
-// The config is shared with every MCP-aware tool on the machine, and its owner
-// (pi-mcp-adapter) writes it with an atomic rename, so it is never a symlink and
-// this helper owns exactly one key inside it. Anything this helper cannot merge
-// safely is refused rather than rewritten — exit 1, no backup, no write:
+// The config is `~/.pi/agent/mcp.json`, read by Pi's built-in MCP extension
+// (docs/mcp.md, "Configure servers"). Pi rewrites the file itself -- `/mcp`
+// saves exposure and enabled-state changes and `pi mcp add` appends servers --
+// so it is never a symlink and this helper owns exactly one key inside it.
+// Anything this helper cannot merge safely is refused rather than rewritten —
+// exit 1, no backup, no write:
 //
 //   - an unparseable file (starting from `{}` would delete every other server)
 //   - a root that is not an object (an array root serialises without an
@@ -19,8 +21,8 @@
 //     nothing)
 //   - a non-object `mcpServers` value (the spread below would rekey it, turning
 //     a string into character-indexed keys)
-//   - a file that spells the key `mcp-servers` (the adapter prefers
-//     `mcpServers`, so writing the camelCase key would shadow the hyphenated one)
+//   - a file that spells the key `mcp-servers` (Pi reads `mcpServers`, so
+//     writing the camelCase key would leave two spellings of the server list)
 //
 import fs from "node:fs";
 import path from "node:path";
@@ -75,9 +77,9 @@ if (fs.existsSync(configPath)) {
     );
   }
 
-  // The adapter reads `raw.mcpServers ?? raw["mcp-servers"] ?? {}` and prefers the
-  // camelCase key, so writing `mcpServers` beside an existing hyphenated one would
-  // silently shadow it. Refuse instead of creating the second key.
+  // Pi reads `mcpServers` (docs/mcp.md, "Configure servers"), so writing the
+  // camelCase key beside a hyphenated `mcp-servers` would leave two spellings
+  // of the same list in one file. Refuse instead of creating the second key.
   if (raw["mcp-servers"] !== undefined && raw.mcpServers === undefined) {
     refuse(
       `uses the key "mcp-servers"; this helper writes "mcpServers"`,
@@ -97,9 +99,12 @@ if (fs.existsSync(configPath)) {
 }
 
 // `command` is the PATH-resolved name, never an absolute path: this file is
-// shared across machines and tools, so it must not carry a machine-specific
-// value. `lifecycle: "lazy"` mirrors the adapter's own generated entry.
-const entry = { command, args: [], lifecycle: "lazy" };
+// reproduced on every machine this repo is cloned onto, so it must not carry a
+// machine-specific value. `exposure: "codemode"` is Pi's documented default
+// written explicitly: it keeps the server's tools callable from `codemode`
+// scripts without declaring them to the model (docs/mcp.md, "Control tool
+// exposure").
+const entry = { command, args: [], exposure: "codemode" };
 const out = structuredClone(raw);
 // Guarded above: `raw` is an object and `raw.mcpServers` is either absent or an
 // object, so this spread preserves every foreign entry rather than rekeying it.
