@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/config/index.md", "reason": "Surface taxonomy (tracked/symlinked/generated/ignored) that decides whether ~/.pi/agent/mcp.json is committed, symlinked, or ignored (design D4/D7)."}
+{"file": ".trellis/spec/config/optional-bundles.md", "reason": "How packages[] in settings.core.json interact with render/sync and optional manifests — the settings edit in step 1 must keep that contract."}
+{"file": ".trellis/spec/scripts/index.md", "reason": "Pre-development checklist: which script owns the change, lib.sh single-definition rule for MCP_CFG, and the bash/Node boundary for register-mcp-server.mjs."}
+{"file": ".trellis/spec/scripts/node-guidelines.md", "reason": "argv/--check discipline and JSON write rules for editing scripts/register-mcp-server.mjs."}

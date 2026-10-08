@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/config/index.md", "reason": "Verify the new mcp.json/mcp.log surfaces are classified and ignored correctly, and no generated file became tracked."}
+{"file": ".trellis/spec/scripts/index.md", "reason": "Verify the script-ownership rules and the lib.sh/MCP_CFG single-definition contract still hold after the edits."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer review: settings -> scripts -> path lists -> docs/spec must agree, and the ADR/consistency checks apply to the spec rewrite."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Verify no duplicated MCP destination or entry shape survived in a second script, and no dead helper is left behind."}
