@@ -17,5 +17,8 @@
   "compaction": {
     "enabled": true
   },
-  "autocompleteMaxVisible": 7
+  "autocompleteMaxVisible": 7,
+  "extensions": [
+    "-builtin:mcp"
+  ]
 }

@@ -167,7 +167,7 @@ The table below is the inventory; that page is the manual.
 | `npm:@juicesharp/rpiv-todo` | Model-facing todo list as a live overlay surviving `/reload` and compaction |
 | `npm:@sting8k/pi-vcc` | Algorithmic, LLM-free compaction summaries; keeps the raw transcript searchable |
 | `npm:@thunstack/auto-compact` | Compacts early at a configurable **percentage** of context, plus `/auto-compact` and `/auto-compact-config` |
-| `npm:pi-mcp-adapter` | MCP servers behind a single proxy tool instead of their full tool lists; reads `.mcp.json` and host configs, adds `/mcp` and `/mcp setup` |
+| `npm:pi-mcp-adapter` | MCP servers behind a single proxy tool instead of their full tool lists; reads `.mcp.json` and host configs, adds `/mcp` and `/mcp setup`; Pi's own built-in MCP extension is disabled (`"-builtin:mcp"` in core settings), so the adapter is the only owner of `/mcp` |
 | `npm:pi-lens` | Language-aware feedback on every write/edit — LSP diagnostics, linters/type-checkers, formatters, ast-grep/tree-sitter rules, `/lens-map` |
 | `npm:pi-tps-status` | Live tokens-per-second meter in the status bar, with TTFT/token modes and provider-usage reconciliation; `/tps` configures it |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped output — answer or next action first, numbered steps, no preamble. `/i-have-adhd` (or `stop adhd mode`) toggles it for the session; `/skill:i-have-adhd` is the aliased skill entry point |
@@ -236,6 +236,12 @@ the adapter ignores that variable; `doctor.sh` notes the mismatch when it applie
 - `scripts/install-mcp.sh --force` reinstalls the binary (that is the update
   path); `./setup.sh --skip-mcp` opts out on a machine that does not want it.
   Inside Pi, `/mcp` lists what the adapter can see.
+- Pi 1.1.0 ships MCP as a **built-in** extension too (`builtin:mcp`), and it also
+  claims `/mcp`. Both loading means Pi silently drops the built-in one and prints
+  `built-in extension \`mcp\` was not loaded`. Core settings carry
+  `"extensions": ["-builtin:mcp"]` so only the adapter loads; remove that entry
+  together with the adapter, or MCP is off entirely. `pi config` toggles the
+  same thing under Built-in, and `--no-mcp` does it for one run.
 
 Compaction is split between the last two: `auto-compact` decides **when**
 (percentage of context) and `pi-vcc` decides **how** (algorithmic extraction, no

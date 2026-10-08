@@ -97,6 +97,8 @@
 
 **Config.** `~/.config/mcp/mcp.json` — generated outside the repo; it is the shared, machine-global layer `setup.sh` registers into, with Pi-only overrides in `~/.pi/agent/mcp.json` and `.pi/mcp.json`. Surface rationale: [`.trellis/spec/config/pi-resources.md`](../.trellis/spec/config/pi-resources.md).
 
+**Gotcha.** Pi 1.1.0 ships MCP as a built-in extension that also claims `/mcp`. Core settings carry `"extensions": ["-builtin:mcp"]`, so only this adapter loads and Pi does not warn that it dropped `builtin:mcp`. If you ever remove the adapter, remove that entry too, or MCP support is simply off; `--no-mcp` disables it for one run instead.
+
 ### `npm:pi-lens`
 
 **What it is.** Language-aware feedback on every write and edit: LSP diagnostics and navigation, language-specific linters and type-checkers, safe format/autofix, ast-grep and tree-sitter rules, and a ranked identifier index.

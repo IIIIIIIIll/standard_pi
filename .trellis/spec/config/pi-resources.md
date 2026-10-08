@@ -30,7 +30,10 @@ Always-on settings, identical on every machine. It is the base that
   "compaction": {
     "enabled": true
   },
-  "autocompleteMaxVisible": 7
+  "autocompleteMaxVisible": 7,
+  "extensions": [
+    "-builtin:mcp"
+  ]
 }
 ```
 
@@ -40,6 +43,16 @@ Rules:
   specs, and `setup.sh` runs `pi update --extensions` on every invocation.
 - **Anything under `packages` is installed on every machine.** If it is not wanted
   everywhere, it belongs in an optional bundle instead.
+- **The built-in MCP extension stays disabled.** Pi 1.1.0 ships MCP as a
+  built-in, replaceable extension (`builtin:mcp`) that claims `/mcp`, exactly
+  like `pi-mcp-adapter` does. With both loading, Pi drops the built-in one and
+  prints `Extension package "builtin:mcp": ... registers command \`/mcp\`, so
+  built-in extension \`mcp\` was not loaded`. `"-builtin:mcp"` in `extensions`
+  removes the collision: only the adapter loads, reads the host configs and the
+  global `~/.config/mcp/mcp.json`, and owns `/mcp`. Dropping
+  `pi-mcp-adapter` from `packages` means dropping this entry too, otherwise MCP
+  is off entirely. `pi config` lists the same toggle under Built-in (or use
+  `--no-mcp` for one run).
 - `lastChangelogVersion` must never appear here — it is runtime-owned, carried
   over on render and deleted on sync.
 - Add a setting by editing this file, then `./setup.sh` (or `scripts/sync.sh` if
@@ -74,7 +87,7 @@ compares.
 | `npm:@gotgenes/pi-permission-system` | the permission gate | see below — the **only** thing gating tool calls |
 | `npm:@sting8k/pi-vcc` | algorithmic, transcript-preserving compaction summaries with **no LLM call** | owns "how to summarize" — see [Compaction](#compaction) |
 | `npm:@thunstack/auto-compact` | early percentage-triggered compaction, session toggle, TUI panel | owns "when to compact" — see [Compaction](#compaction) |
-| `npm:pi-mcp-adapter` | MCP servers behind one proxy tool (~200 tokens) instead of every server's full tool list; reads `.mcp.json`, `~/.config/mcp/mcp.json`, and host configs; adds `/mcp`, `/mcp setup`, `mcp-auth` | the on-demand path into the MCP ecosystem without paying for it in context |
+| `npm:pi-mcp-adapter` | MCP servers behind one proxy tool (~200 tokens) instead of every server's full tool list; reads `.mcp.json`, `~/.config/mcp/mcp.json`, and host configs; adds `/mcp`, `/mcp setup`, `mcp-auth`; the built-in `builtin:mcp` extension is disabled in `settings.core.json` so only the adapter registers `/mcp` | the on-demand path into the MCP ecosystem without paying for it in context |
 | `npm:pi-lens` | language-aware feedback on every write/edit: LSP diagnostics and navigation, linters/type-checkers, format/autofix, ast-grep and tree-sitter rules, ranked `symbol_search`, `/lens-map` | edits get checked by the real toolchain instead of by the model's own reading |
 | `npm:pi-tps-status` | live tokens-per-second meter in the status bar: TTFT and token-count modes, three counting strategies, provider-usage reconciliation, `/tps` settings | streaming throughput is otherwise invisible; it keeps its config outside `~/.pi/agent/`, at `$XDG_CONFIG_HOME/pi-tps-status/config.json` (like `pi-lens`), so it adds nothing to the path lists |
 | `https://github.com/ayghri/i-have-adhd` | ADHD-shaped replies -- answer or next action first, numbered steps, progress restated each turn, concrete time estimates, no preamble; `/i-have-adhd` (or `stop adhd mode`) toggles it per session, `/skill:i-have-adhd` is the aliased skill | output *shape* is a standing preference rather than a per-task prompt, so it belongs to every machine; it is the one package here with a tracked, symlinked config file (`pi-agent/i-have-adhd.json`) -- see below |
