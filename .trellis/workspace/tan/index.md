@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 13
-- **Last Active**: 2026-10-08
+- **Total Sessions**: 14
+- **Last Active**: 2026-10-13
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~448 | Active |
+| `journal-1.md` | ~489 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 14 | 2026-10-13 | Verify the harness against Pi 1.2.0, fix two gaps, clean up the MCP leftovers | `2e44c24` | `main` |
 | 13 | 2026-10-08 | Swap MCP to Pi's built-in extension and verify it live | `349bb4d` | `main` |
 | 12 | 2026-09-20 | Verify the upgraded harness and resync the permission policy | `3868e8d` | `main` |
 | 11 | 2026-09-16 | Carry the role gates to dispatched children, and guard three invariants | `afb4237`, `2f58e45`, `b7cce25`, `8550e4a`, `d76e427` | `main` |

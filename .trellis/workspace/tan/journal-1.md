@@ -446,3 +446,44 @@ MCP now runs on Pi's built-in mcp extension instead of pi-mcp-adapter: the adapt
 ### Next Steps
 
 - Nothing blocking. Leftover inert state from the adapter (npm package dir, mcp-cache.json) can be deleted any time; no extension reads it
+
+
+## Session 14: Verify the harness against Pi 1.2.0, fix two gaps, clean up the MCP leftovers
+<!-- trellis-session: v=2 fp=aadd42b40312eade -->
+
+**Date**: 2026-10-13
+**Task**: Verify the harness against Pi 1.2.0, fix two gaps, clean up the MCP leftovers
+**Branch**: `main`
+
+### Summary
+
+A sweep of Pi 1.2.0's breaking changes against every extension, plugin and script found two real gaps and one machine-local leftover. run-timer subscribed to session_switch, which Pi removed in 0.65.0, and pi.on() stores an unknown event name silently, so it never ran while the spec claimed it did. settings.core.json gained the $schema key 1.2.0 recommends, in core rather than live because render-settings.mjs carries over exactly one Pi-owned key. npm:pi-mcp-adapter was still in the extension set's package.json after it left packages[], so every pi update --extensions kept updating it; it and its two state files are gone.
+
+### Main Changes
+
+- run-timer.ts: dropped the session_switch handler and left an in-place note on why Pi's removal in 0.65.0 makes it unobservable; session_start already resets the timer
+- pi-resources.md: the ticker sentence names only live events, and the settings.core.json section documents $schema as core-not-live with the docs/settings.md citation
+- settings.core.json: added $schema, so the live file is rendered rather than hand-edited; render -> --check -> sync-settings is green and idempotent
+- Machine-local, not committed: pi remove npm:pi-mcp-adapter (it had left packages[] but stayed in npm/package.json), then deleted the adapter's mcp-cache.json and mcp-onboarding.json, which the built-in MCP extension replaces with mcp.log
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2e44c24` | fix(compat): track $schema in core and drop the removed session_switch event |
+
+### Testing
+
+- [OK] Pi 1.2.0 API surface vs repo usage: all 12 packages load, 75 commands registered, empty stderr in a fresh 'pi --mode rpc --no-session' probe; every member used (pi.on, getActiveTools, setActiveTools, getThinkingLevel, registerTool, registerShortcut, ctx.ui.setStatus) exists in dist/core/extensions/types.d.ts
+- [OK] before_agent_start union resolved: both bridge handlers and the Trellis adapter read event.systemPrompt, which stays on the shared base; no messageType discrimination is needed
+- [OK] pi mcp list -> codebase-memory-mcp connected, 15 tools, codemode exposure; codemode searchTools() returns the same 15 mcp__codebase_memory_mcp__* tools with the 1.2.0 structuredContent typing
+- [OK] render-settings --check ok, sync-settings same, doctor.sh 'No problems.', check-docs still 10 plugins
+- [OK] pi list -> 11 packages, no pi-mcp-adapter; pi-lens's native deps (@ast-grep/cli, tree-sitter-bash) still resolve after the npm removal
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ~/.config/mcp/mcp.json still holds a codebase-memory-mcp entry. It is kept deliberately: it is shared with other MCP-aware tools and the spec records it as another tool's surface, so nothing to do unless that changes
