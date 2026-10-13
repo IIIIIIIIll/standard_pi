@@ -12,6 +12,7 @@ Always-on settings, identical on every machine. It is the base that
 
 ```json
 {
+  "$schema": "https://pi.dev/schemas/settings.schema.json",
   "packages": [
     "npm:pi-subagents",
     "npm:pi-web-access",
@@ -47,6 +48,13 @@ Rules:
   and print `built-in extension \`mcp\` was not loaded`; the harness used to
   disable `builtin:mcp` for exactly that reason, and the package is gone. Do not
   re-add an `extensions` entry unless a package again owns `/mcp`.
+- **`$schema` is core, not live.** Pi 1.2.0 publishes a JSON Schema per config
+  file and recommends the editor-validation key (`docs/settings.md`, "Settings
+  Reference": *add `"$schema": "https://pi.dev/schemas/settings.schema.json"` to
+  `settings.json`*). It is tracked in this file rather than typed into
+  `~/.pi/agent/settings.json`, because `render-settings.mjs` carries over exactly
+  one Pi-owned key (`lastChangelogVersion`): anything else added live is dropped
+  by the next `./setup.sh` and reported as drift by `doctor.sh` first.
 - `lastChangelogVersion` must never appear here — it is runtime-owned, carried
   over on render and deleted on sync.
 - Add a setting by editing this file, then `./setup.sh` (or `scripts/sync.sh` if
@@ -652,8 +660,11 @@ Facts a contributor must not break:
   accent colour while the run is live and dim once it has ended, freezing at the
   final duration until the next run or the next session, and nothing is shown
   before the first run of a session. A 1s ticker drives the count and is cleared
-  on `agent_end`, `session_switch`, `session_start` and `session_shutdown`, so
-  repeated runs cannot leak an interval.
+  on `agent_end`, `session_start` and `session_shutdown`, so repeated runs cannot
+  leak an interval. `session_switch` is **not** part of this: Pi removed that
+  event in 0.65.0 in favour of `session_start` with `event.reason`, and `pi.on()`
+  accepts an unknown name without complaining while never firing it, so a handler
+  for it reads as live code while never running.
 - **It owns no state.** No config file, no `fs` import, nothing persisted, so it
   changes neither path list in `scripts/lib.sh` nor `.gitignore`. There is nothing
   to symlink and nothing to ignore.

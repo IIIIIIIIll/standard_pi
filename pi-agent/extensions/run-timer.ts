@@ -127,10 +127,11 @@ export default function (pi: PiApi) {
     return undefined;
   });
 
-  pi.on?.("session_switch", (_event, ctx) => {
-    reset(ctx);
-    return undefined;
-  });
+  // No `session_switch` handler here, on purpose. Pi removed that event in
+  // 0.65.0 in favour of `session_start` with `event.reason`, and `pi.on()`
+  // accepts an unknown name without complaining while never firing it — so a
+  // handler for it reads as live code for as long as nobody checks. The reset
+  // on `session_start` above already covers new, resume and fork.
 
   pi.on?.("agent_start", (_event, ctx) => {
     // Clearing first is what makes repeated start/end cycles leak nothing.
