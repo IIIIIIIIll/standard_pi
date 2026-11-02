@@ -96,6 +96,15 @@ compares.
 
 `pi-lens` and `pi-tps-status` are self-contained: neither needs a tracked
 config file in this repo, and neither writes into `~/.pi/agent/`.
+
+**Pi 1.5.0 no longer fails startup when a declared package fails to install**
+— it skips the package, warns as an extension, and retries on the next start or
+`/reload`. Startup is therefore no longer a detector for a broken install, so
+`doctor.sh`'s `==> Packages` section compares every spec in the rendered
+`settings.json` against `pi list --no-approve`: a spec with no resolved path, or
+a resolved path that no longer exists on disk, is a hard failure. Note that
+`pi list` echoes the declared spec whether or not it installed; only an installed
+package carries its path on the next line.
 MCP is Pi's built-in extension rather than a package this repo ships, but the
 harness still supplies a server: `setup.sh` installs `codebase-memory-mcp` and
 registers it in Pi's own `~/.pi/agent/mcp.json`. That is an always-on core cost,

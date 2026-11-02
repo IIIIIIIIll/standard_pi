@@ -91,6 +91,42 @@ else
   warn "node unavailable or optional/ missing"
 fi
 
+echo "==> Packages  (declared vs installed)"
+# Pi 1.5.0 keeps running when a declared package fails to install: it skips the
+# package, prints an extension warning, and retries on the next start or
+# /reload. Startup is therefore no longer a detector, so verify the declared set
+# against `pi list` here instead.
+if command -v pi >/dev/null 2>&1 && command -v node >/dev/null 2>&1 && [ -f "$PI_DST/settings.json" ]; then
+  declared="$(node -e 'const s=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));for(const p of s.packages??[])console.log(typeof p==="string"?p:(p.source??JSON.stringify(p)))' "$PI_DST/settings.json" 2>/dev/null)"
+  listed="$(pi list --no-approve 2>/dev/null)"
+  # `pi list` echoes every declared spec, installed or not; only an installed
+  # package gets its resolved path on the following, deeper-indented line.
+  resolved="$(printf '%s\n' "$listed" | awk '/^  [^ ]/ {spec=$0; sub(/^  /,"",spec); next} /^    [^ ]/ {if (spec != "") {path=$0; sub(/^    /,"",path); print spec "\t" path; spec=""}}')"
+  if [ -z "$listed" ]; then
+    warn "pi list returned nothing; cannot verify the declared packages"
+  else
+    missing=0
+    while IFS= read -r pkg; do
+      [ -n "$pkg" ] || continue
+      resolved_path="$(printf '%s\n' "$resolved" | awk -F'\t' -v s="$pkg" '$1 == s {print $2; exit}')"
+      if [ -z "$resolved_path" ]; then
+        bad "declared but not installed: $pkg (run ./setup.sh or pi update --extensions)"
+        missing=$((missing + 1))
+      elif [ ! -d "$resolved_path" ]; then
+        bad "installed path is gone: $pkg -> $resolved_path"
+        missing=$((missing + 1))
+      fi
+    done <<EOF
+$declared
+EOF
+    if [ "$missing" = 0 ]; then
+      ok "all $(printf '%s\n' "$declared" | grep -c .) declared package(s) installed"
+    fi
+  fi
+else
+  warn "pi or node unavailable; cannot verify installed packages"
+fi
+
 echo "==> MCP server  ($MCP_CFG)"
 if command -v codebase-memory-mcp >/dev/null 2>&1; then
   ok "codebase-memory-mcp: $(command -v codebase-memory-mcp)"

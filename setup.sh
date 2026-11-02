@@ -248,7 +248,9 @@ fi
 if [ "$SKIP_PLUGINS" = 0 ] && command -v pi >/dev/null 2>&1; then
   echo "==> Pi plugins"
   if pi update --extensions >/tmp/pi-setup-plugins.$$ 2>&1; then
-    sed 's/^/  /' /tmp/pi-setup-plugins.$$ | tail -n 5
+    # Print the whole run: 1.5.0 reports installed vs expected versions, and a
+    # trailing `tail -n 5` can cut exactly those lines on a 10-package install.
+    sed 's/^/  /' /tmp/pi-setup-plugins.$$
   else
     note "pi update --extensions failed; run it manually later"
   fi

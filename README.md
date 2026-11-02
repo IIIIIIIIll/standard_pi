@@ -372,7 +372,7 @@ git add -A && git commit -m "…" && git push
 | ------ | ----- |
 | `~/.pi/agent/auth.json` | Real API keys — secrets never enter git |
 | `~/.agents/skills/`, `~/.pi/agent/skills/` | Fetched from upstream via `skills.json` |
-| `~/.agents/skills/.skill-lock.json` | Pi's own skill-selection lock, written by Pi; outside every path list in `scripts/lib.sh` |
+| `~/.agents/skills/.skill-lock.json` | Not Pi's: `skill-lock` appears nowhere in Pi's package or docs, and no repo script writes it — it is left by whichever third-party skills installer fetched the tree. Outside every path list in `scripts/lib.sh` |
 | `~/.pi/agent/models-store.json` | Model catalog cached from `https://pi.dev/api/models/providers/<id>` |
 | `~/.pi/agent/sessions/` | Per-machine conversation history |
 | `~/.pi/agent/npm/`, `git/`, `bin/` | Installed `node_modules`, cloned repos, platform `rg`/`fd` |

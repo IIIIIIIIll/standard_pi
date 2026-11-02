@@ -25,7 +25,7 @@
 | `~/.pi/agent/extensions/*/logs/` | — | **Ignored** | the extension |
 | `~/.agents/skills/<name>/` | — | **Fetched from upstream** | `install-skills.mjs` |
 | `~/.agents/.pi-setup-skills.json` | — | **Generated, outside repo** | `install-skills.mjs` |
-| `~/.agents/skills/.skill-lock.json` | — | **Ignored, outside repo** (Pi's skill-selection lock, written in the fetched-skills dir) | Pi — no repo script reads it and no path list names it |
+| `~/.agents/skills/.skill-lock.json` | — | **Ignored, outside repo** (skills-installer lock, **not** Pi-owned) | not Pi — the string `skill-lock` appears nowhere in Pi 1.4.0/1.5.0, and no repo script writes it; whatever third-party installer fetched the tree did |
 | `~/.pi/agent/mcp.json` | — | **Generated, ignored** (repo writes the canonical entry; Pi rewrites it at runtime) | `scripts/install-mcp.sh`; Pi's `/mcp` and `pi mcp add` |
 | `~/.pi/agent/mcp.log*` | — | **Ignored** | Pi's MCP extension |
 | `~/.config/mcp/mcp.json` | — | **Ignored, outside repo** (shared with every MCP-aware tool; this repo no longer writes it) | not this repo — foreign to the harness |
