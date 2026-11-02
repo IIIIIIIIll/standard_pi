@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
-- **Last Active**: 2026-10-13
+- **Total Sessions**: 15
+- **Last Active**: 2026-11-02
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~489 | Active |
+| `journal-1.md` | ~533 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 15 | 2026-11-02 | Pi 1.5.0 sweep: settings runtime keys, package verification, MCP description | `cb5690c`, `c703d90`, `a8cd0fc`, `3bf9777` | `main` |
 | 14 | 2026-10-13 | Verify the harness against Pi 1.2.0, fix two gaps, clean up the MCP leftovers | `2e44c24` | `main` |
 | 13 | 2026-10-08 | Swap MCP to Pi's built-in extension and verify it live | `349bb4d` | `main` |
 | 12 | 2026-09-20 | Verify the upgraded harness and resync the permission policy | `3868e8d` | `main` |
