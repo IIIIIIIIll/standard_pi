@@ -30,14 +30,26 @@ import path from "node:path";
 const [configPath, serverName, command, ...rest] = process.argv.slice(2);
 if (!configPath || !serverName || !command) {
   console.error(
-    "usage: register-mcp-server.mjs <config-path> <server-name> <command> [--check]",
+    "usage: register-mcp-server.mjs <config-path> <server-name> <command> [--description <text>] [--check]",
   );
   process.exit(2);
 }
 
 let checkOnly = false;
-for (const arg of rest) {
+let description;
+for (let i = 0; i < rest.length; i++) {
+  const arg = rest[i];
   if (arg === "--check") checkOnly = true;
+  else if (arg === "--description") {
+    description = rest[++i];
+    if (!description) {
+      console.error("--description requires a value");
+      process.exit(2);
+    }
+  } else {
+    console.error(`unknown option: ${arg}`);
+    process.exit(2);
+  }
 }
 
 const typeName = (value) =>
@@ -103,8 +115,12 @@ if (fs.existsSync(configPath)) {
 // machine-specific value. `exposure: "codemode"` is Pi's documented default
 // written explicitly: it keeps the server's tools callable from `codemode`
 // scripts without declaring them to the model (docs/mcp.md, "Control tool
-// exposure").
+// exposure"). `description` is the one-line summary Pi shows in the
+// `mcp_servers` system-prompt section, ranks tool search by, and returns from
+// `describeNamespace()`; without it Pi shows the server's own first instruction
+// line once it connects.
 const entry = { command, args: [], exposure: "codemode" };
+if (description) entry.description = description;
 const out = structuredClone(raw);
 // Guarded above: `raw` is an object and `raw.mcpServers` is either absent or an
 // object, so this spread preserves every foreign entry rather than rekeying it.

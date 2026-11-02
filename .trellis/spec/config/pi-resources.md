@@ -254,11 +254,20 @@ file:
     "codebase-memory-mcp": {
       "command": "codebase-memory-mcp",
       "args": [],
-      "exposure": "codemode"
+      "exposure": "codemode",
+      "description": "Index and query a repository's code graph: symbol search, call paths, and change impact."
     }
   }
 }
 ```
+
+`description` is the one-line summary Pi lists for the server in the
+`mcp_servers` system-prompt section, ranks the server's tools by in tool search,
+and returns from `describeNamespace()` (`docs/mcp.md`, "Control tool exposure").
+It lives once in `scripts/lib.sh` as `MCP_DESCRIPTION` and is passed by both
+`install-mcp.sh` and `doctor.sh`, so the written and checked entries cannot
+diverge. Without it Pi falls back to the first line of the server's own
+instructions, which only exists after the server connects.
 
 **What it costs.** `codebase-memory-mcp` 0.10.8 is **37.3 MB downloaded** and
 **293 MB on disk** once the binary is extracted (measured 2026-09-14;

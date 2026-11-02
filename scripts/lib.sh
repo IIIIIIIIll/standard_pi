@@ -57,3 +57,11 @@ readonly PI_NOT_SYNCED=(
 #
 # Written by scripts/install-mcp.sh and checked by scripts/doctor.sh.
 readonly MCP_CFG="$HOME/.pi/agent/mcp.json"
+
+# One line describing what the server offers, stored in the entry's `description`.
+# Pi lists it in the `mcp_servers` system-prompt section, ranks the server's
+# tools by it in tool search, and returns it from `describeNamespace()`
+# (docs/mcp.md, "Configure servers" and "Control tool exposure"). Without it Pi
+# falls back to the first line of the server's own instructions, which only
+# exists once the server has connected.
+readonly MCP_DESCRIPTION="Index and query a repository's code graph: symbol search, call paths, and change impact."

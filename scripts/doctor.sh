@@ -144,7 +144,7 @@ fi
 if [ -f "$MCP_CFG" ]; then
   if ! command -v node >/dev/null 2>&1; then
     warn "cannot verify $MCP_CFG — node unavailable"
-  elif out="$(node "$REPO_DIR/scripts/register-mcp-server.mjs" "$MCP_CFG" codebase-memory-mcp codebase-memory-mcp --check 2>&1)"; then
+  elif out="$(node "$REPO_DIR/scripts/register-mcp-server.mjs" "$MCP_CFG" codebase-memory-mcp codebase-memory-mcp --description "$MCP_DESCRIPTION" --check 2>&1)"; then
     ok "codebase-memory-mcp registered in $MCP_CFG"
   else
     printf '%s\n' "$out" | sed 's/^/      /'

@@ -142,4 +142,4 @@ if [ "$MCP_BIN_OFF_PATH" = 1 ]; then
   note "$MCP_BIN is not on this shell's PATH yet — open a new shell (or source your profile) before starting Pi"
 fi
 
-node "$REPO_DIR/scripts/register-mcp-server.mjs" "$MCP_CFG" codebase-memory-mcp codebase-memory-mcp
+node "$REPO_DIR/scripts/register-mcp-server.mjs" "$MCP_CFG" codebase-memory-mcp codebase-memory-mcp --description "$MCP_DESCRIPTION"

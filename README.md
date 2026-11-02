@@ -200,11 +200,17 @@ registers it in Pi's own MCP config at `~/.pi/agent/mcp.json`.
     "codebase-memory-mcp": {
       "command": "codebase-memory-mcp",
       "args": [],
-      "exposure": "codemode"
+      "exposure": "codemode",
+      "description": "Index and query a repository's code graph: symbol search, call paths, and change impact."
     }
   }
 }
 ```
+
+- `description` is the one line Pi lists for this server in the `mcp_servers`
+  system-prompt section and ranks tool search by; without it Pi only gets a
+  summary once the server connects. It is defined once in `scripts/lib.sh`
+  (`MCP_DESCRIPTION`), not typed into this file.
 
 - Pi reads `~/.pi/agent/mcp.json` and, in a trusted project, `.pi/mcp.json`
   (`docs/mcp.md`, "Configure servers"). It does **not** read the machine-global
