@@ -13,7 +13,7 @@
     "https://github.com/ayghri/i-have-adhd"
   ],
   "theme": "dark",
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "max",
   "compaction": {
     "enabled": true
   },
