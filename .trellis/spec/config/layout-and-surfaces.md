@@ -202,7 +202,8 @@ pi-agent/settings.core.json + enabled optional manifests  ──render──▶ 
   `settings.json.pre-render-<YYYYMMDDHHMMSS>` backup first if the file existed.
 - **`./scripts/sync.sh`** folds live → repo, stripping everything contributed by
   an enabled optional so per-machine choices do not leak into core, and dropping
-  `lastChangelogVersion` (owned by Pi).
+  the Pi-owned runtime keys: `lastChangelogVersion` and (Pi 1.5.0+)
+  `extensionChangelogVersions`.
 
 Run `scripts/sync.sh` **before** `setup.sh` if you changed settings inside Pi,
 otherwise the render overwrites them. `doctor.sh` flags the resulting drift.

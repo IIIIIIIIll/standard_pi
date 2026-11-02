@@ -52,11 +52,12 @@ Rules:
   file and recommends the editor-validation key (`docs/settings.md`, "Settings
   Reference": *add `"$schema": "https://pi.dev/schemas/settings.schema.json"` to
   `settings.json`*). It is tracked in this file rather than typed into
-  `~/.pi/agent/settings.json`, because `render-settings.mjs` carries over exactly
-  one Pi-owned key (`lastChangelogVersion`): anything else added live is dropped
+  `~/.pi/agent/settings.json`, because `render-settings.mjs` carries over only
+  the Pi-owned runtime keys (`lastChangelogVersion`,
+  `extensionChangelogVersions`): anything else added live is dropped
   by the next `./setup.sh` and reported as drift by `doctor.sh` first.
-- `lastChangelogVersion` must never appear here — it is runtime-owned, carried
-  over on render and deleted on sync.
+- Pi-owned runtime keys must never appear here — `lastChangelogVersion` and
+  `extensionChangelogVersions` are carried over on render and deleted on sync.
 - Add a setting by editing this file, then `./setup.sh` (or `scripts/sync.sh` if
   you changed it live in Pi) and commit.
 

@@ -28,8 +28,10 @@ const enabled = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath,
 
 const out = structuredClone(live);
 
-// Owned by Pi at runtime.
+// Owned by Pi at runtime: version bookkeeping for Pi's own changelog and for
+// per-extension-package changelogs (Pi 1.5.0+). Never fold these into core.
 delete out.lastChangelogVersion;
+delete out.extensionChangelogVersions;
 
 // Strip everything an enabled optional contributes.
 for (const name of enabled) {

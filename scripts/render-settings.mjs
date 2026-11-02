@@ -63,6 +63,9 @@ const listOptionals = () =>
 
 const core = readJson(corePath);
 
+// Settings Pi writes at runtime and that must never live in the repo.
+const RUNTIME_KEYS = ["lastChangelogVersion", "extensionChangelogVersions"];
+
 let previousLive = null;
 if (fs.existsSync(livePath)) {
   try {
@@ -115,8 +118,12 @@ for (const name of enabled) {
 }
 
 // Runtime state owned by Pi itself — always carried over, never tracked.
-if (previousLive?.lastChangelogVersion)
-  out.lastChangelogVersion = previousLive.lastChangelogVersion;
+// `extensionChangelogVersions` (Pi 1.5.0+) records the last seen changelog
+// version per extension package; dropping it re-shows every package changelog
+// and makes `--check` report permanent drift.
+for (const key of RUNTIME_KEYS) {
+  if (previousLive?.[key] !== undefined) out[key] = previousLive[key];
+}
 
 const next = JSON.stringify(out, null, 2) + "\n";
 const previousText = fs.existsSync(livePath)

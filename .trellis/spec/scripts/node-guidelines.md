@@ -220,8 +220,11 @@ directions are asymmetric:
 
 So a key present in both places is rendered from the manifest and then deleted
 from core on the next `sync.sh` — silently losing it. Keep each key in exactly
-one place. Runtime-owned keys are handled the same way: `lastChangelogVersion`
-is carried over on render and deleted on sync, and is never tracked.
+one place. Runtime-owned keys are handled the same way: the `RUNTIME_KEYS`
+list in `render-settings.mjs` (`lastChangelogVersion`,
+`extensionChangelogVersions`) is carried over on render and deleted on sync by
+`sync-settings.mjs`, and is never tracked. Add a key to both scripts together
+when Pi starts writing another one.
 
 State files are always written as `JSON.stringify(value, null, 2) + "\n"`:
 

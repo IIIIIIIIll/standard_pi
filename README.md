@@ -29,7 +29,8 @@ It does eight things:
 8. verifies everything with `scripts/doctor.sh`
 
 A fresh install reproduces everything this repo owns: the symlinks, the rendered
-`settings.json` (modulo Pi's own `lastChangelogVersion`), the declared package
+`settings.json` (modulo Pi's own runtime keys, `lastChangelogVersion` and
+`extensionChangelogVersions`), the declared package
 set, each skill's content at the commit recorded in the provenance marker, and
 the MCP registration. Plugin and skill sources are unpinned on purpose, so a
 fresh install resolves the newest upstream — versions may differ from this
