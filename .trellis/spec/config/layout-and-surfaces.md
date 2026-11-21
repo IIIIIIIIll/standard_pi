@@ -25,7 +25,7 @@
 | `~/.pi/agent/extensions/*/logs/` | — | **Ignored** | the extension |
 | `~/.agents/skills/<name>/` | — | **Fetched from upstream** | `install-skills.mjs` |
 | `~/.agents/.pi-setup-skills.json` | — | **Generated, outside repo** | `install-skills.mjs` |
-| `~/.agents/skills/.skill-lock.json` | — | **Ignored, outside repo** (skills-installer lock, **not** Pi-owned) | not Pi — the string `skill-lock` appears nowhere in Pi 1.4.0/1.5.0, and no repo script writes it; whatever third-party installer fetched the tree did |
+| `~/.agents/skills/.skill-lock.json` | — | **Ignored, outside repo** (skills-installer lock, **not** Pi-owned) | not Pi — the string `skill-lock` appears nowhere in Pi 1.4.0 through 1.6.0, and no repo script writes it; whatever third-party installer fetched the tree did |
 | `~/.pi/agent/mcp.json` | — | **Generated, ignored** (repo writes the canonical entry; Pi rewrites it at runtime) | `scripts/install-mcp.sh`; Pi's `/mcp` and `pi mcp add` |
 | `~/.pi/agent/mcp.log*` | — | **Ignored** | Pi's MCP extension |
 | `~/.config/mcp/mcp.json` | — | **Ignored, outside repo** (shared with every MCP-aware tool; this repo no longer writes it) | not this repo — foreign to the harness |
@@ -106,11 +106,15 @@ Measured on `73cb810` with `@mindfoldhq/trellis@0.7.0-beta.4`,
 — it reads each absent file as a deletion *you* made — and then exits
 `✓ Already up to date!`. `--force` does not override the classification. `trellis
 init` is the only command that writes them back, so the script runs
-`trellis init --pi -y -s` and then removes exactly what that call also creates:
-`.trellis/spec/{backend,frontend}/`, a `.trellis/tasks/00-join-*` task, and a
-duplicate `.trellis/workspace/<git-user-name>/`. It also restores
-`.trellis/.template-hashes.json`, because `trellis init` drops the `AGENTS.md`
-hash entry that keeps `trellis update` managing that file.
+`trellis init --pi -y -s -u <username>`. It writes `.trellis/.developer` before
+that call, which stops `trellis init` taking its "new developer" branch and
+therefore **prevents** the `00-join-*` onboarding task and the duplicate
+developer workspace directory — they are never created, so nothing has to remove
+them. What it prunes is what its own `init` call newly creates under
+`.trellis/{spec,tasks,workspace}/`, found by comparing the tree before and after
+(in practice the `spec/backend/` and `spec/frontend/` template layers). It also
+restores `.trellis/.template-hashes.json`, because `trellis init` drops the
+`AGENTS.md` hash entry that keeps `trellis update` managing that file.
 
 Its prune rule is a before/after comparison, not a name blocklist: a directory
 under `.trellis/{spec,tasks,workspace}/` is removed only if it did not exist before

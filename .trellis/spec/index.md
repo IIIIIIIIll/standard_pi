@@ -16,8 +16,8 @@ The whole product is:
 - JSON config files that Pi reads (`settings.core.json`, `optional/*/manifest.json`, `skills.json`)
 - Markdown that explains the above
 
-Roughly 1,850 lines of authored code total (`wc -l setup.sh scripts/*.sh
-scripts/*.mjs` — 1,846 at the time of writing). `git clone && ./setup.sh` is the
+Roughly 2,200 lines of authored code total (`wc -l setup.sh scripts/*.sh
+scripts/*.mjs` — 2,226 at the time of writing). `git clone && ./setup.sh` is the
 install path, and **re-running `./setup.sh` is the update path** — idempotency
 is the central design constraint, not a nice-to-have.
 

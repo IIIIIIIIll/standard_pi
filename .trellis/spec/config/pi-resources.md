@@ -26,7 +26,7 @@ Always-on settings, identical on every machine. It is the base that
     "https://github.com/ayghri/i-have-adhd"
   ],
   "theme": "dark",
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "max",
   "compaction": {
     "enabled": true
   },
@@ -191,12 +191,12 @@ too late to be useful. Two packages split the job:
 
 Facts that must not be re-litigated:
 
-- **`reserveTokens` stays untouched.** Pi overloads it as the summarization
-  output budget (`0.8 × reserveTokens`), so raising it to move the native trigger
-  would change an unrelated number. With pi-vcc's `overrideDefaultCompaction:
-  true` there is no LLM summarization call, so that budget is irrelevant anyway.
-  The percentage trigger is the right lever: proportional, and still meaningful
-  on a smaller context window.
+- **`reserveTokens` stays untouched.** Since Pi 1.5.0 it only decides when
+  compaction starts; summary requests use the model's output limit, not a share
+  of `reserveTokens` (the old `0.8 × reserveTokens` overload is gone). With
+  pi-vcc's `overrideDefaultCompaction: true` there is no LLM summarization call
+  at all. The percentage trigger is the right lever: proportional, and still
+  meaningful on a smaller context window.
 - **`autoResume: true` is required on Pi ≥ 0.84.4.** Measured on Pi **0.85.1**
   (`--mode rpc`, `thresholdPercent: 1` to force a compaction after two tool
   turns): with `false`, the session compacted **once** and then **stalled** — 0
@@ -208,7 +208,8 @@ Facts that must not be re-litigated:
   `auto-compact` does not use it. The two packages' docs disagree; the
   measurement is the authority.
 - **pi-vcc does not send its own continue here.** `shouldScheduleAutoContinue`
-  returns `false` for Pi ≥ 0.84.4 (`PI_SELF_RESUME_VERSION` in pi-vcc 0.7.2), so
+  returns `false` for Pi ≥ 0.84.4 (`PI_SELF_RESUME_VERSION` in pi-vcc 0.11.2,
+  `before-compact.ts:62,84-92`), so
   `continueAfterThresholdCompact: true` is inert on this machine; and the
   `session_compact` handler that would send it only fires for `reason`
   `threshold` or `overflow`, never `manual`, which is the path `ctx.compact()`
@@ -433,7 +434,7 @@ stays the contributor view.
 
 ## The `docs/` coverage check
 
-`docs/` answers "when do I reach for this, and what do I type" for the 11
+`docs/` answers "when do I reach for this, and what do I type" for the 10
 always-on packages ([`docs/plugins.md`](../../../docs/plugins.md)) and the 6 fetched
 skills ([`docs/skills.md`](../../../docs/skills.md)). Nothing keeps those pages
 current except this check: `scripts/check-docs.mjs`, run by `doctor.sh` as
@@ -537,7 +538,7 @@ Facts a contributor must not break:
   here (`.trellis/config.yaml:158-161`), so today the bridge's built-ins apply:
   `DEFAULT_CONTEXT_INJECTION_LIMITS` at
   `pi-agent/extensions/trellis-subagents-bridge/index.ts:319-323`, read by
-  `readContextInjectionLimits()` at `:354-393` — `max_file_bytes` **32768**,
+  `readContextInjectionLimits()` at `:357-393` — `max_file_bytes` **32768**,
   `max_artifact_bytes` **65536**, `max_total_bytes` **131072**. A body already
   present in the prompt verbatim is skipped, which is what
   keeps the injection from duplicating a file the shipped tool already supplied. And

@@ -93,7 +93,7 @@
 
 **Reach for it when.** You want the real toolchain rather than the model's own reading to be what checks an edit, or you are navigating a codebase and want ranked `symbol_search` → `module_report` → `read_symbol` instead of grep.
 
-**Invoke.** Tools appear on write/edit with nothing to type. Five stay always active (`lens_diagnostics`, `module_report`, `read_symbol`, `read_enclosing`, `symbol_search`); five more (`ast_grep_search`, `ast_grep_replace`, `ast_grep_outline`, `lsp_navigation`, `lens_diagnostic_mark`) are switched on through `pi_lens_activate_tools`. Commands: `/lens-map`, `/lens-toggle`, `/lens-context-toggle`, `/lens-widget-toggle`, `/lens-health`, `/lens-perf`, `/lens-tools`, `/lens-tdi`, `/lens-allow-edit <path>`.
+**Invoke.** Tools appear on write/edit with nothing to type. Seven stay always active (`lens_diagnostics`, `module_report`, `project_report`, `read_symbol`, `read_enclosing`, `symbol_search`, `effective_config`); five more (`ast_grep_search`, `ast_grep_replace`, `ast_grep_outline`, `lsp_navigation`, `lens_diagnostic_mark`) are switched on through `pi_lens_activate_tools`. Commands: `/lens-map`, `/lens-toggle`, `/lens-context-toggle`, `/lens-widget-toggle`, `/lens-health`, `/lens-perf`, `/lens-tools`, `/lens-tdi`, `/lens-allow-edit <path>`.
 
 **Config.** `~/.pi-lens/config.json` — none here; machine-global under its own root, outside `~/.pi/agent`. Project config is `.pi-lens.json`.
 

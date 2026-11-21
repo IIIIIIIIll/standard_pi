@@ -96,9 +96,12 @@ for (let i = 0; i < rest.length; i++) {
 }
 ```
 
-Unknown flags are ignored rather than rejected — positional slots are the guard.
-Do not add a strict unknown-flag error without checking every caller
-(`setup.sh`, `optional.sh`, `sync.sh`, `doctor.sh` all call these helpers).
+The positional helpers (`render-settings.mjs`, `sync-settings.mjs`,
+`install-skills.mjs`, `check-docs.mjs`) ignore unknown flags rather than reject
+them — positional slots are the guard. `register-mcp-server.mjs` is the
+exception: it rejects an unknown option with exit `2`. Do not add a strict
+unknown-flag error to the others without checking every caller (`setup.sh`,
+`optional.sh`, `sync.sh`, `doctor.sh` all call these helpers).
 
 ### Exit Codes
 

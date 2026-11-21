@@ -7,8 +7,9 @@
 # Trellis extension, no prompt commands, and no role agents for `pi-subagents` to
 # discover. `trellis update` cannot repair that — it reads each absent file as an
 # intentional deletion ("Deleted by you (preserved)") and exits "Already up to
-# date". `trellis init` can, so this script runs it and then removes exactly the
-# four things that invocation also creates:
+# date". `trellis init` can, so this script runs it with the developer identity
+# already in place and then prunes only what that call newly creates. Its four
+# by-products:
 #
 #   1. `.trellis/spec/{backend,frontend}/` — template layers this repo has no use
 #      for (see `.trellis/spec/index.md`, which says not to recreate them)

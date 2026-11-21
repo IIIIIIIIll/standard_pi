@@ -26,9 +26,9 @@ them):
 | --- | ---------- | ------ |
 | — | `scripts/lib.sh:17-19` | **the single definition** — `readonly PI_DIRS=(…)` / `PI_FILES=(…)`, sourced by all three scripts |
 | 1 | `setup.sh:8` | header comment (`--help` text) |
-| 2 | `scripts/doctor.sh:87` | inline "none in repo yet" message listing the names |
-| 3 | `README.md:16,74` | overview: numbered setup step + Layout table |
-| 4 | `README.md:167` | Day-to-day prose list |
+| 2 | `scripts/doctor.sh:174` | inline "none in repo yet" message listing the names |
+| 3 | `README.md:16,92` | overview: numbered setup step + Layout table |
+| 4 | `README.md:350` | Day-to-day prose list |
 
 The three scripts carry no copy of their own: `setup.sh`, `scripts/sync.sh`, and
 `scripts/doctor.sh` each source `scripts/lib.sh`, and the arrays are `readonly`,
@@ -154,7 +154,7 @@ change set is:
    `setup.sh`, `scripts/sync.sh`, and `scripts/doctor.sh` all pick it up.
 3. `setup.sh` — the header comment on line 8 (the `--help` text is generated
    from it).
-4. `scripts/doctor.sh` — the "none in repo yet" message on line 87.
+4. `scripts/doctor.sh` — the "none in repo yet" message on line 174.
 5. `README.md` — the overview (numbered setup step + Layout table).
 6. `README.md` — the Day-to-day prose list.
 7. `.gitignore` — only if Pi writes runtime state into it.
