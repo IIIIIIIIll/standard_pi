@@ -78,7 +78,7 @@ before editing a constant, a list, or a name.
 Run all of these; there is no CI and no test runner.
 
 ```bash
-./scripts/doctor.sh          # symlinks, render drift, skills, auth.json, git state, secret scan
+./scripts/doctor.sh          # symlinks, render drift, skills, auth.json + provider readiness, git state, secret scan
 ./setup.sh                   # must be safe to re-run; this is the real integration test
 ./scripts/sync.sh            # must report no diff after a clean setup
 bash -n setup.sh scripts/*.sh

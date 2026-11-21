@@ -189,7 +189,7 @@ What each step actually proves:
 | ------ | --------- |
 | `./setup.sh` twice | non-idempotent `link()` / render logic, a backup written on every run |
 | `./setup.sh` → `./scripts/sync.sh` | asymmetry between render and sync — the highest-value check here, because render/sync are the two directions of the same mapping |
-| `./scripts/doctor.sh` | drift, wrong symlink target, `auth.json` mode, a tracked secret, missing skills |
+| `./scripts/doctor.sh` | drift, wrong symlink target, `auth.json` mode, a not-ready default provider, a tracked secret, missing skills |
 | `git status --short` | a path that should be ignored but is not |
 
 `doctor.sh`'s exit code is meaningful: `0` with `All good.`, `0` with notes

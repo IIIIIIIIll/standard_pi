@@ -231,7 +231,7 @@ done
 if [ ! -e "$PI_DST/auth.json" ]; then
   cp "$PI_SRC/auth.json.example" "$PI_DST/auth.json"
   chmod 600 "$PI_DST/auth.json"
-  say create "$PI_DST/auth.json  (fill in your keys)"
+  say create "$PI_DST/auth.json  (add keys: pi auth login <provider> --api-key)"
 else
   say keep "$PI_DST/auth.json  (secrets stay local)"
 fi

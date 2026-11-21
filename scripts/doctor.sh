@@ -456,7 +456,65 @@ if [ -f "$PI_DST/auth.json" ]; then
     ok "auth.json present, mode 600"
   else warn "auth.json mode is $perms (expected 600)"; fi
 else
-  warn "auth.json missing (run ./setup.sh, then add your keys)"
+  warn "auth.json missing (run ./setup.sh, then: pi auth login <provider> --api-key)"
+fi
+
+echo "==> Provider credentials"
+# `pi auth check --no-refresh` resolves the configured default from auth.json
+# and environment variables without contacting the provider. It is a note, not a
+# failure: missing credentials are the user's to add, and an expired OAuth token
+# that a session would refresh reports `not_ready` here. Extension providers
+# count — it reported `opencode-go` ready on 2026-11-21, the machine's default.
+if ! command -v pi >/dev/null 2>&1; then
+  warn "pi unavailable; cannot check the default provider"
+elif ! command -v node >/dev/null 2>&1; then
+  warn "node unavailable; cannot check the default provider"
+elif [ ! -f "$PI_DST/settings.json" ]; then
+  # The Settings section above already reports this as `bad`; do not double-count
+  # it here, and do not pretend the missing file is a credential problem.
+  printf '  \033[2m·\033[0m %s\n' "settings.json missing (reported above); provider credentials not checked"
+else
+  target="$(node -e '
+    const s = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    const p = typeof s.defaultProvider === "string" ? s.defaultProvider : "";
+    const m = typeof s.defaultModel === "string" ? s.defaultModel : "";
+    if (p && m) console.log("model:" + p + "/" + m);
+    else if (p) console.log("provider:" + p);
+  ' "$PI_DST/settings.json" 2>/dev/null)"
+  case "$target" in
+  model:*) args=(--model "${target#model:}") ;;
+  provider:*) args=(--provider "${target#provider:}") ;;
+  *) args=() ;;
+  esac
+  if [ ${#args[@]} -eq 0 ]; then
+    # No default is a valid machine: Pi falls back to the model last used, and
+    # `--none` machines never get the opencode-go manifest that sets these keys.
+    printf '  \033[2m·\033[0m %s\n' "no defaultProvider configured; provider credentials not checked"
+  else
+    label="${target#model:}"
+    label="${label#provider:}"
+    out="$(pi auth check "${args[@]}" --json --no-refresh 2>&1)"
+    # Keep only the JSON line: a warning before it would otherwise defeat the
+    # parse and turn a readable verdict into "unparsed".
+    json="$(printf '%s\n' "$out" | grep '"status"' | tail -n 1)"
+    status="$(node -e 'try{console.log(JSON.parse(process.argv[1]).status||"unknown")}catch{console.log("unparsed")}' "$json" 2>/dev/null)"
+    case "$status" in
+    ready)
+      auth_type="$(node -e 'try{console.log(JSON.parse(process.argv[1]).authType||"unknown")}catch{console.log("unknown")}' "$json" 2>/dev/null)"
+      ok "$label ready ($auth_type)"
+      ;;
+    not_ready)
+      warn "$label not ready (run: pi auth login ${label%%/*})"
+      ;;
+    invalid)
+      reason="$(node -e 'try{console.log(JSON.parse(process.argv[1]).reason||"")}catch{console.log("")}' "$json" 2>/dev/null)"
+      warn "$label invalid${reason:+ ($reason)} — check defaultProvider/defaultModel in settings.json"
+      ;;
+    *)
+      warn "cannot verify $label (pi auth check said: $(printf '%s' "$out" | head -n 1))"
+      ;;
+    esac
+  fi
 fi
 
 echo "==> Secret scan (tracked files)"

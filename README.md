@@ -42,9 +42,12 @@ lists it.
 Then add credentials and start Pi:
 
 ```bash
-$EDITOR ~/.pi/agent/auth.json && chmod 600 ~/.pi/agent/auth.json
+pi auth login <provider> --api-key   # or omit --api-key for browser sign-in
 pi
 ```
+
+`pi auth login` writes `~/.pi/agent/auth.json`; `doctor.sh` still checks that the
+file stays mode `600`.
 
 Run `./setup.sh --help` for flags (`--with`, `--none`, `--yes`, `--skip-skills`,
 `--skip-plugins`, `--skip-mcp`, `--skip-trellis`, `--skip-verify`).
@@ -414,7 +417,7 @@ git add -A && git commit -m "…" && git push
 | `scripts/register-mcp-server.mjs` | The JSON helper that helper uses: merges one server entry, backs up before overwrite, `--check` for drift without writing. |
 | `scripts/check-docs.mjs` | Compares the entry ids in `docs/plugins.md` and `docs/skills.md` against `settings.core.json` and `skills.json`; run by `doctor.sh`, and it fails loudly rather than skipping when an input is unreadable. |
 | `scripts/sync.sh` | Both directions: folds live settings into `settings.core.json`, stripping optional contributions, and copies live resource files/dirs back into `pi-agent/`. |
-| `scripts/doctor.sh` | Checks symlinks, render drift, the Trellis surfaces and adapter tool coverage, skills, docs coverage, `auth.json` permissions, git cleanliness, and scans tracked files for secrets. |
+| `scripts/doctor.sh` | Checks symlinks, render drift, the Trellis surfaces and adapter tool coverage, skills, docs coverage, `auth.json` permissions and default-provider readiness, git cleanliness, and scans tracked files for secrets. |
 | `scripts/render-settings.mjs`, `scripts/sync-settings.mjs` | Node helpers used by the shell scripts. |
 
 Override the Pi config directory with `PI_CODING_AGENT_DIR` — Pi reads that one

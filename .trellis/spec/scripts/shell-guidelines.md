@@ -473,7 +473,7 @@ intentional in each case:
 | Skill install has problems | warn, continue | `setup.sh` uses `\|\| note "skill install had problems; see above"` |
 | `pi update --extensions` fails | warn, continue | `setup.sh` |
 | Render drift / tracked `auth.json` / bad symlink | fatal in `doctor.sh` | `doctor.sh` counts a `bad` and exits `1` |
-| Missing `origin` remote, uncommitted changes, `auth.json` not `600` | note only | `doctor.sh` `warn` |
+| Missing `origin` remote, uncommitted changes, `auth.json` not `600`, default provider not ready | note only | `doctor.sh` `warn` |
 
 A partial install is always preferred to a half-applied one: warn and let the
 user re-run, because every script is idempotent.
